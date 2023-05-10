@@ -38,8 +38,9 @@ void handle_arguments(int argc, char *argsv[])
             exit(0);
         case 'b':
         {
-            benchmark = true; 
+            benchmark = true;
         }
+        break;
         case 'c':
         {
             if (std::isdigit(*optarg))
@@ -48,13 +49,15 @@ void handle_arguments(int argc, char *argsv[])
                 switch (config)
                 {
                 case 1:
-                    run.reset(new RunConfigOne()); 
+                    run.reset(new RunConfigOne());
                     break;
                 default:
                     break;
                 }
-            } else {
-                std::cout << "Argument not correct, must be a digit" << std::endl; 
+            }
+            else
+            {
+                std::cout << "Argument not correct, must be a digit" << std::endl;
                 print_help();
                 exit(1);
             }
@@ -68,8 +71,8 @@ void handle_arguments(int argc, char *argsv[])
 
 int main(int argc, char *argsv[])
 {
-    run.reset(new RunConfigOne()); 
+    run.reset(new RunConfigOne());
     std::cout << "Welcome to your thesis." << std::endl;
-    handle_arguments(argc, argsv); 
+    handle_arguments(argc, argsv);
     run->execute(benchmark);
 }

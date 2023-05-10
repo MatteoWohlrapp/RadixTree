@@ -4,12 +4,9 @@
 
 class RunConfig
 {
-private:
+public:
     Benchmark benchmark;
 
-    virtual void run() = 0;
-
-public:
     virtual ~RunConfig() {} 
 
     RunConfig()
