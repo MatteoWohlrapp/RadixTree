@@ -7,20 +7,22 @@
 #include <vector>
 #include <map>
 #include <random>
-
+#include "spdlog/spdlog.h"
 
 class BufferManager
 {
 
 private:
-    std::shared_ptr<StorageManager> storage_manager; 
+    std::shared_ptr<spdlog::logger> logger;
+
+    std::shared_ptr<StorageManager> storage_manager;
 
     // data structure for page id mapping
     std::map<u_int32_t, Frame *> page_id_map;
 
     // size for one page in memory
-    uint32_t page_size;
-    
+    const int page_size;
+
     // current page_id
     uint32_t page_id_count;
 
@@ -30,14 +32,14 @@ private:
 
     // random number generator used for eviction of pages
     std::random_device rd;
-    std::uniform_int_distribution<int> dist; 
+    std::uniform_int_distribution<int> dist;
 
     void fetch_page_from_disk(uint32_t page_id);
 
-    Frame* evict_page();
+    Frame *evict_page();
 
 public:
-    BufferManager(std::shared_ptr<StorageManager> storage_manager_arg, int page_size_arg = 4096, int page_id = 1);
+    BufferManager(std::shared_ptr<StorageManager> storage_manager_arg, const int page_size_arg, int page_id = 1);
 
     Header *request_page(uint32_t page_id);
 
@@ -49,5 +51,5 @@ public:
 
     void unfix_page(uint32_t page_id);
 
-    void mark_diry(uint32_t page_id); 
+    void mark_diry(uint32_t page_id);
 };

@@ -6,10 +6,13 @@
 #include <iostream>
 #include <filesystem>
 #include <fstream>
+#include "spdlog/spdlog.h"
 
 class StorageManager
 {
 private:
+    std::shared_ptr<spdlog::logger> logger;
+
     std::filesystem::path base_path;
 
     std::filesystem::path offsets = "offsets.bin";
@@ -19,7 +22,7 @@ private:
 
     std::fstream data_fs;
 
-    int page_size;
+    const int page_size;
 
 public:
     // data structure that maps page_id and offset in file
@@ -27,7 +30,7 @@ public:
 
     uint32_t current_offset = 0;
 
-    StorageManager(std::filesystem::path base_path_arg, int page_size_arg = 4096);
+    StorageManager(std::filesystem::path base_path_arg, const int page_size_arg);
 
     void save_page(Header *header);
 

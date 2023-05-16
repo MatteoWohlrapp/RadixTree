@@ -5,7 +5,7 @@
 class RunConfigOne : public RunConfig
 {
 public:
-    RunConfigOne() : RunConfig() {}
+    RunConfigOne(const int page_size) : RunConfig(page_size) {}
 
     void execute(bool benchmark) override;
 };

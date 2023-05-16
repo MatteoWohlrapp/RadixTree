@@ -8,7 +8,7 @@ TEST(StorageManager, FolderInitialization)
     std::filesystem::remove(base_path / "offsets.bin");
     std::filesystem::remove(base_path / "data.bin");
 
-    StorageManager storage_manager(base_path);
+    StorageManager storage_manager(base_path, 10);
     ASSERT_TRUE(std::filesystem::exists(base_path));
     ASSERT_TRUE(std::filesystem::exists(base_path / "offsets.bin"));
     ASSERT_TRUE(std::filesystem::exists(base_path / "data.bin"));

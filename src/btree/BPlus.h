@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include "../data/BufferManager.h"
 
@@ -6,10 +6,7 @@
 #include <math.h>
 #include <iostream>
 #include <cassert>
-
-// ((PAGE_SIZE-16)/2)/4 and (PAGE_SIZE-20)/4 must both be integers
-// 48 works for a degree of 4 in the inner nodes, 7 in the outer nodes
-const int NODE_SIZE = 52;
+#include "spdlog/spdlog.h"
 
 template <int PAGE_SIZE>
 struct InnerNode
@@ -167,6 +164,8 @@ struct OuterNode
 class BPlus
 {
 private:
+    std::shared_ptr<spdlog::logger> logger;
+
     std::shared_ptr<BufferManager> buffer_manager;
 
     void recursive_insert(uint32_t page_id, int key, int value);

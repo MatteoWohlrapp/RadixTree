@@ -4,8 +4,9 @@
 #include <stdlib.h>
 #include <random>
 
-BufferManager::BufferManager(std::shared_ptr<StorageManager> storage_manager_arg, int page_size_arg, int highest_page_id) : storage_manager(storage_manager_arg), page_size(page_size_arg), page_id_count(highest_page_id + 1)
+BufferManager::BufferManager(std::shared_ptr<StorageManager> storage_manager_arg, const int page_size_arg, int highest_page_id) : storage_manager(storage_manager_arg), page_size(page_size_arg), page_id_count(highest_page_id + 1)
 {
+    logger = spdlog::get("logger");
     page_id_count = 1;
     dist = std::uniform_int_distribution<int>(0, max_buffer_size);
 }
@@ -89,7 +90,7 @@ void BufferManager::mark_diry(uint32_t page_id)
 Frame *BufferManager::evict_page()
 {
     //  Randomly access a page from the map and evict if unmarked - if marked, set to unmark and try next page
-    std::cout << "Evicting page" << std::endl;
+    logger->info("Evicting page");
 
     while (true)
     {
@@ -103,21 +104,22 @@ Frame *BufferManager::evict_page()
         }
         else
         {
-            if(it->second->dirty){
-                storage_manager->save_page(&it->second->header); 
+            if (it->second->dirty)
+            {
+                storage_manager->save_page(&it->second->header);
             }
-            page_id_map.erase(it->second->header.page_id); 
-            return it->second; 
+            page_id_map.erase(it->second->header.page_id);
+            return it->second;
         }
     }
 }
 
 void BufferManager::fetch_page_from_disk(uint32_t page_id)
 {
-    std::cout << "Fetching page from disk" << std::endl;
+    logger->info("Fetching page from disk");
     if (current_buffer_size > max_buffer_size)
     {
-        std::cout << "Buffer full, evicting page" << std::endl;
+        logger->info("Buffer full, evicting page");
         Frame *frame_address = evict_page();
         storage_manager->load_page(&frame_address->header, page_id);
         page_id_map.emplace(page_id, frame_address);
