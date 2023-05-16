@@ -5,7 +5,8 @@
 
 struct Frame
 {
-    uint8_t fix_count = 0;
+    uint16_t fix_count = 0;
     bool dirty = false;
+    bool marked = false; 
     Header header;
 };

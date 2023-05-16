@@ -47,4 +47,4 @@ target_compile_options(RadixTree
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 include(doxygen)
-#include(googletest)
+include(googletest)

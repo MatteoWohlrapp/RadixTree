@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <unistd.h>
-
+#include <memory>
 // gives information if benchmark should be run
 bool benchmark = false;
 // run that will be executed, default is configuration one

@@ -1,5 +1,6 @@
 #include "RunConfigOne.h"
 
+#include "../data/DBManager.h"
 #include "./btree/BPlus.h"
 #include "./debug/Debuger.h"
 
@@ -10,9 +11,9 @@ void RunConfigOne::execute(bool benchmark)
 {
     auto run = []
     {
-        auto buffer_manager = std::shared_ptr<BufferManager>(new BufferManager(NODE_SIZE));
-        auto debuger = Debuger(buffer_manager);
-        auto tree = BPlus(buffer_manager);
+        auto db_manager = DBManager(NODE_SIZE); 
+        auto debuger = Debuger(db_manager.buffer_manager);
+        auto tree = BPlus(db_manager.buffer_manager);
         std::cout << "Radix Tree Insert" << std::endl;
         tree.insert(1, 1);
         debuger.traverse_tree(&tree);
