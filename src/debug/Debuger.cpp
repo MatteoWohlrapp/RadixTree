@@ -1,9 +1,9 @@
 
 #include "Debuger.h"
+#include "../Configuration.h"
 #include <iostream>
 #include <queue>
 #include <sstream>
-#include "../Configuration.h"
 
 Debuger::Debuger(std::shared_ptr<BufferManager> buffer_manager_arg) : buffer_manager(buffer_manager_arg)
 {
@@ -67,4 +67,4 @@ void Debuger::traverse_tree(BPlus *tree)
 
         level++;
     }
-} 
+}

@@ -1,6 +1,6 @@
 # RadixTree
 
-Evaluation of a RadixTree Cache for Database Management Systems
+Codebase for the Thesis: Evaluation of a RadixTree Cache for Database Management Systems
 
 
 ## Docker Instructions 

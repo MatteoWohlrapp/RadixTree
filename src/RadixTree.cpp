@@ -1,6 +1,16 @@
+/*
+ *  RadixTree.h
+ *
+ *  Created on: 16.05.2023
+ *      Author: Matteo Wohlrapp
+ */
+
+/**
+ * Codebase for the Thesis: Evaluation of a RadixTree Cache for Database Management Systems
+ * This file marks the entry point into the program
+*/
 
 #include "benchmark/RunConfigOne.h"
-
 #include <iostream>
 #include <stdio.h>
 #include <ctype.h>
@@ -130,7 +140,7 @@ void handle_arguments(int argc, char *argsv[])
                 switch (config)
                 {
                 case 1:
-                    run.reset(new RunConfigOne(Configuration::page_size));
+                    run.reset(new RunConfigOne());
                     break;
                 default:
                     break;
@@ -154,7 +164,7 @@ int main(int argc, char *argsv[])
 {
     // first turn the logging on or off
     handle_logging(argc, argsv);
-    run.reset(new RunConfigOne(Configuration::page_size));
+    run.reset(new RunConfigOne());
     handle_arguments(argc, argsv);
     run->execute(benchmark);
 }

@@ -1,9 +1,10 @@
-/*
- *  Logger.h
- *
- *  Created on: 16.05.2023
- *      Author: wohlrapp
- */
+/**
+ * @file    Logger.h
+ * 
+ * @author  Matteo Wohlrapp
+ * @date    16.05.2023
+*/
+
 
 #pragma once
 

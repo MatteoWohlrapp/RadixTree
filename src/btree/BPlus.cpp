@@ -1,8 +1,8 @@
 
 #include "BPlus.h"
+#include "../Configuration.h"
 #include <iostream>
 #include <math.h>
-#include "../Configuration.h"
 
 BPlus::BPlus(std::shared_ptr<BufferManager> buffer_manager_arg) : buffer_manager(buffer_manager_arg)
 {

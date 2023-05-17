@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 #include "../src/data/StorageManager.h"
+#include "../src/Configuration.h"
 
 
 TEST(StorageManager, FolderInitialization)

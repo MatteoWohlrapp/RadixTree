@@ -1,9 +1,10 @@
-/*
- *  File.h
- *
- *  Created on: 16.05.2023
- *      Author: wohlrapp
- */
+/**
+ * @file    Time.h
+ * 
+ * @author  Matteo Wohlrapp
+ * @date    16.05.2023
+*/
+
 
 #pragma once
 
@@ -12,6 +13,9 @@
 #include <ctime>
 #include <iostream>
 
+/**
+ * @brief namespace that handles time requests
+*/
 namespace Time
 {
     /**

@@ -1,8 +1,19 @@
+/**
+ * @file    Configuration.h
+ *
+ * @author  Matteo Wohlrapp
+ * @date    16.05.2023
+ */
 
+#pragma once
 
-// ((PAGE_SIZE-16)/2)/4 and (PAGE_SIZE-20)/4 must both be integers
-// 48 works for a degree of 4 in the inner nodes, 7 in the outer nodes
+/**
+ * @brief namespace that contains all important variables for the configuration of the database
+ */
 namespace Configuration
 {
+    /// sets the overall page_size for the pages written to memory. Subject to constraints: [((PAGE_SIZE - 20) / 2) / 4] > 2
     constexpr int page_size = 52;
+    /// sets the number of pages that are be stored in memory by the buffer manager
+    constexpr int max_buffer_size = 100;
 }

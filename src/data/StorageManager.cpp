@@ -1,5 +1,6 @@
 
 #include "StorageManager.h"
+#include "../Configuration.h"
 
 #include <cstring>
 #include <cerrno>
