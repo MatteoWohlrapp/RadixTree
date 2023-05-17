@@ -34,7 +34,7 @@ add_executable(
 
 target_include_directories(
     AllTests
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/libs/libxsd
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/libs
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 

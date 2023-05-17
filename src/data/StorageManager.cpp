@@ -1,10 +1,11 @@
 
 #include "StorageManager.h"
+#include "../Configuration.h"
 
 #include <cstring>
 #include <cerrno>
 
-void printFileContent(std::fstream &data_fs)
+void print_file_content(std::fstream &data_fs)
 {
 
     // Read and print the content
@@ -25,9 +26,10 @@ void printFileContent(std::fstream &data_fs)
     std::cout << std::endl;
 }
 
-StorageManager::StorageManager(std::filesystem::path base_path_arg, int page_size_arg)
+StorageManager::StorageManager(std::filesystem::path base_path_arg, const int page_size_arg)
     : base_path(base_path_arg), page_size(page_size_arg)
 {
+    logger = spdlog::get("logger");
     // check if folder and files exist
     if (!std::filesystem::exists(base_path))
     {
@@ -49,7 +51,7 @@ StorageManager::StorageManager(std::filesystem::path base_path_arg, int page_siz
         data_fs.open(base_path / data, std::ios::binary | std::ios::in | std::ios::out);
         if (!data_fs.is_open())
         {
-            std::cerr << "File opening failed: " << std::strerror(errno) << std::endl;
+            logger->error("File opening failed: ", std::strerror(errno));
             exit(1);
         }
     }
@@ -65,16 +67,14 @@ StorageManager::StorageManager(std::filesystem::path base_path_arg, int page_siz
         offset_fs.open(base_path / offsets, std::ios::binary | std::ios::in | std::ios::out);
         if (!offset_fs.is_open())
         {
-            std::cerr << "File opening failed: " << std::strerror(errno) << std::endl;
+            logger->error("File opening failed: ", std::strerror(errno));
             exit(1);
         }
     }
 
     if (!(std::filesystem::file_size(base_path / offsets) == 0))
     {
-        std::cout << "Size: " << std::dec << std::filesystem::file_size(base_path / offsets) << std::endl;
         // read tuples with page_id and offset if available
-
         u_int32_t page_id = 0, offset = 0;
         while (offset_fs.read(reinterpret_cast<char *>(&page_id), sizeof(page_id)) && offset_fs.read(reinterpret_cast<char *>(&offset), sizeof(offset)))
         {
@@ -103,7 +103,7 @@ void StorageManager::destroy()
     offset_fs.open(base_path / offsets, std::ios::binary | std::ios::out | std::ios::trunc);
     if (!offset_fs.is_open())
     {
-        std::cerr << "File opening failed: " << std::strerror(errno) << std::endl;
+        logger->error("File opening failed: ", std::strerror(errno));
         exit(1);
     }
 
@@ -116,7 +116,7 @@ void StorageManager::destroy()
     }
 
     offset_fs.close();
-    data_fs.close(); 
+    data_fs.close();
 }
 
 void StorageManager::load_page(Header *header, u_int32_t page_id)
@@ -129,19 +129,19 @@ void StorageManager::load_page(Header *header, u_int32_t page_id)
         data_fs.seekg(offset, std::ios::beg);
         if (!data_fs)
         {
-            std::cerr << "Seekg failed: " << std::strerror(errno) << std::endl;
+            logger->error("Seekg failed: ", std::strerror(errno));
             exit(1);
         }
         data_fs.read(reinterpret_cast<char *>(header), page_size);
         if (!data_fs)
         {
-            std::cerr << "File read failed: " << std::strerror(errno) << std::endl;
+            logger->error("File read failed: ", std::strerror(errno));
             exit(1);
         }
     }
     else
     {
-        std::cerr << "Requested page not in memory" << std::endl;
+        logger->error("Requested page not in memory");
         exit(1);
     }
 }
@@ -153,43 +153,38 @@ void StorageManager::save_page(Header *header)
 
     if (it != page_id_offset_map.end())
     {
-        std::cout << "Page already in memory, writing to same location" << std::endl;
         uint32_t offset = it->second;
-        std::cout << "Offset: " << offset << std::endl;
         data_fs.seekp(offset, std::ios::beg);
         if (!data_fs)
         {
-            std::cerr << "Seekp failed: " << std::strerror(errno) << std::endl;
+            logger->error("Seekp failed: ", std::strerror(errno));
             exit(1);
         }
         data_fs.write(reinterpret_cast<char *>(header), page_size);
         if (!data_fs)
         {
-            std::cerr << "File write failed: " << std::strerror(errno) << std::endl;
+            logger->error("File write failed: ", std::strerror(errno));
             exit(1);
         }
         data_fs.flush();
-        printFileContent(data_fs);
     }
     else
     {
-        std::cout << "Page not in file, appending file with new page" << std::endl;
         page_id_offset_map.emplace(page_id, current_offset);
         data_fs.seekp(current_offset, std::ios::beg);
         if (!data_fs)
         {
-            std::cerr << "Seekp write failed: " << std::strerror(errno) << std::endl;
+            logger->error("Seekp failed: ", std::strerror(errno));
             exit(1);
         }
         data_fs.write(reinterpret_cast<char *>(header), page_size);
         if (!data_fs)
         {
-            std::cerr << "File write failed: " << std::strerror(errno) << std::endl;
+            logger->error("File write failed: ", std::strerror(errno));
             exit(1);
         }
         data_fs.flush();
         current_offset += page_size;
-        printFileContent(data_fs);
     }
 }
 

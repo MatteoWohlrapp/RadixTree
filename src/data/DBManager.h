@@ -1,26 +1,35 @@
+/**
+ * @file    DBManager.h
+ *
+ * @author  Matteo Wohlrapp
+ * @date    16.05.2023
+ */
+
 #pragma once
 
 #include "BufferManager.h"
 #include "StorageManager.h"
+#include "../Configuration.h"
 
+/**
+ * @brief Makes sure that the DB is initialized correctly and hold all variables necessary to run the system
+ */
 class DBManager
 {
 private:
-    int node_size;
-    std::filesystem::path base_path = "../db"; 
-
+    /// path were files related to the DB should be saved
+    std::filesystem::path base_path = "./db";
 
 public:
     std::shared_ptr<StorageManager> storage_manager;
     std::shared_ptr<BufferManager> buffer_manager;
 
-    DBManager(int node_size_arg) : node_size(node_size_arg)
+    /**
+     * @brief Constructor for the DBManager
+     */
+    DBManager()
     {
-        storage_manager = std::shared_ptr<StorageManager>(new StorageManager(base_path));
-        buffer_manager = std::shared_ptr<BufferManager>(new BufferManager(storage_manager, node_size, storage_manager->highest_page_id()));
-    }
-
-    ~DBManager(){
-        storage_manager->~StorageManager(); 
+        storage_manager = std::shared_ptr<StorageManager>(new StorageManager(base_path, Configuration::page_size));
+        buffer_manager = std::shared_ptr<BufferManager>(new BufferManager(storage_manager, storage_manager->highest_page_id()));
     }
 };

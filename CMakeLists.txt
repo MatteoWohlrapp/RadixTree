@@ -34,6 +34,7 @@ target_compile_features(RadixTree
 target_include_directories(RadixTree
         PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/libs
 )
 
 
