@@ -13,6 +13,11 @@
 #include <filesystem>
 #include <fstream>
 #include "spdlog/spdlog.h"
+#include <boost/dynamic_bitset.hpp>
+#include "../Configuration.h"
+
+/// forward declaration
+class StorageManagerTest;
 
 /**
  * @brief Is responsible for the writing and reading to disk
@@ -24,31 +29,31 @@ private:
 
     std::filesystem::path base_path;
 
-    /// path to the offset file
-    std::filesystem::path offsets = "offsets.bin";
+    /// path to the bitmap file
+    std::filesystem::path bitmap = "bitmap.bin";
     /// path to the data file
     std::filesystem::path data = "data.bin";
 
     /// file handle for the offset file
-    std::fstream offset_fs;
+    std::fstream bitmap_fs;
     /// file handle for the data file
     std::fstream data_fs;
 
-    const int page_size;
+    int page_size;
+
+    int bitmap_increment; 
 
 public:
-    /// data structure that maps page_id and offset in file
-    std::map<u_int32_t, u_int32_t> page_id_offset_map;
+    /// data structure that shows if page_id is currently in use, 1 is free, 0 is occupied
+    boost::dynamic_bitset<> free_space_map;
 
-    /// how many bytes have been written to the data file
-    uint32_t current_offset = 0;
-
+    int current_page_count = 0;
     /**
      * @brief Constructor for the storage manager
      * @param base_path_arg The base path of the folder where the data and offset file will be placed in
      * @param page_size_arg The page size saved into memory
      */
-    StorageManager(std::filesystem::path base_path_arg, const int page_size_arg);
+    StorageManager(std::filesystem::path base_path_arg, int page_size_arg);
 
     /**
      * @brief Saves a page to disc
@@ -64,13 +69,15 @@ public:
     void load_page(Header *header, u_int32_t page_id);
 
     /**
-     * @brief Gives the highest page id that is currently stored in memory
-     * @return highest page id currently stored
+     * @brief Gives an unsued page_id, when requesting a new unused page_id, the bitmap is already set, so its important to write the page at the end
+     * @return page_id that is currently not in use
      */
-    int highest_page_id();
+    int get_unused_page_id();
 
     /**
      * @brief Used to save the offset to disc, needs to be called before exiting the program
      */
     void destroy();
+
+    friend class StorageManagerTest;
 };

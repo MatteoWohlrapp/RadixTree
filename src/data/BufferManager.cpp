@@ -12,6 +12,11 @@ BufferManager::BufferManager(std::shared_ptr<StorageManager> storage_manager_arg
     dist = std::uniform_int_distribution<int>(0, Configuration::max_buffer_size);
 }
 
+void BufferManager::destroy()
+{
+    // TODO
+}
+
 Header *BufferManager::request_page(u_int32_t page_id)
 {
     std::map<uint32_t, Frame *>::iterator it = page_id_map.find(page_id);
@@ -42,7 +47,7 @@ Header *BufferManager::create_new_page()
     Frame *frame_address = (Frame *)malloc(Configuration::page_size + 4);
     frame_address->fix_count = 0;
     frame_address->marked = true;
-    frame_address->header.page_id = page_id_count;
+    frame_address->header.page_id = storage_manager->get_unused_page_id();
     frame_address->header.inner = false;
     page_id_map.emplace(page_id_count, frame_address);
     // page is fixed as it will likely be used

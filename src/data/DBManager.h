@@ -30,6 +30,15 @@ public:
     DBManager()
     {
         storage_manager = std::shared_ptr<StorageManager>(new StorageManager(base_path, Configuration::page_size));
-        buffer_manager = std::shared_ptr<BufferManager>(new BufferManager(storage_manager, storage_manager->highest_page_id()));
+        buffer_manager = std::shared_ptr<BufferManager>(new BufferManager(storage_manager, storage_manager->get_unused_page_id()));
+    }
+
+    /**
+     * @brief Function that needs to be called before exiting the program, saved all pages to the disc, important to be called before the storage manager is destroyed
+     */
+    void destroy()
+    {
+        buffer_manager->destroy();
+        storage_manager->destroy();
     }
 };
