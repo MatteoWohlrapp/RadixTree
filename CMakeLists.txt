@@ -31,12 +31,12 @@ target_compile_features(RadixTree
             cxx_std_17
 )
 
+# Include Boost's headers
 target_include_directories(RadixTree
         PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/src
             ${CMAKE_CURRENT_SOURCE_DIR}/libs
 )
-
 
 # activate all compiler warnings.
 # depending on the compiler different flags are used
@@ -49,3 +49,4 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 include(doxygen)
 include(googletest)
+include(boost)

@@ -8,7 +8,7 @@
 /**
  * Codebase for the Thesis: Evaluation of a RadixTree Cache for Database Management Systems
  * This file marks the entry point into the program
-*/
+ */
 
 #include "benchmark/RunConfigOne.h"
 #include <iostream>
@@ -23,6 +23,7 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "utils/Logger.h"
 #include "Configuration.h"
+#include <boost/dynamic_bitset.hpp>
 
 // gives information if benchmark should be run
 bool benchmark = false;

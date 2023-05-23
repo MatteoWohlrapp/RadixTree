@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     doxygen \
     curl \
     libssl-dev \
+    libboost-all-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Set default compiler options
