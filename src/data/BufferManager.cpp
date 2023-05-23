@@ -5,10 +5,9 @@
 #include <stdlib.h>
 #include <random>
 
-BufferManager::BufferManager(std::shared_ptr<StorageManager> storage_manager_arg, int highest_page_id) : storage_manager(storage_manager_arg), page_id_count(highest_page_id + 1)
+BufferManager::BufferManager(std::shared_ptr<StorageManager> storage_manager_arg) : storage_manager(storage_manager_arg)
 {
     logger = spdlog::get("logger");
-    page_id_count = 1;
     dist = std::uniform_int_distribution<int>(0, Configuration::max_buffer_size);
 }
 
@@ -47,12 +46,12 @@ Header *BufferManager::create_new_page()
     Frame *frame_address = (Frame *)malloc(Configuration::page_size + 4);
     frame_address->fix_count = 0;
     frame_address->marked = true;
-    frame_address->header.page_id = storage_manager->get_unused_page_id();
+    uint32_t page_id = storage_manager->get_unused_page_id();
+    frame_address->header.page_id = page_id;
     frame_address->header.inner = false;
-    page_id_map.emplace(page_id_count, frame_address);
+    page_id_map.emplace(page_id, frame_address);
     // page is fixed as it will likely be used
-    fix_page(page_id_count);
-    page_id_count++;
+    fix_page(page_id);
     return &frame_address->header;
 }
 
@@ -123,7 +122,7 @@ Frame *BufferManager::evict_page()
 void BufferManager::fetch_page_from_disk(uint32_t page_id)
 {
     logger->info("Fetching page from disk");
-    if (current_buffer_size > Configuration::max_buffer_size)
+    if (current_buffer_size >= Configuration::max_buffer_size)
     {
         logger->info("Buffer full, evicting page");
         Frame *frame_address = evict_page();
@@ -136,7 +135,7 @@ void BufferManager::fetch_page_from_disk(uint32_t page_id)
         frame_address->fix_count = 0;
         frame_address->dirty = false;
         storage_manager->load_page(&frame_address->header, page_id);
-        page_id_map.emplace(page_id_count, frame_address);
+        page_id_map.emplace(page_id, frame_address);
         current_buffer_size++;
     }
 }

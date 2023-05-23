@@ -24,19 +24,18 @@ struct InnerNode
     // 4 bytes padding to make it the same size as outer node
     char padding[4];
 
-    int keys[((PAGE_SIZE - 20) / 2) / 4];
-    uint32_t child_ids[((PAGE_SIZE - 20) / 2) / 4];
+    int64_t keys[((PAGE_SIZE - 20) / 2) / 8];
+    uint32_t child_ids[((PAGE_SIZE - 20) / 2) / 8];
 
     /**
      * @brief Constructor for the inner node
-     * @param header_arg Reference to the header from which the node will be constructed
      */
-    InnerNode(Header *header_arg) : header(*new(header_arg) Header(header_arg))
+    InnerNode()
     {
-        current_index = 0;
-        max_size = ((PAGE_SIZE - 20) / 2) / 4 - 1;
-        assert(max_size > 2 && "Node size is too small");
         header.inner = true;
+        current_index = 0;
+        max_size = ((PAGE_SIZE - 20) / 2) / 8 - 1;
+        assert(max_size > 2 && "Node size is too small");
     }
 
     /**
@@ -44,7 +43,7 @@ struct InnerNode
      * @param key The key to the next page
      * @return The id of the next page
      */
-    uint32_t next_page(int key)
+    uint32_t next_page(int64_t key)
     {
         int index = 0;
         while (index < current_index)
@@ -64,7 +63,7 @@ struct InnerNode
      * @param child_id The id of the new child
      * @param key Key corresponding to the child
      */
-    void insert(uint32_t child_id, int key)
+    void insert(uint32_t child_id, int64_t key)
     {
         assert(!is_full() && "Inserting into inner node when its full.");
         // find index where to insert
@@ -122,20 +121,19 @@ struct OuterNode
     /// Id of next outer leaf
     uint32_t next_lef_id;
 
-    int keys[((PAGE_SIZE - 20) / 4) / 2];
-    int values[((PAGE_SIZE - 20) / 4) / 2];
+    int keys[((PAGE_SIZE - 20) / 2) / 8];
+    int values[((PAGE_SIZE - 20) / 2) / 8];
 
     /**
      * @brief Constructor for the outer node
-     * @param header_arg Reference to the header from which the node will be constructed
      */
-    OuterNode(Header *header_arg) : header(*new(header_arg) Header(header_arg))
+    OuterNode()
     {
+        header.inner = false;
         current_index = 0;
-        max_size = ((PAGE_SIZE - 20) / 4) / 2;
+        max_size = ((PAGE_SIZE - 20) / 2) / 8;
         assert(max_size > 2 && "Node size is too small");
         next_lef_id = 0;
-        header.inner = false;
     }
 
     /**
@@ -143,7 +141,7 @@ struct OuterNode
      * @param key Key
      * @param value Value corresponding to the key
      */
-    void insert(int key, int value)
+    void insert(int64_t key, int64_t value)
     {
         assert(!is_full() && "Inserting into outer node when its full.");
         // find index where to insert
@@ -177,20 +175,18 @@ struct OuterNode
      * @brief Return the value for a key
      * @return the value
      */
-    int get_value(int key)
+    int64_t get_value(int64_t key)
     {
-        int value = -1;
         int index = 0;
         while (index < current_index)
         {
-            if (values[index] == key)
+            if (keys[index] == key)
             {
-                value = values[index];
-                break;
+                return values[index];
             }
             index++;
         }
-        return value;
+        return -1;
     }
 
     /**

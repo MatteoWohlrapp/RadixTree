@@ -27,8 +27,6 @@ private:
     std::shared_ptr<StorageManager> storage_manager;
     /// data structure for page id mapping
     std::map<u_int32_t, Frame *> page_id_map;
-    /// current page_id
-    uint32_t page_id_count;
     /// information about how full the buffer is right now
     uint32_t current_buffer_size = 0;
 
@@ -55,7 +53,7 @@ public:
      * @param storage_manager_arg A reference to the storage manager
      * @param page_id The lowest page it that can be used from here
      */
-    BufferManager(std::shared_ptr<StorageManager> storage_manager_arg, int page_id = 1);
+    BufferManager(std::shared_ptr<StorageManager> storage_manager_arg);
 
     /**
      * @brief Request a page

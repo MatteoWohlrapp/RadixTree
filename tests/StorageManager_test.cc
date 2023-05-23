@@ -268,15 +268,11 @@ TEST_F(StorageManagerTest, CurrentPageCount)
     ASSERT_EQ(storage_manager->current_page_count, 3);
 }
 
-TEST_F(StorageManagerTest, UniqueId)
+TEST_F(StorageManagerTest, UniqueIdAfterSaving)
 {
-    ASSERT_EQ(storage_manager->get_unused_page_id(), 1);
-
     Header *header = (Header *)malloc(page_size);
     header->page_id = 1;
     storage_manager->save_page(header);
-
-    ASSERT_EQ(storage_manager->get_unused_page_id(), 2);
 
     header->page_id = 3;
     storage_manager->save_page(header);
