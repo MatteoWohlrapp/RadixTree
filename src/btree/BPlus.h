@@ -31,14 +31,14 @@ private:
      * @param key The key to insert
      * @param value The value to insert
      */
-    void recursive_insert(uint32_t page_id, int key, int value);
+    void recursive_insert(uint32_t page_id, int64_t key, int64_t value);
 
     /**
      * @brief Get the value to a key recursively
      * @param page_id The page id of the current node
      * @param key The key corresponding to the value
      */
-    int recursive_get_value(uint32_t page_id, int key);
+    int64_t recursive_get_value(uint32_t page_id, int64_t key);
 
     /**
      * @brief Splits the outer node and copies values
@@ -78,12 +78,12 @@ public:
      * @param key The key that will be inserted
      * @param value The value that will be inserted
      */
-    void insert(int key, int value);
+    void insert(int64_t key, int64_t value);
 
     /**
      * @brief Get a value corresponding to the key
      * @param key The key corresponding a value
      * @return The value
      */
-    int get_value(int key);
+    int64_t get_value(int64_t key);
 };

@@ -33,4 +33,9 @@ struct Header
      * @param other Header to copy from
      */
     Header(Header *other) : page_id(other->page_id), inner(other->inner) {}
+
+    /**
+     * @brief Constructor that does not change anything, can be used when correct values are already in the right memory position
+    */
+    Header() {}
 };

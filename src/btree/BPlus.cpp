@@ -7,18 +7,18 @@
 BPlus::BPlus(std::shared_ptr<BufferManager> buffer_manager_arg) : buffer_manager(buffer_manager_arg)
 {
     logger = spdlog::get("logger"); 
+    logger->debug("Called in BPlus tree"); 
     root = buffer_manager->create_new_page();
-    new (root) OuterNode<Configuration::page_size>(root);
+    new (root) OuterNode<Configuration::page_size>();
 };
 
-void BPlus::insert(int key, int value)
+void BPlus::insert(int64_t key, int64_t value)
 {
     buffer_manager->fix_page(root->page_id);
     recursive_insert(root->page_id, key, value);
 }
 
-// TODO, fix and unfix pages!
-void BPlus::recursive_insert(uint32_t page_id, int key, int value)
+void BPlus::recursive_insert(uint32_t page_id, int64_t key, int64_t value)
 {
     Header *header = buffer_manager->request_page(page_id);
     if (!header->inner)
@@ -34,10 +34,11 @@ void BPlus::recursive_insert(uint32_t page_id, int key, int value)
             // Because the node size has a lower limit, this does not cause issues
             int split_key = node->keys[split_index - 1];
             uint32_t new_outer_id = split_outer_node(page_id, split_index);
+            logger->debug("New outer id: {}", new_outer_id); 
 
             // create new inner node for root
-            InnerNode<Configuration::page_size> *new_root_node_address = (InnerNode<Configuration::page_size> *)buffer_manager->create_new_page();
-            InnerNode<Configuration::page_size> *new_root_node = new (new_root_node_address) InnerNode<Configuration::page_size>((Header *)new_root_node_address);
+            Header *new_root_node_address = buffer_manager->create_new_page();
+            InnerNode<Configuration::page_size> *new_root_node = new (new_root_node_address) InnerNode<Configuration::page_size>();
 
             new_root_node->keys[0] = split_key;
             new_root_node->child_ids[0] = node->header.page_id;
@@ -72,8 +73,8 @@ void BPlus::recursive_insert(uint32_t page_id, int key, int value)
             int split_key = node->keys[split_index - 1];
             uint32_t new_inner_id = split_inner_node(node->header.page_id, split_index);
             // create new inner node for root
-            InnerNode<Configuration::page_size> *new_root_node_address = (InnerNode<Configuration::page_size> *)buffer_manager->create_new_page();
-            InnerNode<Configuration::page_size> *new_root_node = new (new_root_node_address) InnerNode<Configuration::page_size>((Header *)new_root_node_address);
+            Header *new_root_node_address = buffer_manager->create_new_page();
+            InnerNode<Configuration::page_size> *new_root_node = new (new_root_node_address) InnerNode<Configuration::page_size>();
 
             new_root_node->keys[0] = split_key;
             new_root_node->child_ids[0] = node->header.page_id;
@@ -156,7 +157,6 @@ void BPlus::recursive_insert(uint32_t page_id, int key, int value)
     }
 }
 
-// TODO, make use of pointers, unfix new page after use
 uint32_t BPlus::split_outer_node(uint32_t page_id, int index_to_split)
 {
     Header *header = buffer_manager->request_page(page_id);
@@ -167,7 +167,7 @@ uint32_t BPlus::split_outer_node(uint32_t page_id, int index_to_split)
 
     // Create new outer node
     Header *new_header = buffer_manager->create_new_page();
-    OuterNode<Configuration::page_size> *new_outer_node = new (new_header) OuterNode<Configuration::page_size>(new_header);
+    OuterNode<Configuration::page_size> *new_outer_node = new (new_header) OuterNode<Configuration::page_size>();
 
     // It is important that index_to_split is already increases by 2
     for (int i = index_to_split; i < node->max_size; i++)
@@ -195,7 +195,7 @@ uint32_t BPlus::split_inner_node(uint32_t page_id, int index_to_split)
 
     // Create new inner node
     Header *new_header = buffer_manager->create_new_page();
-    InnerNode<Configuration::page_size> *new_inner_node = new (new_header) InnerNode<Configuration::page_size>(new_header);
+    InnerNode<Configuration::page_size> *new_inner_node = new (new_header) InnerNode<Configuration::page_size>();
 
     for (int i = index_to_split; i < node->max_size; i++)
     {
@@ -210,12 +210,12 @@ uint32_t BPlus::split_inner_node(uint32_t page_id, int index_to_split)
     return new_inner_node->header.page_id;
 }
 
-int BPlus::get_value(int key)
+int64_t BPlus::get_value(int64_t key)
 {
     return recursive_get_value(root->page_id, key);
 }
 
-int BPlus::recursive_get_value(uint32_t page_id, int key)
+int64_t BPlus::recursive_get_value(uint32_t page_id, int64_t key)
 {
     Header *header = buffer_manager->request_page(page_id);
     if (!header->inner)

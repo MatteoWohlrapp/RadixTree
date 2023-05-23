@@ -188,7 +188,8 @@ int StorageManager::get_unused_page_id()
     {
         free_space_map.resize(free_space_map.size() + bitmap_increment, true);
         next = free_space_map.find_next(0);
-        free_space_map.reset(next);
     }
+
+    free_space_map.reset(next);
     return next;
 }
