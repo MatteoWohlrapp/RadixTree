@@ -11,7 +11,7 @@ protected:
     std::filesystem::path base_path = "../tests/temp/";
     std::filesystem::path bitmap = "bitmap.bin";
     std::filesystem::path data = "data.bin";
-    int page_size = 16;
+    int page_size = 32;
     int buffer_size = 2;
     std::shared_ptr<spdlog::logger> logger = spdlog::get("logger");
 

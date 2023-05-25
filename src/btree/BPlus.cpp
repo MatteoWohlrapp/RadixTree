@@ -6,8 +6,8 @@
 
 BPlus::BPlus(std::shared_ptr<BufferManager> buffer_manager_arg) : buffer_manager(buffer_manager_arg)
 {
-    logger = spdlog::get("logger"); 
-    logger->debug("Called in BPlus tree"); 
+    logger = spdlog::get("logger");
+    logger->debug("Called in BPlus tree");
     root = buffer_manager->create_new_page();
     new (root) OuterNode<Configuration::page_size>();
 };
@@ -34,16 +34,14 @@ void BPlus::recursive_insert(uint64_t page_id, int64_t key, int64_t value)
             // Because the node size has a lower limit, this does not cause issues
             int split_key = node->keys[split_index - 1];
             uint64_t new_outer_id = split_outer_node(page_id, split_index);
-            logger->debug("New outer id: {}", new_outer_id); 
+            logger->debug("New outer id: {}", new_outer_id);
 
             // create new inner node for root
             Header *new_root_node_address = buffer_manager->create_new_page();
             InnerNode<Configuration::page_size> *new_root_node = new (new_root_node_address) InnerNode<Configuration::page_size>();
 
-            new_root_node->keys[0] = split_key;
             new_root_node->child_ids[0] = node->header.page_id;
-            new_root_node->child_ids[1] = new_outer_id;
-            new_root_node->current_index++;
+            new_root_node->insert(split_key, new_outer_id);
 
             root = (Header *)new_root_node;
 
@@ -76,10 +74,8 @@ void BPlus::recursive_insert(uint64_t page_id, int64_t key, int64_t value)
             Header *new_root_node_address = buffer_manager->create_new_page();
             InnerNode<Configuration::page_size> *new_root_node = new (new_root_node_address) InnerNode<Configuration::page_size>();
 
-            new_root_node->keys[0] = split_key;
             new_root_node->child_ids[0] = node->header.page_id;
-            new_root_node->child_ids[1] = new_inner_id;
-            new_root_node->current_index++;
+            new_root_node->insert(split_key, new_inner_id);
 
             root = (Header *)new_root_node;
 
@@ -136,7 +132,7 @@ void BPlus::recursive_insert(uint64_t page_id, int64_t key, int64_t value)
                 int split_key = child->keys[split_index - 1];
                 uint64_t new_outer_id = split_outer_node(child->header.page_id, split_index);
                 // Insert new child and then call function again
-                node->insert(new_outer_id, split_key);
+                node->insert(split_key, new_outer_id);
 
                 // unfix previous child which could have been changed due to splitting
                 buffer_manager->unfix_page(next_page);

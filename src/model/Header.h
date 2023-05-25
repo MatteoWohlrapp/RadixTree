@@ -18,8 +18,8 @@ struct Header
     uint64_t page_id;
     /// specifies if inner or outer node
     bool inner = false;
-    /// padding to align to 4 byte
-    char padding[3];
+    /// padding to align to 8 byte
+    char padding[7];
 
     /**
      * @brief Constructor for the header
