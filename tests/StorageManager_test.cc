@@ -21,8 +21,24 @@ protected:
         storage_manager = std::make_unique<StorageManager>(base_path, page_size);
     }
 
-    void TearDown() override
+    boost::dynamic_bitset<> get_free_space_map()
     {
+        return storage_manager->free_space_map;
+    }
+
+    int get_current_page_count()
+    {
+        return storage_manager->current_page_count;
+    }
+
+    int get_next_free_space()
+    {
+        return storage_manager->next_free_space;
+    }
+
+    void overwrite_storage_manager()
+    {
+        storage_manager = std::make_unique<StorageManager>(base_path, page_size);
     }
 };
 
@@ -49,11 +65,11 @@ TEST_F(StorageManagerTest, BitmapSavingAndLoading)
 
     storage_manager->destroy();
 
-    StorageManager storage_manager_new(base_path, page_size);
+    overwrite_storage_manager();
 
     for (int i = 0; i < 4; i++)
     {
-        ASSERT_EQ(storage_manager_new.free_space_map[i], 0);
+        ASSERT_EQ(get_free_space_map()[i], 0);
     }
 }
 
@@ -65,8 +81,8 @@ TEST_F(StorageManagerTest, SaveAndLoadNewPage)
 
     // cast to char array and fill latest two bytes with values to check later
     char *arr = (char *)header;
-    arr[8] = 1;
-    arr[9] = 2;
+    arr[14] = 1;
+    arr[15] = 2;
 
     // save the page to the file
     storage_manager->save_page(header);
@@ -80,8 +96,8 @@ TEST_F(StorageManagerTest, SaveAndLoadNewPage)
     ASSERT_EQ(loaded_header->inner, true);
     // test for data properties
     arr = (char *)loaded_header;
-    ASSERT_EQ(arr[8], 1);
-    ASSERT_EQ(arr[9], 2);
+    ASSERT_EQ(arr[14], 1);
+    ASSERT_EQ(arr[15], 2);
 }
 
 TEST_F(StorageManagerTest, SaveAndLoadNewPageFromMemory)
@@ -92,26 +108,26 @@ TEST_F(StorageManagerTest, SaveAndLoadNewPageFromMemory)
 
     // cast to char array and fill latest two bytes with values to check later
     char *arr = (char *)header;
-    arr[8] = 1;
-    arr[9] = 2;
+    arr[14] = 1;
+    arr[15] = 2;
 
     // save the page to the file
     storage_manager->save_page(header);
     storage_manager->destroy();
 
-    StorageManager storage_manager_new(base_path, page_size);
+    overwrite_storage_manager();
 
     // Re-load the page and check if it was saved correctly
     Header *loaded_header = (Header *)malloc(page_size);
-    storage_manager_new.load_page(loaded_header, 1);
+    storage_manager->load_page(loaded_header, 1);
 
     // test for header properties
     ASSERT_EQ(loaded_header->page_id, 1);
     ASSERT_EQ(loaded_header->inner, true);
     // test for data properties
     arr = (char *)loaded_header;
-    ASSERT_EQ(arr[8], 1);
-    ASSERT_EQ(arr[9], 2);
+    ASSERT_EQ(arr[14], 1);
+    ASSERT_EQ(arr[15], 2);
 }
 
 TEST_F(StorageManagerTest, OverwritePageThenInsertNewThenOverwritePage)
@@ -122,16 +138,16 @@ TEST_F(StorageManagerTest, OverwritePageThenInsertNewThenOverwritePage)
 
     // cast to char array and fill latest two bytes with values to check later
     char *arr = (char *)header;
-    arr[8] = 1;
-    arr[9] = 2;
+    arr[14] = 1;
+    arr[15] = 2;
 
     // save the page to the file
     storage_manager->save_page(header);
 
     // rewrite the properties
     header->inner = false;
-    arr[8] = 3;
-    arr[9] = 4;
+    arr[14] = 3;
+    arr[15] = 4;
 
     // save the changes to the page
     storage_manager->save_page(header);
@@ -146,16 +162,16 @@ TEST_F(StorageManagerTest, OverwritePageThenInsertNewThenOverwritePage)
     ASSERT_EQ(loaded_header->inner, false);
     // test for filled byte array in the end
     arr = (char *)loaded_header;
-    ASSERT_EQ(arr[8], 3);
-    ASSERT_EQ(arr[9], 4);
+    ASSERT_EQ(arr[14], 3);
+    ASSERT_EQ(arr[15], 4);
 
     // second part, add new page and overwrite it as well
     // rewrite the properties
     header->page_id = 2;
     header->inner = true;
     arr = (char *)header;
-    arr[8] = 5;
-    arr[9] = 6;
+    arr[14] = 5;
+    arr[15] = 6;
 
     // save the changes to the page
     storage_manager->save_page(header);
@@ -167,13 +183,13 @@ TEST_F(StorageManagerTest, OverwritePageThenInsertNewThenOverwritePage)
     ASSERT_EQ(loaded_header->inner, true);
     // test for filled byte array in the end
     arr = (char *)loaded_header;
-    ASSERT_EQ(arr[8], 5);
-    ASSERT_EQ(arr[9], 6);
+    ASSERT_EQ(arr[14], 5);
+    ASSERT_EQ(arr[15], 6);
 
     header->inner = false;
     arr = (char *)header;
-    arr[8] = 7;
-    arr[9] = 8;
+    arr[14] = 7;
+    arr[15] = 8;
 
     // save the changes to the page
     storage_manager->save_page(header);
@@ -185,8 +201,8 @@ TEST_F(StorageManagerTest, OverwritePageThenInsertNewThenOverwritePage)
     ASSERT_EQ(loaded_header->inner, false);
     // test for filled byte array in the end
     arr = (char *)loaded_header;
-    ASSERT_EQ(arr[8], 7);
-    ASSERT_EQ(arr[9], 8);
+    ASSERT_EQ(arr[14], 7);
+    ASSERT_EQ(arr[15], 8);
 }
 
 TEST_F(StorageManagerTest, WritingBoundaries)
@@ -219,33 +235,36 @@ TEST_F(StorageManagerTest, WritingBoundaries)
     ASSERT_EQ(arr[15], 2);
 }
 
-TEST_F(StorageManagerTest, InsertMorePagesThanInitialBitmapSize)
+TEST_F(StorageManagerTest, InsertHigherPagesThanInitialBitmapSize)
 {
     Header *header = (Header *)malloc(page_size);
     header->page_id = page_size + 10;
     char *arr = (char *)header;
-    arr[8] = 1;
-    arr[9] = 2;
+    arr[14] = 1;
+    arr[15] = 2;
     storage_manager->save_page(header);
     storage_manager->destroy();
 
-    StorageManager storage_manager_new(base_path, page_size);
+    overwrite_storage_manager();
 
     // Re-load the page and check if it was saved correctly
     Header *loaded_header = (Header *)malloc(page_size);
-    storage_manager_new.load_page(loaded_header, page_size + 10);
+    storage_manager->load_page(loaded_header, page_size + 10);
 
     // test for header properties
     ASSERT_EQ(loaded_header->page_id, page_size + 10);
     arr = (char *)loaded_header;
-    ASSERT_EQ(arr[8], 1);
-    ASSERT_EQ(arr[9], 2);
+    ASSERT_EQ(arr[14], 1);
+    ASSERT_EQ(arr[15], 2);
+    // test if the bitmap at that position is set correctly 
+    ASSERT_EQ(get_free_space_map()[loaded_header->page_id], 0);  
+    ASSERT_EQ(get_next_free_space(), 1); 
 }
 
 TEST_F(StorageManagerTest, CurrentPageCount)
 {
 
-    ASSERT_EQ(storage_manager->current_page_count, 0);
+    ASSERT_EQ(get_current_page_count(), 0);
 
     Header *header = (Header *)malloc(page_size);
     header->page_id = 1;
@@ -254,18 +273,18 @@ TEST_F(StorageManagerTest, CurrentPageCount)
     storage_manager->save_page(header);
 
     // check if offset increased
-    ASSERT_EQ(storage_manager->current_page_count, 2);
+    ASSERT_EQ(get_current_page_count(), 2);
 
     // save the page to the file again, triggering overwrite
     storage_manager->save_page(header);
 
     // already in file so page count should not increase
-    ASSERT_EQ(storage_manager->current_page_count, 2);
+    ASSERT_EQ(get_current_page_count(), 2);
 
     header->page_id = 2;
     storage_manager->save_page(header);
 
-    ASSERT_EQ(storage_manager->current_page_count, 3);
+    ASSERT_EQ(get_current_page_count(), 3);
 }
 
 TEST_F(StorageManagerTest, UniqueIdAfterSaving)
@@ -277,5 +296,20 @@ TEST_F(StorageManagerTest, UniqueIdAfterSaving)
     header->page_id = 3;
     storage_manager->save_page(header);
 
+    // internally makes sure that free space is also saved correctly
     ASSERT_EQ(storage_manager->get_unused_page_id(), 2);
+    ASSERT_EQ(storage_manager->get_unused_page_id(), 4);
+}
+
+TEST_F(StorageManagerTest, FirstFreeAfterSaving)
+{
+    Header *header = (Header *)malloc(page_size);
+    header->page_id = 1;
+    storage_manager->save_page(header);
+
+    header->page_id = 3;
+    storage_manager->save_page(header);
+
+    ASSERT_EQ(storage_manager->get_unused_page_id(), 2);
+    ASSERT_EQ(storage_manager->get_unused_page_id(), 4);
 }

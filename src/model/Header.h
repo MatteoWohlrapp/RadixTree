@@ -15,7 +15,7 @@
 struct Header
 {
     /// id of the page
-    uint32_t page_id;
+    uint64_t page_id;
     /// specifies if inner or outer node
     bool inner = false;
     /// padding to align to 4 byte
@@ -26,7 +26,7 @@ struct Header
      * @param page_id_arg unique id for the page
      * @param inner_arg specifies if it will be an inner or outer node - all pages are nodes in this implementation
      */
-    Header(uint32_t page_id_arg, bool inner_arg) : page_id(page_id_arg), inner(inner_arg){};
+    Header(uint64_t page_id_arg, bool inner_arg) : page_id(page_id_arg), inner(inner_arg){};
 
     /**
      * @brief Copy Constructor for the header

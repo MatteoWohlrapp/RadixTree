@@ -15,6 +15,9 @@
 #include <cassert>
 #include "spdlog/spdlog.h"
 
+/// forward declaration
+class BPlusTest;
+
 /**
  * @brief Implements the B+ Tree of the Database
  */
@@ -31,14 +34,14 @@ private:
      * @param key The key to insert
      * @param value The value to insert
      */
-    void recursive_insert(uint32_t page_id, int64_t key, int64_t value);
+    void recursive_insert(uint64_t page_id, int64_t key, int64_t value);
 
     /**
      * @brief Get the value to a key recursively
      * @param page_id The page id of the current node
      * @param key The key corresponding to the value
      */
-    int64_t recursive_get_value(uint32_t page_id, int64_t key);
+    int64_t recursive_get_value(uint64_t page_id, int64_t key);
 
     /**
      * @brief Splits the outer node and copies values
@@ -46,7 +49,7 @@ private:
      * @param index_to_split The index where the node needs to be split
      * @return The page_id of the new node containing the higher elements
      */
-    uint32_t split_outer_node(uint32_t page_id, int index_to_split);
+    uint64_t split_outer_node(uint64_t page_id, int index_to_split);
 
     /**
      * @brief Splits the inner node and copies values
@@ -54,7 +57,7 @@ private:
      * @param index_to_split The index where the node needs to be split
      * @return The page_id of the new node containing the higher elements
      */
-    uint32_t split_inner_node(uint32_t page_id, int index_to_split);
+    uint64_t split_inner_node(uint64_t page_id, int index_to_split);
 
     /**
      * @brief Returns the index where to split depending on the size
@@ -64,6 +67,7 @@ private:
     int get_split_index(int max_size);
 
 public:
+    friend class BPlusTest;
     /// root of tree
     Header *root;
 

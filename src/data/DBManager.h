@@ -30,7 +30,7 @@ public:
     DBManager()
     {
         storage_manager = std::shared_ptr<StorageManager>(new StorageManager(base_path, Configuration::page_size));
-        buffer_manager = std::shared_ptr<BufferManager>(new BufferManager(storage_manager));
+        buffer_manager = std::shared_ptr<BufferManager>(new BufferManager(storage_manager, Configuration::max_buffer_size));
     }
 
     /**

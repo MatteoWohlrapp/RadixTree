@@ -41,13 +41,23 @@ private:
 
     int page_size;
 
-    int bitmap_increment; 
+    int bitmap_increment;
 
-public:
     /// data structure that shows if page_id is currently in use, 1 is free, 0 is occupied
     boost::dynamic_bitset<> free_space_map;
 
     int current_page_count = 0;
+
+    int next_free_space = 1; 
+
+    /**
+     * @brief Find the next free space in the bitmap and set the attribute
+    */
+    void find_next_free_space(); 
+
+public:
+    friend class StorageManagerTest;
+
     /**
      * @brief Constructor for the storage manager
      * @param base_path_arg The base path of the folder where the data and offset file will be placed in
@@ -66,7 +76,7 @@ public:
      * @param header A pointer to the header (page) that should be written to
      * @param page_id The unique identifier of the page that should be loaded
      */
-    void load_page(Header *header, u_int32_t page_id);
+    void load_page(Header *header, uint64_t page_id);
 
     /**
      * @brief Gives an unsued page_id, when requesting a new unused page_id, the bitmap is already set, so its important to write the page at the end
@@ -78,6 +88,4 @@ public:
      * @brief Used to save the offset to disc, needs to be called before exiting the program
      */
     void destroy();
-
-    friend class StorageManagerTest;
 };

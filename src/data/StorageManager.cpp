@@ -83,6 +83,9 @@ StorageManager::StorageManager(std::filesystem::path base_path_arg, int page_siz
         free_space_map.reset(0);
     }
 
+    // find correct first free space in file
+    find_next_free_space();
+
     if (!(std::filesystem::file_size(base_path / data) == 0))
     {
         current_page_count = File::get_file_size(data_fs) / page_size;
@@ -117,7 +120,7 @@ void StorageManager::destroy()
     data_fs.close();
 }
 
-void StorageManager::load_page(Header *header, u_int32_t page_id)
+void StorageManager::load_page(Header *header, uint64_t page_id)
 {
     if (page_id > current_page_count)
     {
@@ -156,7 +159,7 @@ void StorageManager::save_page(Header *header)
             current_page_count++;
         }
 
-        while (free_space_map.size() < header->page_id)
+        while (free_space_map.size() <= header->page_id)
         {
             free_space_map.resize(free_space_map.size() + page_size, true);
         }
@@ -177,19 +180,24 @@ void StorageManager::save_page(Header *header)
         exit(1);
     }
     free_space_map.reset(header->page_id);
+    find_next_free_space();
     data_fs.flush();
 }
 
 int StorageManager::get_unused_page_id()
 {
-    int next = free_space_map.find_next(0);
+    int next = next_free_space;
+    free_space_map.reset(next); 
+    find_next_free_space();
+    return next;
+}
 
-    if (next == free_space_map.npos)
+void StorageManager::find_next_free_space()
+{
+    next_free_space = free_space_map.find_next(next_free_space - 1);
+    if (next_free_space == free_space_map.npos)
     {
         free_space_map.resize(free_space_map.size() + bitmap_increment, true);
-        next = free_space_map.find_next(0);
+        next_free_space = free_space_map.find_next(next_free_space - 1);
     }
-
-    free_space_map.reset(next);
-    return next;
 }

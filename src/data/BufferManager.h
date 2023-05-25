@@ -15,6 +15,9 @@
 #include <random>
 #include "spdlog/spdlog.h"
 
+/// forward declaration 
+class BufferManagerTest;
+
 /**
  * @brief Handles the pages currently stored in memory
  */
@@ -26,20 +29,23 @@ private:
     /// write and read to disc
     std::shared_ptr<StorageManager> storage_manager;
     /// data structure for page id mapping
-    std::map<u_int32_t, Frame *> page_id_map;
+    std::map<uint64_t, Frame *> page_id_map;
     /// information about how full the buffer is right now
-    uint32_t current_buffer_size = 0;
+    uint64_t current_buffer_size = 0;
 
     /// random number generator used for eviction of pages
     std::random_device rd;
     /// distributen associated with random number generator
     std::uniform_int_distribution<int> dist;
 
+    /// how many pages will be stored in the buffer manager
+    int buffer_size; 
+
     /**
      * @brief Get a specific page from disc
      * @param page_id The page id of the page that should be retreived
      */
-    void fetch_page_from_disk(uint32_t page_id);
+    void fetch_page_from_disk(uint64_t page_id);
 
     /**
      * @brief Removes pages from memory to free space for further pages
@@ -48,19 +54,21 @@ private:
     Frame *evict_page();
 
 public:
+    friend class BufferManagerTest;
+
     /**
      * @brief Constructor for the Buffer Manager
      * @param storage_manager_arg A reference to the storage manager
      * @param page_id The lowest page it that can be used from here
      */
-    BufferManager(std::shared_ptr<StorageManager> storage_manager_arg);
+    BufferManager(std::shared_ptr<StorageManager> storage_manager_arg, int buffer_size_arg);
 
     /**
      * @brief Request a page
      * @param page_id The identifier of the page to retrieve
      * @return A pointer to the page
      */
-    Header *request_page(uint32_t page_id);
+    Header *request_page(uint64_t page_id);
 
     /**
      * @brief Creates a new page
@@ -72,25 +80,25 @@ public:
      * @brief Deletes a page from the buffer
      * @param page_id The page id from the page that should be deleted
      */
-    void delete_page(uint32_t page_id);
+    void delete_page(uint64_t page_id);
 
     /**
      * @brief Fixes a page, so no other thread modify it
      * @param page_id The page id of the page that should be fixed
      */
-    void fix_page(uint32_t page_id);
+    void fix_page(uint64_t page_id);
 
     /**
      * @brief Unfixes a page and enables other threads to modify it again
      * @param page_id The page id of the page that should be fixed
      */
-    void unfix_page(uint32_t page_id);
+    void unfix_page(uint64_t page_id);
 
     /**
      * @brief Marks a page dirty so it will be written to memory
      * @param page_id The page id of the page that should be flagged dirty
      */
-    void mark_dirty(uint32_t page_id);
+    void mark_dirty(uint64_t page_id);
 
     /**
      * @brief Function that needs to be called before exiting the program, saved all pages to the disc, important to be called before the storage manager is destroyed
