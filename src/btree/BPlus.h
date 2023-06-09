@@ -30,34 +30,34 @@ private:
 
     /**
      * @brief Inserts recursively into the tree
-     * @param page_id The page id of the current node
+     * @param header The header of the current node
      * @param key The key to insert
      * @param value The value to insert
      */
-    void recursive_insert(uint64_t page_id, int64_t key, int64_t value);
+    void recursive_insert(Header *header, int64_t key, int64_t value);
 
     /**
      * @brief Get the value to a key recursively
-     * @param page_id The page id of the current node
+     * @param header The header of the current node
      * @param key The key corresponding to the value
      */
-    int64_t recursive_get_value(uint64_t page_id, int64_t key);
+    int64_t recursive_get_value(Header *header, int64_t key);
 
     /**
      * @brief Splits the outer node and copies values
-     * @param page_id Page id of the outer node to split
+     * @param header The header of the current node
      * @param index_to_split The index where the node needs to be split
      * @return The page_id of the new node containing the higher elements
      */
-    uint64_t split_outer_node(uint64_t page_id, int index_to_split);
+    uint64_t split_outer_node(Header *header, int index_to_split);
 
     /**
      * @brief Splits the inner node and copies values
-     * @param page_id Page id of the outer node to split
+     * @param header The header of the current node
      * @param index_to_split The index where the node needs to be split
      * @return The page_id of the new node containing the higher elements
      */
-    uint64_t split_inner_node(uint64_t page_id, int index_to_split);
+    uint64_t split_inner_node(Header *header, int index_to_split);
 
     /**
      * @brief Returns the index where to split depending on the size
@@ -69,7 +69,7 @@ private:
 public:
     friend class BPlusTest;
     /// root of tree
-    Header *root;
+    uint64_t root_id;
 
     /**
      * @brief Constructor for the B+ tree

@@ -12,13 +12,13 @@
 
 /**
  * @brief namespace contains helper functions for file access
-*/
+ */
 namespace File
 {
     /**
      * @brief prints the content of a binary file
      * @param data_fs a file handle
-    */
+     */
     void print_file_content(std::fstream &file)
     {
 
@@ -40,11 +40,37 @@ namespace File
         std::cout << std::endl;
     }
 
+    void print_headers_in_file(std::string path, std::fstream *data_fs, std::shared_ptr<spdlog::logger> logger)
+    {
+        data_fs->flush();
+        std::ifstream file(path, std::ios::binary);
+
+        std::streamsize size = file.tellg();
+        file.seekg(0, std::ios::beg);
+
+        std::vector<char> buffer(size);
+        logger->info("File content: ");
+
+        Header *header = (Header *)malloc(96);
+        while (file.read(reinterpret_cast<char *>(header), 96))
+        {
+            std::stringstream ss;
+            ss << "Page ID: " << header->page_id
+               << ", Inner: " << std::boolalpha << header->inner;
+
+            std::string result = ss.str();
+            logger->info(result);
+        }
+        free(header);
+
+        file.close();
+    }
+
     /**
-     * @brief calculates the file size of a file 
-     * @param a file handle 
+     * @brief calculates the file size of a file
+     * @param a file handle
      * @return the size of the file
-    */
+     */
     int get_file_size(std::fstream &file)
     {
         // Read and print the content

@@ -65,15 +65,17 @@ TEST_F(BufferManagerTest, FixAndUnfixPage)
     ASSERT_EQ(it->second->fix_count, 1);
     buffer_manager->fix_page(1);
     ASSERT_EQ(it->second->fix_count, 2);
-    buffer_manager->unfix_page(1);
+    buffer_manager->unfix_page(1, true);
     ASSERT_EQ(it->second->fix_count, 1);
 }
 
 TEST_F(BufferManagerTest, BufferFullWhenCreatingPage)
 {
-    buffer_manager->create_new_page();
-    buffer_manager->create_new_page();
     Header *header = buffer_manager->create_new_page();
+    buffer_manager->unfix_page(header->page_id, false);
+    header = buffer_manager->create_new_page();
+    buffer_manager->unfix_page(header->page_id, false);
+    header = buffer_manager->create_new_page();
     ASSERT_EQ(get_current_buffer_size(), 2);
     ASSERT_EQ(header->page_id, 3);
     auto page_id_map = get_page_id_map();
@@ -82,17 +84,20 @@ TEST_F(BufferManagerTest, BufferFullWhenCreatingPage)
 
 TEST_F(BufferManagerTest, BufferFullWhenRequestingPage)
 {
-    buffer_manager->create_new_page();
-    buffer_manager->create_new_page();
-    buffer_manager->create_new_page();
+    Header *header = buffer_manager->create_new_page();
+    buffer_manager->unfix_page(header->page_id, false);
+    header = buffer_manager->create_new_page();
+    buffer_manager->unfix_page(header->page_id, false);
+    header = buffer_manager->create_new_page();
     auto page_id_map = get_page_id_map();
     int page_id = 1;
     if (page_id_map.find(1) != page_id_map.end())
     {
         page_id = 2;
     }
-    Header *header = buffer_manager->request_page(page_id);
+    header = buffer_manager->request_page(page_id);
     ASSERT_EQ(get_current_buffer_size(), 2);
     ASSERT_EQ(header->page_id, page_id);
-    ASSERT_TRUE((page_id_map.find(3) != page_id_map.end() && page_id_map.find(page_id) == page_id_map.end()) || (page_id_map.find(3) == page_id_map.end() && page_id_map.find(page_id) != page_id_map.end()));
+    page_id_map = get_page_id_map();
+    ASSERT_TRUE((page_id_map.find(3) != page_id_map.end()) && (page_id_map.find(page_id) != page_id_map.end()));
 }

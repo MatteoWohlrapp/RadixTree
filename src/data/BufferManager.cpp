@@ -14,6 +14,11 @@ BufferManager::BufferManager(std::shared_ptr<StorageManager> storage_manager_arg
 // TODO
 void BufferManager::destroy()
 {
+    logger->trace("Destroying");
+    for (auto &pair : page_id_map)
+    {
+        logger->trace("Map: {}, fixed {}, marked {}", pair.first, pair.second->fix_count, pair.second->marked);
+    }
 }
 
 Header *BufferManager::request_page(uint64_t page_id)
@@ -21,11 +26,14 @@ Header *BufferManager::request_page(uint64_t page_id)
     std::map<uint64_t, Frame *>::iterator it = page_id_map.find(page_id);
     if (it == page_id_map.end())
     {
+        logger->debug("Page {} not in memory", page_id);
         // means the page is not in the buffer and we need to fetch it from memory
         fetch_page_from_disk(page_id);
         it = page_id_map.find(page_id);
     }
-    fix_page(page_id);
+    // fix page
+    logger->debug("Page id in map: {}", it->second->header.page_id);
+    it->second->fix_count++;
     it->second->marked = true;
     return &it->second->header;
 }
@@ -45,15 +53,14 @@ Header *BufferManager::create_new_page()
         frame_address = (Frame *)malloc(Configuration::page_size + 4);
         current_buffer_size++;
     }
-    frame_address->fix_count = 0;
+    // fix page
+    frame_address->fix_count = 1;
     frame_address->marked = true;
     frame_address->dirty = true;
     uint64_t page_id = storage_manager->get_unused_page_id();
     frame_address->header.page_id = page_id;
     frame_address->header.inner = false;
     page_id_map.emplace(page_id, frame_address);
-    // page is fixed as it will likely be used
-    fix_page(page_id);
     return &frame_address->header;
 }
 
@@ -76,60 +83,52 @@ void BufferManager::fix_page(uint64_t page_id)
     }
 }
 
-// TODO flag if modified
-void BufferManager::unfix_page(uint64_t page_id)
+void BufferManager::unfix_page(uint64_t page_id, bool dirty)
 {
     std::map<uint64_t, Frame *>::iterator it = page_id_map.find(page_id);
     if (it != page_id_map.end())
     {
         it->second->fix_count--;
-    }
-}
-
-// TODO remove
-void BufferManager::mark_dirty(uint64_t page_id)
-{
-    std::map<uint64_t, Frame *>::iterator it = page_id_map.find(page_id);
-    if (it != page_id_map.end())
-    {
-        it->second->dirty = true;
+        it->second->dirty = it->second->dirty || dirty;
     }
 }
 
 Frame *BufferManager::evict_page()
 {
     //  Randomly access a page from the map and evict if unmarked - if marked, set to unmark and try next page
-    logger->info("Evicting page");
-
     while (true)
     {
         int random_index = dist(rd) % current_buffer_size;
         std::map<uint64_t, Frame *>::iterator it = page_id_map.begin();
         std::advance(it, random_index);
 
-        if (it->second->marked)
+        if (it->second->fix_count == 0)
         {
-            it->second->marked = false;
-        }
-        else
-        {
-            if (it->second->dirty)
+            if (it->second->marked)
             {
-                storage_manager->save_page(&it->second->header);
+                it->second->marked = false;
             }
-            page_id_map.erase(it->second->header.page_id);
-            return it->second;
+            else
+            {
+                logger->trace("Evicting page: {}, dirty: {}", it->first, it->second->dirty);
+                if (it->second->dirty)
+                {
+                    storage_manager->save_page(&it->second->header);
+                }
+                page_id_map.erase(it->second->header.page_id);
+                return it->second;
+            }
         }
     }
 }
 
 void BufferManager::fetch_page_from_disk(uint64_t page_id)
 {
-    logger->info("Fetching page from disk");
+    logger->debug("Fetching page from disk");
     Frame *frame_address;
     if (current_buffer_size >= buffer_size)
     {
-        logger->info("Buffer full, evicting page");
+        logger->debug("Buffer full, evicting page");
         frame_address = evict_page();
     }
     else
@@ -140,5 +139,6 @@ void BufferManager::fetch_page_from_disk(uint64_t page_id)
     frame_address->fix_count = 0;
     frame_address->dirty = false;
     storage_manager->load_page(&frame_address->header, page_id);
+    assert((page_id == frame_address->header.page_id) && "Page_id requested and page_id from disk are not equal.");
     page_id_map.emplace(page_id, frame_address);
 }

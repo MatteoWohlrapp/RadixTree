@@ -17,6 +17,7 @@
 
 /// forward declaration 
 class BufferManagerTest;
+class BPlusTest; 
 
 /**
  * @brief Handles the pages currently stored in memory
@@ -55,6 +56,7 @@ private:
 
 public:
     friend class BufferManagerTest;
+    friend class BPlusTest; 
 
     /**
      * @brief Constructor for the Buffer Manager
@@ -91,14 +93,9 @@ public:
     /**
      * @brief Unfixes a page and enables other threads to modify it again
      * @param page_id The page id of the page that should be fixed
+     * @param dirty Specifies if the page corresponding to page_id has been modified
      */
-    void unfix_page(uint64_t page_id);
-
-    /**
-     * @brief Marks a page dirty so it will be written to memory
-     * @param page_id The page id of the page that should be flagged dirty
-     */
-    void mark_dirty(uint64_t page_id);
+    void unfix_page(uint64_t page_id, bool dirty);
 
     /**
      * @brief Function that needs to be called before exiting the program, saved all pages to the disc, important to be called before the storage manager is destroyed

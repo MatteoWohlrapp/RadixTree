@@ -12,7 +12,7 @@ StorageManager::StorageManager(std::filesystem::path base_path_arg, int page_siz
 {
     logger = spdlog::get("logger");
     bitmap_increment = std::ceil(page_size_arg / 8.0) * 8;
-    // check if folder and files exist
+    // check if folder and files exist 
     if (!std::filesystem::exists(base_path))
     {
         std::filesystem::create_directories(base_path);
@@ -135,6 +135,7 @@ void StorageManager::load_page(Header *header, uint64_t page_id)
         exit(1);
     }
     data_fs.read(reinterpret_cast<char *>(header), page_size);
+
     if (!data_fs)
     {
         logger->error("File read failed: ", std::strerror(errno));
@@ -146,6 +147,7 @@ void StorageManager::save_page(Header *header)
 {
     if (current_page_count <= header->page_id)
     {
+
         data_fs.seekp(0, std::ios::end);
         if (!data_fs)
         {
@@ -187,7 +189,7 @@ void StorageManager::save_page(Header *header)
 int StorageManager::get_unused_page_id()
 {
     int next = next_free_space;
-    free_space_map.reset(next); 
+    free_space_map.reset(next);
     find_next_free_space();
     return next;
 }

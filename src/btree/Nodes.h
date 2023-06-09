@@ -172,7 +172,7 @@ struct OuterNode
     }
 
     /**
-     * @brief Return the value for a key
+     * @brief Return the value for a key, if key is not found, minimum number is returned
      * @return the value
      */
     int64_t get_value(int64_t key)
@@ -186,7 +186,7 @@ struct OuterNode
             }
             index++;
         }
-        return -1;
+        return INT64_MIN;
     }
 
     /**

@@ -11,35 +11,26 @@ void RunConfigOne::execute(bool benchmark)
 {
     auto run = [this]
     {
+        std::random_device rd;
+        std::uniform_int_distribution<int64_t> dist = std::uniform_int_distribution<int64_t>(INT64_MIN + 1, INT64_MAX);
+
         auto debuger = Debuger(db_manager.buffer_manager);
         auto tree = BPlus(db_manager.buffer_manager);
-        logger->info("Radix Tree Insert");
-        tree.insert(1, 1);
-        debuger.traverse_tree(&tree);
-        logger->info("Radix Tree Insert");
-        tree.insert(2, 4);
-        debuger.traverse_tree(&tree);
-        logger->info("Radix Tree Insert");
-        tree.insert(3, 9);
-        debuger.traverse_tree(&tree);
-        logger->info("Radix Tree Insert");
-        tree.insert(4, 16);
-        debuger.traverse_tree(&tree);
-        logger->info("Radix Tree Insert");
-        tree.insert(5, 25);
-        debuger.traverse_tree(&tree);
-        logger->info("Radix Tree Insert");
-        tree.insert(6, 36);
-        debuger.traverse_tree(&tree);
-        logger->info("Radix Tree Insert");
-        tree.insert(7, 49);
-        debuger.traverse_tree(&tree);
-        logger->info("Radix Tree Insert");
-        tree.insert(8, 64);
-        debuger.traverse_tree(&tree);
+        int64_t values[10];
+        for (int i = 0; i < 10; i++)
+        {
+            int64_t value = dist(rd);
+            values[i] = value;
+            logger->info("Inserting {}", value);
+            tree.insert(value, value);
+            debuger.traverse_tree(&tree);
+        }
 
-        int square = tree.get_value(3);
-        logger->info("Squared value is: {}", square);
+        for (int i = 0; i < 10; i++)
+        {
+            auto value = tree.get_value(values[i]);
+            logger->info("Get value is equal {}, actual {}, expected {}", value == values[i], value, values[i]);
+        }
     };
     this->benchmark.measure(run, benchmark);
 }
