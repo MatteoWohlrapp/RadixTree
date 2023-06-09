@@ -12,7 +12,7 @@ docker build -t radixtree .
 2. Run the docker container: 
 If you want to debug, you need to run <br>
 ```
-docker run -v <path_to_project>:/app -p 8000:8000 -it --cap-add=SYS_PTRACE --security-opt seccomp=unconfine radixtree
+docker run -v <path_to_project>:/app -p 8000:8000 -it --cap-add=SYS_PTRACE --security-opt seccomp=unconfined radixtree
 ```
 otherwise the following is enough, 
 ```

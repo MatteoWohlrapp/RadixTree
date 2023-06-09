@@ -13,7 +13,7 @@
 template <int PAGE_SIZE>
 struct InnerNode
 {
-    // 8 bytes
+    // 16 bytes
     Header header;
     // 4 bytes
     /// info about current capacity of node
@@ -22,10 +22,10 @@ struct InnerNode
     /// maximum capacity of node
     int max_size;
     // 4 bytes padding to make it the same size as outer node
-    char padding[4];
+    char padding[8];
 
-    int64_t keys[((PAGE_SIZE - 20) / 2) / 8];
-    uint32_t child_ids[((PAGE_SIZE - 20) / 2) / 8];
+    int64_t keys[((PAGE_SIZE - 32) / 2) / 8];
+    uint64_t child_ids[((PAGE_SIZE - 32) / 2) / 8];
 
     /**
      * @brief Constructor for the inner node
@@ -34,7 +34,7 @@ struct InnerNode
     {
         header.inner = true;
         current_index = 0;
-        max_size = ((PAGE_SIZE - 20) / 2) / 8 - 1;
+        max_size = ((PAGE_SIZE - 32) / 2) / 8 - 1;
         assert(max_size > 2 && "Node size is too small");
     }
 
@@ -43,7 +43,7 @@ struct InnerNode
      * @param key The key to the next page
      * @return The id of the next page
      */
-    uint32_t next_page(int64_t key)
+    uint64_t next_page(int64_t key)
     {
         int index = 0;
         while (index < current_index)
@@ -63,7 +63,7 @@ struct InnerNode
      * @param child_id The id of the new child
      * @param key Key corresponding to the child
      */
-    void insert(uint32_t child_id, int64_t key)
+    void insert(int64_t key, uint64_t child_id)
     {
         assert(!is_full() && "Inserting into inner node when its full.");
         // find index where to insert
@@ -109,7 +109,7 @@ struct InnerNode
 template <int PAGE_SIZE>
 struct OuterNode
 {
-    // 8 bytes
+    // 16 bytes
     Header header;
     // 4 bytes
     /// info about current capacity of node
@@ -117,12 +117,12 @@ struct OuterNode
     // 4 bytes
     /// maximum capacity of node
     int max_size;
-    // 4 bytes
+    // 8 bytes
     /// Id of next outer leaf
-    uint32_t next_lef_id;
+    uint64_t next_lef_id;
 
-    int keys[((PAGE_SIZE - 20) / 2) / 8];
-    int values[((PAGE_SIZE - 20) / 2) / 8];
+    int64_t keys[((PAGE_SIZE - 32) / 2) / 8];
+    int64_t values[((PAGE_SIZE - 32) / 2) / 8];
 
     /**
      * @brief Constructor for the outer node
@@ -131,7 +131,7 @@ struct OuterNode
     {
         header.inner = false;
         current_index = 0;
-        max_size = ((PAGE_SIZE - 20) / 2) / 8;
+        max_size = ((PAGE_SIZE - 32) / 2) / 8;
         assert(max_size > 2 && "Node size is too small");
         next_lef_id = 0;
     }
@@ -172,7 +172,7 @@ struct OuterNode
     }
 
     /**
-     * @brief Return the value for a key
+     * @brief Return the value for a key, if key is not found, minimum number is returned
      * @return the value
      */
     int64_t get_value(int64_t key)
@@ -186,7 +186,7 @@ struct OuterNode
             }
             index++;
         }
-        return -1;
+        return INT64_MIN;
     }
 
     /**
