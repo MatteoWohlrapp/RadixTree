@@ -13,24 +13,20 @@ void RunConfigOne::execute(bool benchmark)
     {
         std::random_device rd;
         std::uniform_int_distribution<int64_t> dist = std::uniform_int_distribution<int64_t>(INT64_MIN + 1, INT64_MAX);
+        //             int64_t value = dist(rd);
 
         auto debuger = Debuger(db_manager.buffer_manager);
         auto tree = BPlus(db_manager.buffer_manager);
-        int64_t values[10];
-        for (int i = 0; i < 10; i++)
-        {
-            int64_t value = dist(rd);
-            values[i] = value;
-            logger->info("Inserting {}", value);
-            tree.insert(value, value);
-            debuger.traverse_tree(&tree);
-        }
+        for (int i = 1; i < 6; i++)
+            tree.insert(i * 2, i * 2);
 
-        for (int i = 0; i < 10; i++)
-        {
-            auto value = tree.get_value(values[i]);
-            logger->info("Get value is equal {}, actual {}, expected {}", value == values[i], value, values[i]);
-        }
+        debuger.traverse_tree(&tree);
+
+        logger->info("Deleting");
+        tree.delete_pair(4);
+        debuger.traverse_tree(&tree);
+        tree.delete_pair(6);
+        debuger.traverse_tree(&tree);
     };
     this->benchmark.measure(run, benchmark);
 }

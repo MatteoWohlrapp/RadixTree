@@ -3,6 +3,7 @@
 #include "../src/data/BufferManager.h"
 #include "../src/Configuration.h"
 #include <random>
+#include <queue>
 
 constexpr int node_test_size = 96;
 
@@ -62,7 +63,7 @@ protected:
         if (!header->inner)
             return 1;
 
-        InnerNode<Configuration::page_size> *node = (InnerNode<Configuration::page_size> *)header;
+        InnerNode<node_test_size> *node = (InnerNode<node_test_size> *)header;
 
         auto current_index = node->current_index;
         uint64_t child_ids[current_index + 1];
@@ -106,7 +107,7 @@ protected:
         if (!header->inner)
             return true;
 
-        InnerNode<Configuration::page_size> *node = (InnerNode<Configuration::page_size> *)header;
+        InnerNode<node_test_size> *node = (InnerNode<node_test_size> *)header;
         auto id = node->header.page_id;
         auto current_index = node->current_index;
         uint64_t child_ids[current_index + 1];
@@ -150,7 +151,7 @@ protected:
         if (!header->inner)
         {
             buffer_manager->unfix_page(page_id, false);
-            OuterNode<Configuration::page_size> *node = (OuterNode<Configuration::page_size> *)header;
+            OuterNode<node_test_size> *node = (OuterNode<node_test_size> *)header;
 
             for (int i = 0; i < node->current_index; i++)
             {
@@ -162,7 +163,7 @@ protected:
             return true;
         }
 
-        InnerNode<Configuration::page_size> *node = (InnerNode<Configuration::page_size> *)header;
+        InnerNode<node_test_size> *node = (InnerNode<node_test_size> *)header;
         auto current_index = node->current_index;
         uint64_t child_ids[current_index + 1];
         for (int i = 0; i <= current_index; i++)
@@ -196,7 +197,7 @@ protected:
         if (!header->inner)
         {
             buffer_manager->unfix_page(page_id, false);
-            OuterNode<Configuration::page_size> *node = (OuterNode<Configuration::page_size> *)header;
+            OuterNode<node_test_size> *node = (OuterNode<node_test_size> *)header;
 
             for (int i = 0; i < node->current_index; i++)
             {
@@ -208,7 +209,7 @@ protected:
             return true;
         }
 
-        InnerNode<Configuration::page_size> *node = (InnerNode<Configuration::page_size> *)header;
+        InnerNode<node_test_size> *node = (InnerNode<node_test_size> *)header;
         auto current_index = node->current_index;
         uint64_t child_ids[current_index + 1];
         for (int i = 0; i <= current_index; i++)
@@ -240,12 +241,12 @@ protected:
         uint64_t page_id = find_leftmost(root_id);
         logger->debug("Leftmost: {}", page_id);
         Header *header;
-        OuterNode<Configuration::page_size> *node;
+        OuterNode<node_test_size> *node;
         int count = 0;
         while (page_id != 0)
         {
             header = buffer_manager->request_page(page_id);
-            node = (OuterNode<Configuration::page_size> *)header;
+            node = (OuterNode<node_test_size> *)header;
             buffer_manager->unfix_page(page_id, false);
             logger->debug("Page: {}", page_id);
             page_id = node->next_lef_id;
@@ -257,7 +258,7 @@ protected:
                 {
                     if (node->keys[i - 1] > node->keys[i])
                     {
-                        logger->debug("Order of elements is off"); 
+                        logger->debug("Order of elements is off");
                         return false;
                     }
                 }
@@ -265,7 +266,7 @@ protected:
         }
         if (count != num_elements)
         {
-            logger->debug("Count is off, count: {}, expected {}", count, num_elements); 
+            logger->debug("Count is off, count: {}, expected {}", count, num_elements);
             return false;
         }
 
@@ -281,39 +282,150 @@ protected:
             return header->page_id;
         }
 
-        InnerNode<Configuration::page_size> *node = (InnerNode<Configuration::page_size> *)header;
+        InnerNode<node_test_size> *node = (InnerNode<node_test_size> *)header;
         auto child_id = node->child_ids[0];
         buffer_manager->unfix_page(page_id, false);
         return find_leftmost(child_id);
     }
+
+    bool all(std::function<bool(Header *)> predicate)
+    {
+        std::queue<uint64_t> nodes_queue;
+        nodes_queue.push(bplus->root_id);
+        int level = 0;
+
+        logger->debug("Starting traversing on root node: {}", bplus->root_id);
+        while (!nodes_queue.empty())
+        {
+            int level_size = nodes_queue.size();
+            logger->debug("Level {} :", level);
+
+            for (int i = 0; i < level_size; i++)
+            {
+                uint64_t current_id = nodes_queue.front();
+                nodes_queue.pop();
+                Header *current = buffer_manager->request_page(current_id);
+
+                if (!current->inner)
+                {
+                    std::ostringstream node;
+                    OuterNode<Configuration::page_size> *outer_node = (OuterNode<Configuration::page_size> *)current;
+                    node << "OuterNode:  " << outer_node->header.page_id << " {";
+                    for (int j = 0; j < outer_node->current_index; j++)
+                    {
+                        node << " (Key: " << outer_node->keys[j] << ", Value: " << outer_node->values[j] << ")";
+                    }
+                    node << "; Next Leaf: " << outer_node->next_lef_id << " }";
+                    logger->debug(node.str());
+                    if (!predicate(current))
+                    {
+                        logger->debug("Predicate failed");
+                        buffer_manager->unfix_page(current_id, false);
+                        return false;
+                    }
+                }
+                else
+                {
+                    std::ostringstream node;
+                    InnerNode<Configuration::page_size> *inner_node = (InnerNode<Configuration::page_size> *)current;
+                    node << "InnerNode: " << inner_node->header.page_id << " {";
+                    node << " (Child_id: " << inner_node->child_ids[0] << ", ";
+                    for (int j = 0; j < inner_node->current_index; j++)
+                    {
+                        node << " Key: " << inner_node->keys[j] << ", Child_id: " << inner_node->child_ids[j + 1] << "";
+                    }
+                    node << ") }";
+                    logger->debug(node.str());
+                    if (!predicate(current))
+                    {
+                        logger->debug("Predicate failed");
+                        buffer_manager->unfix_page(current_id, false);
+                        return false;
+                    }
+
+                    // <= because the child array is one position bigger
+                    for (int j = 0; j <= inner_node->current_index; j++)
+                    {
+                        nodes_queue.push(inner_node->child_ids[j]);
+                    }
+                }
+                buffer_manager->unfix_page(current_id, false);
+            }
+
+            level++;
+        }
+        return true;
+        logger->debug("Finished traversing");
+    }
+
+    bool minimum_size()
+    {
+        std::function<bool(Header *)> predicate = [this](Header *header)
+        {
+            if (header->inner)
+            {
+                InnerNode<node_test_size> *inner = (InnerNode<node_test_size> *)header;
+                if (bplus->root_id == header->page_id)
+                    return inner->current_index > 0;
+                return !inner->is_empty();
+            }
+            else
+            {
+                OuterNode<node_test_size> *outer = (OuterNode<node_test_size> *)header;
+                if (bplus->root_id == header->page_id)
+                    return true;
+                return !outer->is_empty();
+            }
+        };
+        return all(predicate);
+    }
+
+    bool not_contains(int64_t key)
+    {
+        std::function<bool(Header *)> predicate = [&key](Header *header)
+        {
+            if (header->inner)
+            {
+                InnerNode<node_test_size> *inner = (InnerNode<node_test_size> *)header;
+                return !inner->contains(key);
+            }
+            else
+            {
+                OuterNode<node_test_size> *outer = (OuterNode<node_test_size> *)header;
+                return outer->get_value(key) == INT64_MIN;
+            }
+        };
+        return all(predicate);
+    }
 };
 
+// Test the controll functions for insert
 TEST_F(BPlusTest, BalanceCorrect)
 {
     Header *header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(2, true);
-    InnerNode<Configuration::page_size> *inner = new (header) InnerNode<Configuration::page_size>();
+    InnerNode<node_test_size> *inner = new (header) InnerNode<node_test_size>();
     inner->child_ids[0] = 3;
     inner->child_ids[1] = 4;
     inner->current_index++;
 
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(3, true);
-    inner = new (header) InnerNode<Configuration::page_size>();
+    inner = new (header) InnerNode<node_test_size>();
     inner->child_ids[0] = 5;
     inner->child_ids[1] = 5;
     inner->current_index++;
 
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(4, true);
-    inner = new (header) InnerNode<Configuration::page_size>();
+    inner = new (header) InnerNode<node_test_size>();
     inner->child_ids[0] = 5;
     inner->child_ids[1] = 5;
     inner->current_index++;
 
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(5, true);
-    OuterNode<Configuration::page_size> *outer = new (header) OuterNode<Configuration::page_size>();
+    OuterNode<node_test_size> *outer = new (header) OuterNode<node_test_size>();
 
     ASSERT_TRUE(is_balanced(2));
     ASSERT_TRUE(all_pages_unfixed());
@@ -323,25 +435,25 @@ TEST_F(BPlusTest, BalanceIncorrect)
 {
     Header *header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(2, true);
-    InnerNode<Configuration::page_size> *inner = new (header) InnerNode<Configuration::page_size>();
+    InnerNode<node_test_size> *inner = new (header) InnerNode<node_test_size>();
     inner->child_ids[0] = 3;
     inner->child_ids[1] = 4;
     inner->current_index++;
 
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(3, true);
-    inner = new (header) InnerNode<Configuration::page_size>();
+    inner = new (header) InnerNode<node_test_size>();
     inner->child_ids[0] = 5;
     inner->child_ids[1] = 5;
     inner->current_index++;
 
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(4, true);
-    inner = new (header) InnerNode<Configuration::page_size>();
+    inner = new (header) InnerNode<node_test_size>();
 
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(5, true);
-    OuterNode<Configuration::page_size> *outer = new (header) OuterNode<Configuration::page_size>();
+    OuterNode<node_test_size> *outer = new (header) OuterNode<node_test_size>();
 
     ASSERT_FALSE(is_balanced(2));
     ASSERT_TRUE(all_pages_unfixed());
@@ -352,7 +464,7 @@ TEST_F(BPlusTest, OrderCorrect)
     // root
     Header *header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(2, true);
-    InnerNode<Configuration::page_size> *inner = new (header) InnerNode<Configuration::page_size>();
+    InnerNode<node_test_size> *inner = new (header) InnerNode<node_test_size>();
     inner->keys[0] = 10;
     inner->child_ids[0] = 3;
     inner->child_ids[1] = 4;
@@ -361,7 +473,7 @@ TEST_F(BPlusTest, OrderCorrect)
     // left
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(3, true);
-    inner = new (header) InnerNode<Configuration::page_size>();
+    inner = new (header) InnerNode<node_test_size>();
     inner->keys[0] = 5;
     inner->child_ids[0] = 5;
     inner->child_ids[1] = 6;
@@ -370,7 +482,7 @@ TEST_F(BPlusTest, OrderCorrect)
     // right
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(4, true);
-    inner = new (header) InnerNode<Configuration::page_size>();
+    inner = new (header) InnerNode<node_test_size>();
     inner->keys[0] = 15;
     inner->child_ids[0] = 7;
     inner->child_ids[1] = 8;
@@ -379,7 +491,7 @@ TEST_F(BPlusTest, OrderCorrect)
     // first outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(5, true);
-    OuterNode<Configuration::page_size> *outer = new (header) OuterNode<Configuration::page_size>();
+    OuterNode<node_test_size> *outer = new (header) OuterNode<node_test_size>();
     outer->keys[0] = 1;
     outer->current_index++;
     outer->next_lef_id = 6;
@@ -387,7 +499,7 @@ TEST_F(BPlusTest, OrderCorrect)
     // second outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(6, true);
-    outer = new (header) OuterNode<Configuration::page_size>();
+    outer = new (header) OuterNode<node_test_size>();
     outer->keys[0] = 9;
     outer->current_index++;
     outer->next_lef_id = 7;
@@ -395,7 +507,7 @@ TEST_F(BPlusTest, OrderCorrect)
     // third outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(7, true);
-    outer = new (header) OuterNode<Configuration::page_size>();
+    outer = new (header) OuterNode<node_test_size>();
     outer->keys[0] = 15;
     outer->current_index++;
     outer->next_lef_id = 8;
@@ -403,7 +515,7 @@ TEST_F(BPlusTest, OrderCorrect)
     // fourth outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(8, true);
-    outer = new (header) OuterNode<Configuration::page_size>();
+    outer = new (header) OuterNode<node_test_size>();
     outer->keys[0] = 21;
     outer->current_index++;
     outer->next_lef_id = 0;
@@ -419,7 +531,7 @@ TEST_F(BPlusTest, OrderIncorrectAtLeaf)
     // root
     Header *header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(2, true);
-    InnerNode<Configuration::page_size> *inner = new (header) InnerNode<Configuration::page_size>();
+    InnerNode<node_test_size> *inner = new (header) InnerNode<node_test_size>();
     inner->keys[0] = 10;
     inner->child_ids[0] = 3;
     inner->child_ids[1] = 4;
@@ -428,7 +540,7 @@ TEST_F(BPlusTest, OrderIncorrectAtLeaf)
     // left
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(3, true);
-    inner = new (header) InnerNode<Configuration::page_size>();
+    inner = new (header) InnerNode<node_test_size>();
     inner->keys[0] = 5;
     inner->child_ids[0] = 5;
     inner->child_ids[1] = 6;
@@ -437,7 +549,7 @@ TEST_F(BPlusTest, OrderIncorrectAtLeaf)
     // right
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(4, true);
-    inner = new (header) InnerNode<Configuration::page_size>();
+    inner = new (header) InnerNode<node_test_size>();
     inner->keys[0] = 15;
     inner->child_ids[0] = 7;
     inner->child_ids[1] = 8;
@@ -446,7 +558,7 @@ TEST_F(BPlusTest, OrderIncorrectAtLeaf)
     // first outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(5, true);
-    OuterNode<Configuration::page_size> *outer = new (header) OuterNode<Configuration::page_size>();
+    OuterNode<node_test_size> *outer = new (header) OuterNode<node_test_size>();
     outer->keys[0] = 1;
     outer->current_index++;
     outer->next_lef_id = 6;
@@ -454,7 +566,7 @@ TEST_F(BPlusTest, OrderIncorrectAtLeaf)
     // second outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(6, true);
-    outer = new (header) OuterNode<Configuration::page_size>();
+    outer = new (header) OuterNode<node_test_size>();
     outer->keys[0] = 9;
     outer->current_index++;
     outer->next_lef_id = 7;
@@ -462,7 +574,7 @@ TEST_F(BPlusTest, OrderIncorrectAtLeaf)
     // third outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(7, true);
-    outer = new (header) OuterNode<Configuration::page_size>();
+    outer = new (header) OuterNode<node_test_size>();
     outer->keys[0] = 9;
     outer->current_index++;
     outer->next_lef_id = 0;
@@ -470,7 +582,7 @@ TEST_F(BPlusTest, OrderIncorrectAtLeaf)
     // fourth outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(8, true);
-    outer = new (header) OuterNode<Configuration::page_size>();
+    outer = new (header) OuterNode<node_test_size>();
     outer->keys[0] = 21;
     outer->current_index++;
 
@@ -485,7 +597,7 @@ TEST_F(BPlusTest, OrderIncorrectInner)
     // root
     Header *header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(2, false);
-    InnerNode<Configuration::page_size> *inner = new (header) InnerNode<Configuration::page_size>();
+    InnerNode<node_test_size> *inner = new (header) InnerNode<node_test_size>();
     inner->keys[0] = 10;
     inner->child_ids[0] = 3;
     inner->child_ids[1] = 4;
@@ -494,7 +606,7 @@ TEST_F(BPlusTest, OrderIncorrectInner)
     // left
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(3, false);
-    inner = new (header) InnerNode<Configuration::page_size>();
+    inner = new (header) InnerNode<node_test_size>();
     inner->keys[0] = 11;
     inner->child_ids[0] = 5;
     inner->child_ids[1] = 6;
@@ -503,7 +615,7 @@ TEST_F(BPlusTest, OrderIncorrectInner)
     // right
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(4, false);
-    inner = new (header) InnerNode<Configuration::page_size>();
+    inner = new (header) InnerNode<node_test_size>();
     inner->keys[0] = 15;
     inner->child_ids[0] = 7;
     inner->child_ids[1] = 8;
@@ -512,28 +624,28 @@ TEST_F(BPlusTest, OrderIncorrectInner)
     // first outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(5, false);
-    OuterNode<Configuration::page_size> *outer = new (header) OuterNode<Configuration::page_size>();
+    OuterNode<node_test_size> *outer = new (header) OuterNode<node_test_size>();
     outer->keys[0] = 1;
     outer->current_index++;
 
     // second outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(6, false);
-    outer = new (header) OuterNode<Configuration::page_size>();
+    outer = new (header) OuterNode<node_test_size>();
     outer->keys[0] = 9;
     outer->current_index++;
 
     // third outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(7, false);
-    outer = new (header) OuterNode<Configuration::page_size>();
+    outer = new (header) OuterNode<node_test_size>();
     outer->keys[0] = 15;
     outer->current_index++;
 
     // fourth outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(8, false);
-    outer = new (header) OuterNode<Configuration::page_size>();
+    outer = new (header) OuterNode<node_test_size>();
     outer->keys[0] = 21;
     outer->current_index++;
 
@@ -542,6 +654,7 @@ TEST_F(BPlusTest, OrderIncorrectInner)
     ASSERT_TRUE(all_pages_unfixed());
 }
 
+// Test insert
 TEST_F(BPlusTest, CorrectRootNodeType)
 {
     ASSERT_FALSE(buffer_manager->request_page(get_root_id())->inner);
@@ -596,7 +709,7 @@ TEST_F(BPlusTest, InsertAscending)
 {
     for (int i = -20; i <= 20; i++)
     {
-        logger->info("Inserting {}", i);
+        logger->debug("Inserting {}", i);
         logger->flush();
         bplus->insert(i, i);
     }
@@ -649,3 +762,306 @@ TEST_F(BPlusTest, InsertRandom)
     ASSERT_TRUE(is_balanced(bplus->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 }
+
+// Test the additional control functions for delete
+TEST_F(BPlusTest, NotContains)
+{
+    std::random_device rd;
+    std::uniform_int_distribution<int64_t> dist = std::uniform_int_distribution<int64_t>(INT64_MIN + 1, INT64_MAX);
+
+    for (int i = 0; i < 100; i++)
+    {
+        int64_t value = dist(rd);
+        while (value == 42)
+            value = dist(rd);
+        bplus->insert(value, value);
+    }
+
+    ASSERT_TRUE(not_contains(42));
+    ASSERT_TRUE(all_pages_unfixed());
+}
+
+// Test the additional control functions for delete
+TEST_F(BPlusTest, Contains)
+{
+    std::random_device rd;
+    std::uniform_int_distribution<int64_t> dist = std::uniform_int_distribution<int64_t>(INT64_MIN + 1, INT64_MAX);
+
+    for (int i = 0; i < 99; i++)
+    {
+        int64_t value = dist(rd);
+        bplus->insert(value, value);
+    }
+    bplus->insert(42, 42);
+
+    ASSERT_FALSE(not_contains(42));
+    ASSERT_TRUE(all_pages_unfixed());
+}
+
+TEST_F(BPlusTest, MinimumSize)
+{
+    ASSERT_TRUE(minimum_size());
+
+    std::random_device rd;
+    std::uniform_int_distribution<int64_t> dist = std::uniform_int_distribution<int64_t>(INT64_MIN + 1, INT64_MAX);
+
+    for (int i = 0; i < 100; i++)
+    {
+        int64_t value = dist(rd);
+        bplus->insert(value, value);
+    }
+
+    ASSERT_TRUE(minimum_size());
+    ASSERT_TRUE(all_pages_unfixed());
+}
+
+TEST_F(BPlusTest, NotMinimumSizeInnerRoot)
+{
+    std::random_device rd;
+    std::uniform_int_distribution<int64_t> dist = std::uniform_int_distribution<int64_t>(INT64_MIN + 1, INT64_MAX);
+
+    for (int i = 0; i < 5; i++)
+    {
+        int64_t value = dist(rd);
+        bplus->insert(value, value);
+    }
+
+    ASSERT_TRUE(minimum_size());
+
+    InnerNode<node_test_size> *node = (InnerNode<node_test_size> *)buffer_manager->request_page(bplus->root_id);
+    node->current_index = 0;
+    buffer_manager->unfix_page(node->header.page_id, true);
+
+    ASSERT_FALSE(minimum_size());
+    ASSERT_TRUE(all_pages_unfixed());
+}
+
+TEST_F(BPlusTest, NotMinimumSizeInnerChild)
+{
+
+    for (int i = 0; i < 20; i++)
+    {
+        bplus->insert(i, i);
+    }
+
+    ASSERT_TRUE(minimum_size());
+
+    InnerNode<node_test_size> *node = (InnerNode<node_test_size> *)buffer_manager->request_page(bplus->root_id);
+    buffer_manager->unfix_page(node->header.page_id, false);
+    node = (InnerNode<node_test_size> *)buffer_manager->request_page(node->child_ids[0]);
+    node->current_index = 0;
+    buffer_manager->unfix_page(node->header.page_id, true);
+
+    ASSERT_FALSE(minimum_size());
+    ASSERT_TRUE(all_pages_unfixed());
+}
+
+TEST_F(BPlusTest, NotMinimumSizeLeaf)
+{
+    for (int i = 0; i < 20; i++)
+    {
+        bplus->insert(i, i);
+    }
+
+    ASSERT_TRUE(minimum_size());
+
+    auto leftmost = find_leftmost(bplus->root_id);
+    OuterNode<node_test_size> *node = (OuterNode<node_test_size> *)buffer_manager->request_page(leftmost);
+    node->current_index = 0;
+    buffer_manager->unfix_page(node->header.page_id, true);
+
+    ASSERT_FALSE(minimum_size());
+    ASSERT_TRUE(all_pages_unfixed());
+}
+
+TEST_F(BPlusTest, DeleteFromOuterRoot)
+{
+    bplus->insert(1, 1);
+    bplus->insert(4, 4);
+    bplus->insert(2, 2);
+    bplus->insert(3, 3);
+
+    bplus->delete_pair(3);
+    ASSERT_TRUE(not_contains(3));
+
+    bplus->delete_pair(1);
+    ASSERT_TRUE(not_contains(1));
+
+    bplus->delete_pair(4);
+    ASSERT_TRUE(not_contains(4));
+
+    bplus->delete_pair(2);
+    ASSERT_TRUE(not_contains(2));
+
+    ASSERT_TRUE(all_pages_unfixed());
+}
+
+TEST_F(BPlusTest, DeleteInnerOneLevelExchange)
+{
+    for (int i = 1; i < 7; i++)
+    {
+        bplus->insert(i * 2, i * 2);
+    }
+    bplus->insert(3, 3);
+    bplus->insert(7, 7);
+
+    bplus->delete_pair(4);
+    ASSERT_TRUE(not_contains(4));
+    ASSERT_TRUE(minimum_size());
+    ASSERT_TRUE(is_concatenated(bplus->root_id, 7));
+    ASSERT_TRUE(is_ordered(bplus->root_id));
+    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(all_pages_unfixed());
+
+    bplus->delete_pair(8);
+    ASSERT_TRUE(not_contains(8));
+    ASSERT_TRUE(minimum_size());
+    ASSERT_TRUE(is_concatenated(bplus->root_id, 6));
+    ASSERT_TRUE(is_ordered(bplus->root_id));
+    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(all_pages_unfixed());
+}
+
+TEST_F(BPlusTest, DeleteInnerOneLevelSubstituteLeftMiddle)
+{
+    for (int i = 1; i < 8; i++)
+    {
+        bplus->insert(i * 2, i * 2);
+    }
+    bplus->insert(3, 3);
+
+    bplus->delete_pair(8);
+    ASSERT_TRUE(not_contains(8));
+    ASSERT_TRUE(minimum_size());
+    ASSERT_TRUE(is_concatenated(bplus->root_id, 7));
+    ASSERT_TRUE(is_ordered(bplus->root_id));
+    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(all_pages_unfixed());
+}
+
+TEST_F(BPlusTest, DeleteInnerOneLevelSubstituteLeftRightBoundary)
+{
+    for (int i = 1; i < 8; i++)
+    {
+        bplus->insert(i * 2, i * 2);
+    }
+    bplus->insert(7, 7);
+
+    bplus->delete_pair(14);
+    bplus->delete_pair(12);
+
+    ASSERT_TRUE(not_contains(12));
+    ASSERT_TRUE(minimum_size());
+    ASSERT_TRUE(is_concatenated(bplus->root_id, 6));
+    ASSERT_TRUE(is_ordered(bplus->root_id));
+    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(all_pages_unfixed());
+}
+
+TEST_F(BPlusTest, DeleteInnerOneLevelSubstituteRightMiddle)
+{
+    for (int i = 1; i < 8; i++)
+    {
+        bplus->insert(i * 2, i * 2);
+    }
+
+    bplus->delete_pair(8);
+    ASSERT_TRUE(not_contains(8));
+    ASSERT_TRUE(minimum_size());
+    ASSERT_TRUE(is_concatenated(bplus->root_id, 6));
+    ASSERT_TRUE(is_ordered(bplus->root_id));
+    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(all_pages_unfixed());
+}
+
+TEST_F(BPlusTest, DeleteInnerOneLevelSubstituteRightLeftBoundary)
+{
+    for (int i = 1; i < 8; i++)
+    {
+        bplus->insert(i * 2, i * 2);
+    }
+
+    bplus->insert(7, 7);
+
+    bplus->delete_pair(2);
+    ASSERT_TRUE(not_contains(2));
+    ASSERT_TRUE(minimum_size());
+    ASSERT_TRUE(is_concatenated(bplus->root_id, 7));
+    ASSERT_TRUE(is_ordered(bplus->root_id));
+    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(all_pages_unfixed());
+}
+
+TEST_F(BPlusTest, DeleteInnerOneLevelMergeLeftMiddle)
+{
+    for (int i = 1; i < 8; i++)
+    {
+        bplus->insert(i * 2, i * 2);
+    }
+    bplus->delete_pair(14);
+    bplus->delete_pair(8);
+    ASSERT_TRUE(not_contains(8));
+    ASSERT_TRUE(minimum_size());
+    ASSERT_TRUE(is_concatenated(bplus->root_id, 5));
+    ASSERT_TRUE(is_ordered(bplus->root_id));
+    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(all_pages_unfixed());
+}
+
+TEST_F(BPlusTest, DeleteInnerOneLevelMergeLeftRightBoundary)
+{
+    for (int i = 1; i < 8; i++)
+    {
+        bplus->insert(i * 2, i * 2);
+    }
+
+    bplus->delete_pair(14);
+    bplus->delete_pair(12);
+
+    ASSERT_TRUE(not_contains(12));
+    ASSERT_TRUE(minimum_size());
+    ASSERT_TRUE(is_concatenated(bplus->root_id, 5));
+    ASSERT_TRUE(is_ordered(bplus->root_id));
+    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(all_pages_unfixed());
+}
+
+TEST_F(BPlusTest, DeleteInnerOneLevelMergeRightLeftBoundary)
+{
+    for (int i = 1; i < 8; i++)
+    {
+        bplus->insert(i * 2, i * 2);
+    }
+
+    bplus->delete_pair(2);
+    ASSERT_TRUE(not_contains(2));
+    ASSERT_TRUE(minimum_size());
+    ASSERT_TRUE(is_concatenated(bplus->root_id, 6));
+    ASSERT_TRUE(is_ordered(bplus->root_id));
+    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(all_pages_unfixed());
+}
+
+TEST_F(BPlusTest, OneLevelDecreaseDepth)
+{
+    for (int i = 1; i < 6; i++)
+    {
+        bplus->insert(i * 2, i * 2);
+    }
+    bplus->delete_pair(4);
+    bplus->delete_pair(6);
+
+    ASSERT_TRUE(not_contains(4));
+    ASSERT_TRUE(not_contains(6));
+    ASSERT_TRUE(minimum_size());
+    ASSERT_TRUE(is_concatenated(bplus->root_id, 3));
+    ASSERT_TRUE(is_ordered(bplus->root_id));
+    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(all_pages_unfixed());
+}
+
+// 3. Tests with 2 level
+// Test 1: Delete left, right, middle left and middle right element
+// Test 2: Delete with replacement of inner node, for left, middle left and right, and right element
+// Test 3: Delete with substitution of boundary left and right, middle left and right
+// Test 4: Delete with merge of boundary left and right and middle left and right

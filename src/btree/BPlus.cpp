@@ -187,9 +187,9 @@ uint64_t BPlus::split_outer_node(Header *header, int index_to_split)
         node->current_index--;
     }
     // set correct chaining
-    u_int64_t next_temp = node->next_lef_id; 
+    u_int64_t next_temp = node->next_lef_id;
     node->next_lef_id = new_outer_node->header.page_id;
-    new_outer_node->next_lef_id = next_temp; 
+    new_outer_node->next_lef_id = next_temp;
 
     buffer_manager->unfix_page(new_header->page_id, true);
 
@@ -219,6 +219,266 @@ uint64_t BPlus::split_inner_node(Header *header, int index_to_split)
     buffer_manager->unfix_page(new_header->page_id, true);
 
     return new_inner_node->header.page_id;
+}
+
+void BPlus::delete_pair(int64_t key)
+{
+    recursive_delete(buffer_manager->request_page(root_id), key);
+    buffer_manager->destroy();
+}
+
+void BPlus::recursive_delete(Header *header, int64_t key)
+{
+    if (!header->inner)
+    {
+        // outer node
+        OuterNode<Configuration::page_size> *node = (OuterNode<Configuration::page_size> *)header;
+        node->delete_pair(key);
+        buffer_manager->unfix_page(header->page_id, true);
+    }
+    else
+    {
+        // Inner node
+        InnerNode<Configuration::page_size> *node = (InnerNode<Configuration::page_size> *)header;
+
+        logger->info("Header id: {}", header->page_id); 
+        logger->info("Header current index: {}", node->current_index); 
+        if (header->page_id == root_id && node->current_index == 0)
+        {
+            // only happens for inner node after delete
+            logger->info("Deleting root");
+            logger->flush(); 
+            // no key left, just child ids still has an entry at position 0
+            root_id = node->child_ids[0];
+            buffer_manager->unfix_page(header->page_id, false);
+            buffer_manager->delete_page(header->page_id);
+            delete_pair(key);
+        }
+        else
+        {
+            // find next page to delete from
+            uint64_t next_page = node->next_page(key);
+            Header *child_header = buffer_manager->request_page(next_page);
+
+            if (child_header->inner)
+            {
+                InnerNode<Configuration::page_size> *child = (InnerNode<Configuration::page_size> *)child_header;
+
+                if (!child->can_delete())
+                {
+                }
+                else
+                {
+                    // TODO what if key needs to be deleted in current node!
+
+                    buffer_manager->unfix_page(header->page_id, false);
+                    recursive_delete(child_header, key);
+                }
+            }
+            else
+            {
+                OuterNode<Configuration::page_size> *child = (OuterNode<Configuration::page_size> *)child_header;
+
+                if (!child->can_delete())
+                {
+                    logger->info("Cant delete child");
+                    /**
+                     * 1. Substitute with left or right if you can
+                     * 2. If not, merge with left or right
+                     * -> no need to replace key in current node because with both substitution and merge, key will either change or be deleted
+                     */
+                    if (substitute(header, child_header))
+                    {
+                        buffer_manager->unfix_page(child_header->page_id, true);
+                        //TODO, mark current page dirty
+                        recursive_delete(header, key);
+                    }
+                    else
+                    {
+                        // merge child with adjacent node
+                        merge(header, child_header);
+
+                        // child will be unfixed after the merge, current node can stay fixed
+                        //TODO mark current page dirty
+                        recursive_delete(header, key);
+                    }
+                }
+                else
+                {
+                    logger->info("Can delete child");
+                    // function checks if key is contained and if it is, exchanges it with biggest smaller key
+                    bool dirty = false;
+                    if (node->contains(key))
+                    {
+                        logger->info("Contains key"); 
+                        node->exchange(key, find_biggest_smallest(child_header));
+                        buffer_manager->fix_page(child_header->page_id);
+                        dirty = true;
+                    }
+
+                    buffer_manager->unfix_page(header->page_id, dirty);
+                    recursive_delete(child_header, key);
+                }
+            }
+        }
+    }
+}
+
+bool BPlus::substitute(Header *header, Header *child_header)
+{
+    InnerNode<Configuration::page_size> *node = (InnerNode<Configuration::page_size> *)header;
+
+    if (child_header->inner)
+    {
+        // TODO substitution for inner node
+        return false;
+    }
+    else
+    {
+        OuterNode<Configuration::page_size> *child = (OuterNode<Configuration::page_size> *)child_header;
+        OuterNode<Configuration::page_size> *substitute;
+        int index = 0;
+
+        while (index <= node->current_index)
+        {
+            if (node->child_ids[index] == child_header->page_id)
+            {
+                if (index > 0)
+                {
+                    substitute = (OuterNode<Configuration::page_size> *)buffer_manager->request_page(node->child_ids[index - 1]);
+                    if (substitute->can_delete())
+                    {
+                        // save biggest key and value from left in right node
+                        child->insert(substitute->keys[substitute->current_index - 1], substitute->values[substitute->current_index - 1]);
+                        substitute->delete_pair(substitute->keys[substitute->current_index - 1]);
+                        node->keys[index-1] = substitute->keys[substitute->current_index - 1];
+
+                        // unfix
+                        buffer_manager->unfix_page(node->child_ids[index - 1], true);
+
+                        // substitution worked
+                        return true;
+                    }
+                    else
+                    {
+                        buffer_manager->unfix_page(node->child_ids[index - 1], false);
+                    }
+                }
+                if (index < node->current_index)
+                {
+                    substitute = (OuterNode<Configuration::page_size> *)buffer_manager->request_page(node->child_ids[index + 1]);
+                    if (substitute->can_delete())
+                    {
+                        // save biggest key and value from right to left
+                        child->insert(substitute->keys[0], substitute->values[0]);
+                        node->keys[index] = substitute->keys[0];
+                        substitute->delete_pair(substitute->keys[0]);
+
+                        // unfix
+                        buffer_manager->unfix_page(node->child_ids[index + 1], true);
+
+                        // substitution worked
+                        return true;
+                    }
+                    else
+                    {
+                        buffer_manager->unfix_page(node->child_ids[index + 1], false);
+                    }
+                }
+            }
+            index++;
+        }
+        return false;
+    }
+}
+
+void BPlus::merge(Header *header, Header *child_header)
+{
+    InnerNode<Configuration::page_size> *node = (InnerNode<Configuration::page_size> *)header;
+
+    if (child_header->inner)
+    {
+        // TODO merge for inner node
+    }
+    else
+    {
+        OuterNode<Configuration::page_size> *child = (OuterNode<Configuration::page_size> *)child_header;
+        OuterNode<Configuration::page_size> *merge;
+        int index = 0;
+
+        while (index <= node->current_index)
+        {
+            if (node->child_ids[index] == child_header->page_id)
+            {
+                if (index > 0)
+                {
+                    merge = (OuterNode<Configuration::page_size> *)buffer_manager->request_page(node->child_ids[index - 1]);
+                    if (!merge->can_delete())
+                    {
+                        // add all from right node to left node
+                        for (int i = 0; i < child->current_index; i++)
+                        {
+                            merge->insert(child->keys[i], child->values[i]);
+                        }
+                        merge->next_lef_id = child->next_lef_id; 
+                        buffer_manager->unfix_page(child->header.page_id, false);
+                        buffer_manager->delete_page(child->header.page_id);
+                        node->delete_pair(node->keys[index - 1]);
+
+                        // unfix
+                        buffer_manager->unfix_page(merge->header.page_id, true);
+                    }
+                    else
+                    {
+                        buffer_manager->unfix_page(merge->header.page_id, false);
+                    }
+                }
+                if (index < node->current_index)
+                {
+                    merge = (OuterNode<Configuration::page_size> *)buffer_manager->request_page(node->child_ids[index + 1]);
+                    if (!merge->can_delete())
+                    {
+                        // add all from right node to left node
+                        for (int i = 0; i < merge->current_index; i++)
+                        {
+                            child->insert(merge->keys[i], merge->values[i]);
+                        }
+                        child->next_lef_id = merge->next_lef_id; 
+                        buffer_manager->unfix_page(merge->header.page_id, false);
+                        buffer_manager->delete_page(merge->header.page_id);
+                        node->delete_pair(node->keys[index]);
+
+                        // unfix
+                        buffer_manager->unfix_page(child->header.page_id, true);
+                    }
+                    else
+                    {
+                        buffer_manager->unfix_page(merge->header.page_id, false);
+                    }
+                }
+            }
+            index++;
+        }
+    }
+}
+
+int64_t BPlus::find_biggest_smallest(Header *header)
+{
+    if (!header->inner)
+    {
+        OuterNode<Configuration::page_size> *node = (OuterNode<Configuration::page_size> *)header;
+        // last one is still the key that will be deleted
+        int64_t key = node->keys[node->current_index - 2];
+        buffer_manager->unfix_page(header->page_id, false);
+        return key;
+    }
+    else
+    {
+        InnerNode<Configuration::page_size> *node = (InnerNode<Configuration::page_size> *)header;
+        Header *child_header = buffer_manager->request_page(node->child_ids[node->current_index]);
+        buffer_manager->unfix_page(header->page_id, false);
+        return find_biggest_smallest(child_header);
+    }
 }
 
 int64_t BPlus::get_value(int64_t key)

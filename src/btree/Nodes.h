@@ -93,6 +93,59 @@ struct InnerNode
         current_index++;
     }
 
+    void delete_pair(int key)
+    {
+        // we always delete key and the right child because the new elements will be in the left node from the key
+        int index = 0;
+
+        while (index < current_index)
+        {
+            if (keys[index] == key)
+            {
+                break;
+            }
+            index++;
+        }
+
+        for (int i = index + 1; i < current_index; i++)
+        {
+            keys[i - 1] = keys[i];
+            child_ids[i] = child_ids[i + 1];
+        }
+        current_index--;
+    }
+
+    bool contains(int64_t key)
+    {
+        int index = 0;
+
+        while (index < current_index)
+        {
+            if (keys[index] == key)
+            {
+                break;
+            }
+            index++;
+        }
+
+        return index < current_index;
+    }
+
+    void exchange(int64_t key, int64_t exchange_key)
+    {
+        int index = 0;
+
+        while (index < current_index)
+        {
+            if (keys[index] == key)
+            {
+                keys[index] = exchange_key;
+                return;
+            }
+            index++;
+        }
+    }
+
     /**
      * @brief Checks if the node is full
      * @return true if it is false if it is not full
@@ -100,6 +153,16 @@ struct InnerNode
     bool is_full()
     {
         return current_index >= max_size;
+    }
+
+    bool can_delete()
+    {
+        return current_index >= (max_size / 2) + 1;
+    }
+
+    bool is_empty()
+    {
+        return current_index < max_size / 2;
     }
 };
 
@@ -172,6 +235,32 @@ struct OuterNode
     }
 
     /**
+     * @brief Deleting key and value pair
+     * @param key Key
+     */
+    void delete_pair(int64_t key)
+    {
+        int index = 0;
+        while (index < current_index)
+        {
+            if (keys[index] == key)
+            {
+                break;
+            }
+            index++;
+        }
+
+        assert(index < max_size && "No element to delete");
+
+        for (int i = index + 1; i < current_index; i++)
+        {
+            keys[i - 1] = keys[i];
+            values[i - 1] = values[i];
+        }
+        current_index--;
+    }
+
+    /**
      * @brief Return the value for a key, if key is not found, minimum number is returned
      * @return the value
      */
@@ -196,5 +285,15 @@ struct OuterNode
     bool is_full()
     {
         return current_index >= max_size;
+    }
+
+    bool can_delete()
+    {
+        return current_index >= (max_size / 2) + 1;
+    }
+
+    bool is_empty()
+    {
+        return current_index < max_size / 2;
     }
 };

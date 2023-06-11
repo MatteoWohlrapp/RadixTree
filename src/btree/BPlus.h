@@ -37,6 +37,13 @@ private:
     void recursive_insert(Header *header, int64_t key, int64_t value);
 
     /**
+     * @brief Delete recursively from the tree
+     * @param header The header of the current node
+     * @param key The key to delete
+     */
+    void recursive_delete(Header *header, int64_t key);
+
+    /**
      * @brief Get the value to a key recursively
      * @param header The header of the current node
      * @param key The key corresponding to the value
@@ -66,6 +73,14 @@ private:
      */
     int get_split_index(int max_size);
 
+    bool substitute(Header* header, Header* child_header); 
+
+    void merge(Header* header, Header* child_header); 
+
+    int64_t find_biggest_smallest(Header* header); 
+
+    int64_t recursive_find_biggest_smallest(Header* header); 
+
 public:
     friend class BPlusTest;
     /// root of tree
@@ -83,6 +98,12 @@ public:
      * @param value The value that will be inserted
      */
     void insert(int64_t key, int64_t value);
+
+    /**
+     * @brief Delete an element from the tree
+     * @param key The key that will be deleted
+     */
+    void delete_pair(int64_t key);
 
     /**
      * @brief Get a value corresponding to the key

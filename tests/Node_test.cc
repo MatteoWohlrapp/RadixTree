@@ -145,3 +145,93 @@ TEST_F(NodeTest, OuterNodeFull)
     ASSERT_EQ(node->current_index, 4);
     ASSERT_TRUE(node->is_full());
 }
+
+TEST_F(NodeTest, InnerNodeCanDelete)
+{
+    InnerNode<node_test_size> *node = new (header) InnerNode<node_test_size>();
+
+    node->insert(1, 1);
+    ASSERT_FALSE(node->can_delete());
+    node->insert(1, 1);
+    ASSERT_TRUE(node->can_delete());
+}
+
+TEST_F(NodeTest, InnerNodeContains)
+{
+    InnerNode<node_test_size> *node = new (header) InnerNode<node_test_size>();
+
+    node->insert(2, 2);
+    node->insert(1, 1);
+    node->insert(3, 3);
+    ASSERT_TRUE(node->contains(3));
+    ASSERT_TRUE(node->contains(2));
+    ASSERT_TRUE(node->contains(1));
+    ASSERT_FALSE(node->contains(4));
+
+    node->delete_pair(2);
+    node->delete_pair(3);
+    node->delete_pair(1);
+
+    ASSERT_FALSE(node->contains(3));
+    ASSERT_FALSE(node->contains(2));
+    ASSERT_FALSE(node->contains(1));
+}
+
+TEST_F(NodeTest, InnerNodeDelete)
+{
+    InnerNode<node_test_size> *node = new (header) InnerNode<node_test_size>();
+
+    node->insert(2, 2);
+    node->insert(1, 1);
+    node->insert(3, 3);
+    node->delete_pair(2);
+    node->delete_pair(3);
+    node->delete_pair(1);
+
+    ASSERT_EQ(node->current_index, 0); 
+    ASSERT_FALSE(node->contains(3));
+    ASSERT_FALSE(node->contains(2));
+    ASSERT_FALSE(node->contains(1));
+}
+
+TEST_F(NodeTest, InnerNodeExchange)
+{
+    InnerNode<node_test_size> *node = new (header) InnerNode<node_test_size>();
+
+    node->insert(2, 2);
+    node->insert(1, 1);
+    node->insert(5, 5);
+
+    node->exchange(2, 4);
+
+    ASSERT_FALSE(node->contains(2));
+    ASSERT_TRUE(node->contains(4));
+}
+
+TEST_F(NodeTest, OuterNodeCanDelete)
+{
+    OuterNode<node_test_size> *node = new (header) OuterNode<node_test_size>();
+
+    node->insert(1, 1);
+    node->insert(1, 1);
+    ASSERT_FALSE(node->can_delete());
+    node->insert(1, 1);
+    ASSERT_TRUE(node->can_delete());
+}
+
+TEST_F(NodeTest, OuterNodeDelete)
+{
+    OuterNode<node_test_size> *node = new (header) OuterNode<node_test_size>();
+
+    node->insert(1, 1);
+    node->insert(3, 3);
+    node->insert(2, 2);
+    node->delete_pair(1);
+    node->delete_pair(3);
+    node->delete_pair(2);
+
+    ASSERT_EQ(node->current_index, 0); 
+    ASSERT_EQ(node->get_value(1), INT64_MIN);
+    ASSERT_EQ(node->get_value(2), INT64_MIN);
+    ASSERT_EQ(node->get_value(3), INT64_MIN);
+}

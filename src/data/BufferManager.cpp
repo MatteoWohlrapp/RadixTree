@@ -67,11 +67,12 @@ Header *BufferManager::create_new_page()
 // TODO
 void BufferManager::delete_page(uint64_t page_id)
 {
+    /*
     std::map<uint64_t, Frame *>::iterator it = page_id_map.find(page_id);
     if (it != page_id_map.end())
     {
         free(it->second);
-    }
+    }*/
 }
 
 void BufferManager::fix_page(uint64_t page_id)
