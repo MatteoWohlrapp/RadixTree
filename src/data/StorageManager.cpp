@@ -12,7 +12,7 @@ StorageManager::StorageManager(std::filesystem::path base_path_arg, int page_siz
 {
     logger = spdlog::get("logger");
     bitmap_increment = std::ceil(page_size_arg / 8.0) * 8;
-    // check if folder and files exist 
+    // check if folder and files exist
     if (!std::filesystem::exists(base_path))
     {
         std::filesystem::create_directories(base_path);
@@ -88,7 +88,7 @@ StorageManager::StorageManager(std::filesystem::path base_path_arg, int page_siz
 
     if (!(std::filesystem::file_size(base_path / data) == 0))
     {
-        current_page_count = File::get_file_size(data_fs) / page_size;
+        current_page_count = File::get_file_size(&data_fs) / page_size;
     }
 }
 
@@ -103,11 +103,23 @@ void StorageManager::destroy()
         exit(1);
     }
 
-    for (int i = 0; i < free_space_map.size(); i += 8)
+    int last_zero = 1;
+    for (int i = 1; i < free_space_map.size(); i++)
+    {
+        if (free_space_map[i] == 0)
+            last_zero = i / 8;
+    }
+
+    bitmap_fs.close();
+    bitmap_fs.open(base_path / bitmap, std::ios::binary | std::ios::out | std::ios::trunc);
+
+    int highest = 0;
+    for (int i = 0; i < (last_zero + 1) * 8; i += 8)
     {
         char byte = 0;
         for (int j = 0; j < 8 && j + i < free_space_map.size(); j++)
         {
+            highest = i + j;
             if (free_space_map[j + i])
             {
                 byte |= (1 << j);
@@ -116,8 +128,34 @@ void StorageManager::destroy()
         bitmap_fs.write(&byte, sizeof(byte));
     }
 
-    bitmap_fs.close();
+    if (current_page_count > (last_zero + 1) * 8)
+    {
+        std::ofstream temp_fs(base_path / "temp.bin", std::ios::binary | std::ios::out);
+        if (!temp_fs.is_open())
+        {
+            logger->error("File opening failed for temp file: ", std::strerror(errno));
+            exit(1);
+        }
+
+        data_fs.seekg(0, std::ios::beg);
+
+        // copy content into new file
+        uint64_t num_pages_to_keep = (last_zero + 1) * 8;
+        char buffer[page_size];
+        for (uint64_t i = 0; i < num_pages_to_keep; ++i)
+        {
+            data_fs.read(buffer, page_size);
+            temp_fs.write(buffer, page_size);
+        }
+
+        temp_fs.close();
+
+        // Remove old one and rename new one
+        std::filesystem::remove(base_path / data);
+        std::filesystem::rename(base_path / "temp.bin", base_path / data);
+    }
     data_fs.close();
+    bitmap_fs.close();
 }
 
 void StorageManager::load_page(Header *header, uint64_t page_id)
@@ -145,6 +183,11 @@ void StorageManager::load_page(Header *header, uint64_t page_id)
 
 void StorageManager::save_page(Header *header)
 {
+    while (free_space_map.size() <= header->page_id)
+    {
+        free_space_map.resize(free_space_map.size() + bitmap_increment, true);
+    }
+
     if (current_page_count <= header->page_id)
     {
 
@@ -159,11 +202,6 @@ void StorageManager::save_page(Header *header)
         {
             data_fs.write(reinterpret_cast<char *>(header), page_size);
             current_page_count++;
-        }
-
-        while (free_space_map.size() <= header->page_id)
-        {
-            free_space_map.resize(free_space_map.size() + page_size, true);
         }
     }
     else
@@ -184,6 +222,19 @@ void StorageManager::save_page(Header *header)
     free_space_map.reset(header->page_id);
     find_next_free_space();
     data_fs.flush();
+}
+
+void StorageManager::delete_page(uint64_t page_id)
+{
+    assert(page_id != 0 && "Deleting page 0");
+
+    if (free_space_map.size() > page_id)
+    {
+        free_space_map.set(page_id);
+    }
+
+    if (page_id < next_free_space)
+        next_free_space = page_id;
 }
 
 int StorageManager::get_unused_page_id()

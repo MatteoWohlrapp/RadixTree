@@ -11,13 +11,14 @@ BufferManager::BufferManager(std::shared_ptr<StorageManager> storage_manager_arg
     dist = std::uniform_int_distribution<int>(0, buffer_size);
 }
 
-// TODO
 void BufferManager::destroy()
 {
     logger->trace("Destroying");
     for (auto &pair : page_id_map)
     {
-        logger->trace("Map: {}, fixed {}, marked {}", pair.first, pair.second->fix_count, pair.second->marked);
+        if(pair.second->dirty){
+            storage_manager->save_page(&pair.second->header); 
+        }
     }
 }
 
@@ -64,15 +65,15 @@ Header *BufferManager::create_new_page()
     return &frame_address->header;
 }
 
-// TODO
 void BufferManager::delete_page(uint64_t page_id)
 {
-    /*
     std::map<uint64_t, Frame *>::iterator it = page_id_map.find(page_id);
     if (it != page_id_map.end())
     {
+        storage_manager->delete_page(it->second->header.page_id); 
+        page_id_map.erase(it->first); 
         free(it->second);
-    }*/
+    }
 }
 
 void BufferManager::fix_page(uint64_t page_id)

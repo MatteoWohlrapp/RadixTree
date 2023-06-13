@@ -19,7 +19,7 @@ namespace File
      * @brief prints the content of a binary file
      * @param data_fs a file handle
      */
-    void print_file_content(std::fstream &file)
+    inline void print_file_content(std::fstream &file)
     {
 
         // Read and print the content
@@ -40,7 +40,7 @@ namespace File
         std::cout << std::endl;
     }
 
-    void print_headers_in_file(std::string path, std::fstream *data_fs, std::shared_ptr<spdlog::logger> logger)
+    inline void print_headers_in_file(std::string path, std::fstream *data_fs, std::shared_ptr<spdlog::logger> logger)
     {
         data_fs->flush();
         std::ifstream file(path, std::ios::binary);
@@ -67,15 +67,15 @@ namespace File
     }
 
     /**
-     * @brief calculates the file size of a file
+     * @brief calculates the file size of a file in byte
      * @param a file handle
      * @return the size of the file
      */
-    int get_file_size(std::fstream &file)
+    inline int get_file_size(std::fstream *file)
     {
         // Read and print the content
-        file.seekg(0, std::ios::end);
-        std::streamoff end_postion = file.tellg();
+        file->seekg(0, std::ios::end);
+        std::streamoff end_postion = file->tellg();
 
         return end_postion;
     }

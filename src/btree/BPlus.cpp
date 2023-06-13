@@ -250,7 +250,6 @@ void BPlus::recursive_delete(Header *header, int64_t key)
             logger->flush(); 
             // no key left, just child ids still has an entry at position 0
             root_id = node->child_ids[0];
-            buffer_manager->unfix_page(header->page_id, false);
             buffer_manager->delete_page(header->page_id);
             delete_pair(key);
         }
@@ -421,7 +420,6 @@ void BPlus::merge(Header *header, Header *child_header)
                             merge->insert(child->keys[i], child->values[i]);
                         }
                         merge->next_lef_id = child->next_lef_id; 
-                        buffer_manager->unfix_page(child->header.page_id, false);
                         buffer_manager->delete_page(child->header.page_id);
                         node->delete_pair(node->keys[index - 1]);
 
@@ -444,7 +442,6 @@ void BPlus::merge(Header *header, Header *child_header)
                             child->insert(merge->keys[i], merge->values[i]);
                         }
                         child->next_lef_id = merge->next_lef_id; 
-                        buffer_manager->unfix_page(merge->header.page_id, false);
                         buffer_manager->delete_page(merge->header.page_id);
                         node->delete_pair(node->keys[index]);
 

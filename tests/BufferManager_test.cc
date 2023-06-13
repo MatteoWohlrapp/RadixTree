@@ -22,6 +22,10 @@ protected:
         buffer_manager = std::make_unique<BufferManager>(std::make_shared<StorageManager>(base_path, page_size), buffer_size);
     }
 
+    void overwrite_buffer_manager(){
+        buffer_manager = std::make_unique<BufferManager>(std::make_shared<StorageManager>(base_path, page_size), buffer_size);
+    }
+
     int get_current_buffer_size()
     {
         return buffer_manager->current_buffer_size;
@@ -100,4 +104,27 @@ TEST_F(BufferManagerTest, BufferFullWhenRequestingPage)
     ASSERT_EQ(header->page_id, page_id);
     page_id_map = get_page_id_map();
     ASSERT_TRUE((page_id_map.find(3) != page_id_map.end()) && (page_id_map.find(page_id) != page_id_map.end()));
+}
+
+TEST_F(BufferManagerTest, DeletingPage)
+{
+    Header *header = buffer_manager->create_new_page();
+
+    auto page_id_map = get_page_id_map();
+    ASSERT_FALSE(page_id_map.find(1) == page_id_map.end());
+    buffer_manager->delete_page(1);
+    page_id_map = get_page_id_map();
+    ASSERT_TRUE(page_id_map.find(1) == page_id_map.end());
+}
+
+TEST_F(BufferManagerTest, DestroyPage)
+{
+    Header *header = buffer_manager->create_new_page();
+
+    buffer_manager->destroy(); 
+    
+    overwrite_buffer_manager(); 
+
+    Header *loaded_header = buffer_manager->request_page(1); 
+    ASSERT_EQ(header->page_id, 1);
 }
