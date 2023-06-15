@@ -206,16 +206,16 @@ struct InnerNode
      */
     bool can_delete()
     {
-        return current_index >= (max_size / 2) + 1;
+        return current_index >= (max_size + 1) / 2;
     }
 
     /**
      * @brief Checks if a node is empty
      * @return true if it is empty, false if not
      */
-    bool is_empty()
+    bool is_too_empty()
     {
-        return current_index < max_size / 2;
+        return current_index < ((max_size + 1) / 2) - 1;
     }
 };
 
@@ -346,14 +346,14 @@ struct OuterNode
      */
     bool can_delete()
     {
-        return current_index >= (max_size / 2) + 1;
+        return current_index > max_size / 2;
     }
 
     /**
      * @brief Checks if a node is empty
      * @return true if it is empty, false if not
      */
-    bool is_empty()
+    bool is_too_empty()
     {
         return current_index < max_size / 2;
     }

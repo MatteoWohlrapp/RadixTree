@@ -368,14 +368,14 @@ protected:
                 InnerNode<node_test_size> *inner = (InnerNode<node_test_size> *)header;
                 if (bplus->root_id == header->page_id)
                     return inner->current_index > 0;
-                return !inner->is_empty();
+                return !inner->is_too_empty();
             }
             else
             {
                 OuterNode<node_test_size> *outer = (OuterNode<node_test_size> *)header;
                 if (bplus->root_id == header->page_id)
                     return true;
-                return !outer->is_empty();
+                return !outer->is_too_empty();
             }
         };
         return all(predicate);
