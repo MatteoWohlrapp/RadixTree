@@ -93,7 +93,30 @@ struct InnerNode
         current_index++;
     }
 
-    void delete_pair(int key)
+    /**
+     * @brief Inserting a new key and child at the first position -> child_ids[0], keys[0]
+     * @param key The key to insert
+     * @param child_id The child id that should be inserted
+     */
+    void insert_first(int64_t key, uint64_t child_id)
+    {
+        child_ids[current_index + 1] = child_ids[current_index];
+        for (int i = current_index; i > 0; i--)
+        {
+            keys[i] = keys[i - 1];
+            child_ids[i] = child_ids[i - 1];
+        }
+
+        keys[0] = key;
+        child_ids[0] = child_id;
+        current_index++;
+    }
+
+    /**
+     * @brief Ineserting a key and child pair: the child id will be deleted on the right side of the key
+     * @param key The key to delete
+     */
+    void delete_pair(int64_t key)
     {
         // we always delete key and the right child because the new elements will be in the left node from the key
         int index = 0;
@@ -115,6 +138,24 @@ struct InnerNode
         current_index--;
     }
 
+    /**
+     * @brief Deleting the first key and value at index 0
+     */
+    void delete_first_pair()
+    {
+        for (int i = 1; i < current_index; i++)
+        {
+            keys[i - 1] = keys[i];
+            child_ids[i - 1] = child_ids[i];
+        }
+        child_ids[current_index - 1] = child_ids[current_index];
+        current_index--;
+    }
+
+    /**
+     * @brief Checks the keys if the given key is included
+     * @param key The key to check if contained
+     */
     bool contains(int64_t key)
     {
         int index = 0;
@@ -131,10 +172,14 @@ struct InnerNode
         return index < current_index;
     }
 
+    /**
+     * @brief Exchanging a key with another key
+     * @param key The current key contained
+     * @param exchange_key The new key that replaces the current one
+     */
     void exchange(int64_t key, int64_t exchange_key)
     {
         int index = 0;
-
         while (index < current_index)
         {
             if (keys[index] == key)
@@ -155,11 +200,19 @@ struct InnerNode
         return current_index >= max_size;
     }
 
+    /**
+     * @brief Checks if you can delete from the node
+     * @return true if an element can be deleted, false if not
+     */
     bool can_delete()
     {
         return current_index >= (max_size / 2) + 1;
     }
 
+    /**
+     * @brief Checks if a node is empty
+     * @return true if it is empty, false if not
+     */
     bool is_empty()
     {
         return current_index < max_size / 2;
@@ -236,7 +289,7 @@ struct OuterNode
 
     /**
      * @brief Deleting key and value pair
-     * @param key Key
+     * @param key Key that should be deleted
      */
     void delete_pair(int64_t key)
     {
@@ -287,11 +340,19 @@ struct OuterNode
         return current_index >= max_size;
     }
 
+    /**
+     * @brief Checks if you can delete from the node
+     * @return true if an element can be deleted, false if not
+     */
     bool can_delete()
     {
         return current_index >= (max_size / 2) + 1;
     }
 
+    /**
+     * @brief Checks if a node is empty
+     * @return true if it is empty, false if not
+     */
     bool is_empty()
     {
         return current_index < max_size / 2;

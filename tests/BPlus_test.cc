@@ -4,6 +4,7 @@
 #include "../src/Configuration.h"
 #include <random>
 #include <queue>
+#include <unordered_set>
 
 constexpr int node_test_size = 96;
 
@@ -658,6 +659,7 @@ TEST_F(BPlusTest, OrderIncorrectInner)
 TEST_F(BPlusTest, CorrectRootNodeType)
 {
     ASSERT_FALSE(buffer_manager->request_page(get_root_id())->inner);
+    buffer_manager->unfix_page(get_root_id(), false);
 
     for (int i = 0; i < 6; i++)
     {
@@ -1060,8 +1062,218 @@ TEST_F(BPlusTest, OneLevelDecreaseDepth)
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-// 3. Tests with 2 level
-// Test 1: Delete left, right, middle left and middle right element
-// Test 2: Delete with replacement of inner node, for left, middle left and right, and right element
-// Test 3: Delete with substitution of boundary left and right, middle left and right
-// Test 4: Delete with merge of boundary left and right and middle left and right
+TEST_F(BPlusTest, SubstituteRight)
+{
+    bplus->insert(20, 20);
+    bplus->insert(15, 15);
+    bplus->insert(10, 10);
+    bplus->insert(5, 5);
+    bplus->insert(4, 4);
+    bplus->insert(3, 3);
+    bplus->insert(2, 2);
+    bplus->insert(11, 11);
+    bplus->insert(12, 12);
+    bplus->insert(13, 13);
+    bplus->insert(21, 21);
+    bplus->insert(22, 22);
+    bplus->delete_pair(4);
+
+    ASSERT_TRUE(not_contains(4));
+    ASSERT_TRUE(minimum_size());
+    ASSERT_TRUE(is_concatenated(bplus->root_id, 11));
+    ASSERT_TRUE(is_ordered(bplus->root_id));
+    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(all_pages_unfixed());
+}
+
+TEST_F(BPlusTest, SubstituteLeft)
+{
+    bplus->insert(20, 20);
+    bplus->insert(15, 15);
+    bplus->insert(10, 10);
+    bplus->insert(5, 5);
+    bplus->insert(4, 4);
+    bplus->insert(3, 3);
+    bplus->insert(2, 2);
+    bplus->insert(11, 11);
+    bplus->insert(12, 12);
+    bplus->insert(6, 6);
+    bplus->insert(7, 7);
+    bplus->insert(8, 8);
+    bplus->insert(9, 9);
+    bplus->insert(1, 1);
+    bplus->insert(0, 0);
+    bplus->delete_pair(10);
+
+    ASSERT_TRUE(not_contains(10));
+    ASSERT_TRUE(minimum_size());
+    ASSERT_TRUE(is_concatenated(bplus->root_id, 14));
+    ASSERT_TRUE(is_ordered(bplus->root_id));
+    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(all_pages_unfixed());
+}
+
+TEST_F(BPlusTest, MergeRightInnerNode)
+{
+    bplus->insert(20, 20);
+    bplus->insert(15, 15);
+    bplus->insert(10, 10);
+    bplus->insert(5, 5);
+    bplus->insert(4, 4);
+    bplus->insert(3, 3);
+    bplus->insert(2, 2);
+    bplus->insert(11, 11);
+    bplus->insert(12, 12);
+    bplus->insert(6, 6);
+    bplus->insert(7, 7);
+    bplus->insert(8, 8);
+    bplus->insert(9, 9);
+    bplus->delete_pair(4);
+
+    ASSERT_TRUE(not_contains(4));
+    ASSERT_TRUE(minimum_size());
+    ASSERT_TRUE(is_concatenated(bplus->root_id, 12));
+    ASSERT_TRUE(is_ordered(bplus->root_id));
+    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(all_pages_unfixed());
+}
+
+TEST_F(BPlusTest, MergeLeftInnerNode)
+{
+    bplus->insert(20, 20);
+    bplus->insert(15, 15);
+    bplus->insert(10, 10);
+    bplus->insert(5, 5);
+    bplus->insert(4, 4);
+    bplus->insert(3, 3);
+    bplus->insert(2, 2);
+    bplus->insert(11, 11);
+    bplus->insert(12, 12);
+    bplus->insert(6, 6);
+    bplus->insert(7, 7);
+    bplus->insert(8, 8);
+    bplus->insert(9, 9);
+    bplus->insert(21, 21);
+    bplus->insert(22, 21);
+    bplus->insert(23, 23);
+    bplus->insert(24, 24);
+    bplus->delete_pair(10);
+
+    ASSERT_TRUE(not_contains(10));
+    ASSERT_TRUE(minimum_size());
+    ASSERT_TRUE(is_concatenated(bplus->root_id, 16));
+    ASSERT_TRUE(is_ordered(bplus->root_id));
+    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(all_pages_unfixed());
+}
+
+TEST_F(BPlusTest, InsertAndDeleteRandom)
+{
+    std::random_device rd;
+    std::uniform_int_distribution<int64_t> dist(INT64_MIN + 1, INT64_MAX);
+    std::unordered_set<int64_t> unique_values;
+    int64_t values[100];
+
+    for (int i = 0; i < 100; i++)
+    {
+        int64_t value;
+        do
+        {
+            value = dist(rd);
+        } while (unique_values.count(value) > 0);
+
+        unique_values.insert(value);
+        values[i] = value;
+        logger->info("Inserting {}", value);
+        bplus->insert(value, value);
+    }
+
+    for (int i = 0; i < 100; i++)
+    {
+        ASSERT_EQ(bplus->get_value(values[i]), values[i]);
+    }
+    ASSERT_TRUE(is_concatenated(bplus->root_id, 100));
+    ASSERT_TRUE(is_ordered(bplus->root_id));
+    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(all_pages_unfixed());
+
+    for (int i = 0; i < 50; i++)
+    {
+        logger->info("Deleting {} at index {}", values[i], i);
+        bplus->delete_pair(values[i]);
+    }
+    for (int i = 0; i < 50; i++)
+    {
+        ASSERT_EQ(bplus->get_value(values[i]), INT64_MIN);
+    }
+    ASSERT_TRUE(is_concatenated(bplus->root_id, 50));
+    ASSERT_TRUE(is_ordered(bplus->root_id));
+    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(all_pages_unfixed());
+
+    unique_values.clear();
+    for (int i = 0; i < 50; i++)
+    {
+        int64_t value;
+        do
+        {
+            value = dist(rd);
+        } while (unique_values.count(value) > 0);
+
+        unique_values.insert(value);
+        values[i] = value;
+        bplus->insert(value, value);
+    }
+    for (int i = 0; i < 50; i++)
+    {
+        ASSERT_EQ(bplus->get_value(values[i]), values[i]);
+    }
+    ASSERT_TRUE(is_concatenated(bplus->root_id, 100));
+    ASSERT_TRUE(is_ordered(bplus->root_id));
+    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(all_pages_unfixed());
+
+    for (int i = 0; i < 100; i++)
+    {
+        bplus->delete_pair(values[i]);
+    }
+    for (int i = 0; i < 100; i++)
+    {
+        ASSERT_EQ(bplus->get_value(values[i]), INT64_MIN);
+    }
+    ASSERT_TRUE(is_ordered(bplus->root_id));
+    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(all_pages_unfixed());
+}
+
+TEST_F(BPlusTest, InsertDelteWithSeed42)
+{
+    std::mt19937 generator(42); // 42 is the seed value
+    std::uniform_int_distribution<int64_t> dist(-1000, 1000);
+    std::unordered_set<int64_t> unique_values;
+    int64_t values[100];
+
+    for (int i = 0; i < 100; i++)
+    {
+        int64_t value = dist(generator); // generate a random number
+
+        // Ensure we have a unique value, if not, generate another one
+        while (unique_values.count(value))
+        {
+            value = dist(generator);
+        }
+
+        unique_values.insert(value);
+        values[i] = value;
+        bplus->insert(value, value);
+    }
+
+    for (int i = 0; i < 100; i++)
+    {
+        logger->info("Deleting {} at index {}", values[i], i);
+        bplus->delete_pair(values[i]);
+        ASSERT_TRUE(is_ordered(bplus->root_id));
+        ASSERT_TRUE(is_balanced(bplus->root_id));
+        ASSERT_TRUE(all_pages_unfixed());
+    }
+}

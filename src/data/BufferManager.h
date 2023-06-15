@@ -98,6 +98,12 @@ public:
     void unfix_page(uint64_t page_id, bool dirty);
 
     /**
+     * @brief Marks a page dirty
+     * @param page_id The page id of the page that should be fixed
+     */
+    void mark_dirty(uint64_t page_id);
+
+    /**
      * @brief Function that needs to be called before exiting the program, saved all pages to the disc, important to be called before the storage manager is destroyed
      */
     void destroy();
