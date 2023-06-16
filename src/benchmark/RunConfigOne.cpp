@@ -22,6 +22,7 @@ void RunConfigOne::execute(bool benchmark)
 
         for (int i = 0; i < 100; i++)
         {
+            logger->info("Inserting"); 
             int64_t value = dist(generator); // generate a random number
 
             // Ensure we have a unique value, if not, generate another one
@@ -41,6 +42,7 @@ void RunConfigOne::execute(bool benchmark)
             logger->info("Deleting {} at index {}", values[i], i);
             tree.delete_pair(values[i]);
         }
+        db_manager.destroy(); 
     };
     this->benchmark.measure(run, benchmark);
 }

@@ -250,7 +250,8 @@ void StorageManager::find_next_free_space()
     next_free_space = free_space_map.find_next(next_free_space - 1);
     if (next_free_space == free_space_map.npos)
     {
+        int previous_size =  free_space_map.size();
         free_space_map.resize(free_space_map.size() + bitmap_increment, true);
-        next_free_space = free_space_map.find_next(next_free_space - 1);
+        next_free_space = free_space_map.find_next(previous_size - 1); 
     }
 }
