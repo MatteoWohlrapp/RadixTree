@@ -38,6 +38,22 @@ struct InnerNode
         assert(max_size > 2 && "Node size is too small");
     }
 
+    int binary_search(int64_t key)
+    {
+        int left = 0, right = current_index;
+
+        while (left < right)
+        {
+            int middle = left + (right - left) / 2;
+
+            if (keys[middle] < key)
+                left = middle + 1;
+            else
+                right = middle;
+        }
+        return left;
+    }
+
     /**
      * @brief Finds the next page specified by the key
      * @param key The key to the next page
@@ -45,16 +61,8 @@ struct InnerNode
      */
     uint64_t next_page(int64_t key)
     {
-        int index = 0;
-        while (index < current_index)
-        {
-            // If key is less than or equal to the current key, return child_id
-            if (key <= keys[index])
-            {
-                return child_ids[index];
-            }
-            index++;
-        }
+        int index = binary_search(key);
+
         return child_ids[index];
     }
 
@@ -67,19 +75,8 @@ struct InnerNode
     {
         assert(!is_full() && "Inserting into inner node when its full.");
         // find index where to insert
-        int index = 0;
+        int index = binary_search(key);;
 
-        while (index < current_index)
-        {
-            if (keys[index] < key)
-            {
-                index++;
-            }
-            else
-            {
-                break;
-            }
-        }
         // shift all keys bigger one space to the left
         for (int i = current_index; i > index; i--)
         {
@@ -119,16 +116,7 @@ struct InnerNode
     void delete_pair(int64_t key)
     {
         // we always delete key and the right child because the new elements will be in the left node from the key
-        int index = 0;
-
-        while (index < current_index)
-        {
-            if (keys[index] == key)
-            {
-                break;
-            }
-            index++;
-        }
+        int index = binary_search(key);;
 
         for (int i = index + 1; i < current_index; i++)
         {
@@ -158,18 +146,9 @@ struct InnerNode
      */
     bool contains(int64_t key)
     {
-        int index = 0;
+        int index = binary_search(key);;
 
-        while (index < current_index)
-        {
-            if (keys[index] == key)
-            {
-                break;
-            }
-            index++;
-        }
-
-        return index < current_index;
+        return index != current_index && keys[index] == key;
     }
 
     /**
@@ -179,16 +158,8 @@ struct InnerNode
      */
     void exchange(int64_t key, int64_t exchange_key)
     {
-        int index = 0;
-        while (index < current_index)
-        {
-            if (keys[index] == key)
-            {
-                keys[index] = exchange_key;
-                return;
-            }
-            index++;
-        }
+        int index = binary_search(key);
+        keys[index] = exchange_key;
     }
 
     /**
@@ -252,6 +223,22 @@ struct OuterNode
         next_lef_id = 0;
     }
 
+    int binary_search(int64_t key)
+    {
+        int left = 0, right = current_index;
+
+        while (left < right)
+        {
+            int middle = left + (right - left) / 2;
+
+            if (keys[middle] < key)
+                left = middle + 1;
+            else
+                right = middle;
+        }
+        return left;
+    }
+
     /**
      * @brief Ineserting a new key and value, can only insert when not full
      * @param key Key
@@ -261,19 +248,8 @@ struct OuterNode
     {
         assert(!is_full() && "Inserting into outer node when its full.");
         // find index where to insert
-        int index = 0;
-        while (index < current_index)
-        {
-            if (keys[index] < key)
-            {
-                index++;
-            }
-            else
-            {
-                break;
-            }
-        }
-
+        int index = binary_search(key);
+        
         // shift all keys bigger one space to the left
         for (int i = current_index; i > index; i--)
         {
@@ -293,17 +269,7 @@ struct OuterNode
      */
     void delete_pair(int64_t key)
     {
-        int index = 0;
-        while (index < current_index)
-        {
-            if (keys[index] == key)
-            {
-                break;
-            }
-            index++;
-        }
-
-        assert(index < max_size && "No element to delete");
+        int index = binary_search(key);
 
         for (int i = index + 1; i < current_index; i++)
         {
@@ -319,15 +285,13 @@ struct OuterNode
      */
     int64_t get_value(int64_t key)
     {
-        int index = 0;
-        while (index < current_index)
+        int index = binary_search(key);
+
+        if (index != current_index && keys[index] == key)
         {
-            if (keys[index] == key)
-            {
-                return values[index];
-            }
-            index++;
+            return values[index];
         }
+
         return INT64_MIN;
     }
 

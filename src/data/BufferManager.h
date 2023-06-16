@@ -42,6 +42,9 @@ private:
     /// how many pages will be stored in the buffer manager
     int buffer_size; 
 
+    /// the size of the page
+    int page_size; 
+
     /**
      * @brief Get a specific page from disc
      * @param page_id The page id of the page that should be retreived
@@ -61,9 +64,10 @@ public:
     /**
      * @brief Constructor for the Buffer Manager
      * @param storage_manager_arg A reference to the storage manager
-     * @param page_id The lowest page it that can be used from here
+     * @param buffer_size_arg The size of the buffer
+     * @param page_size_arg The size of the page that needs to be allocated
      */
-    BufferManager(std::shared_ptr<StorageManager> storage_manager_arg, int buffer_size_arg);
+    BufferManager(std::shared_ptr<StorageManager> storage_manager_arg, int buffer_size_arg, int page_size_arg);
 
     /**
      * @brief Request a page

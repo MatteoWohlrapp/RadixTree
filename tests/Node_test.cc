@@ -7,7 +7,7 @@ constexpr int node_test_size = 96;
 
 class NodeTest : public ::testing::Test
 {
-    friend class BPlus;
+    friend class BPlus<node_test_size>;
 
 protected:
     int buffer_size = 2;

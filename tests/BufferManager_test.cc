@@ -19,11 +19,11 @@ protected:
     {
         std::filesystem::remove(base_path / bitmap);
         std::filesystem::remove(base_path / data);
-        buffer_manager = std::make_unique<BufferManager>(std::make_shared<StorageManager>(base_path, page_size), buffer_size);
+        buffer_manager = std::make_unique<BufferManager>(std::make_shared<StorageManager>(base_path, page_size), buffer_size, page_size);
     }
 
     void overwrite_buffer_manager(){
-        buffer_manager = std::make_unique<BufferManager>(std::make_shared<StorageManager>(base_path, page_size), buffer_size);
+        buffer_manager = std::make_unique<BufferManager>(std::make_shared<StorageManager>(base_path, page_size), buffer_size, page_size);
     }
 
     int get_current_buffer_size()

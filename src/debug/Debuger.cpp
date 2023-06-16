@@ -12,7 +12,7 @@ Debuger::Debuger(std::shared_ptr<BufferManager> buffer_manager_arg) : buffer_man
 }
 
 // BFS
-void Debuger::traverse_tree(BPlus *tree)
+void Debuger::traverse_tree(BPlus<Configuration::page_size> *tree)
 {
     if (!tree)
     {
@@ -75,7 +75,7 @@ void Debuger::traverse_tree(BPlus *tree)
     logger->info("Finished traversing");
 }
 
-bool Debuger::are_all_child_ids_unique(BPlus *tree) {
+bool Debuger::are_all_child_ids_unique(BPlus<Configuration::page_size> *tree) {
     if (!tree)
     {
         logger->info("Empty tree");
@@ -114,7 +114,7 @@ bool Debuger::are_all_child_ids_unique(BPlus *tree) {
     return true;
 }
 
-bool Debuger::contains_key(BPlus *tree, uint64_t key) {
+bool Debuger::contains_key(BPlus<Configuration::page_size> *tree, uint64_t key) {
     if (!tree) {
         logger->info("Empty tree");
         return false; 

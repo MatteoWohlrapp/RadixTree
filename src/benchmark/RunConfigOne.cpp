@@ -18,7 +18,7 @@ void RunConfigOne::execute(bool benchmark)
         int64_t values[100];
 
         auto debuger = Debuger(db_manager.buffer_manager);
-        auto tree = BPlus(db_manager.buffer_manager);
+        auto tree = BPlus<Configuration::page_size>(db_manager.buffer_manager);
 
         for (int i = 0; i < 100; i++)
         {

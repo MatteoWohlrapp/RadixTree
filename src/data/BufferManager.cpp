@@ -6,7 +6,7 @@
 #include <random>
 
 
-BufferManager::BufferManager(std::shared_ptr<StorageManager> storage_manager_arg, int buffer_size_arg) : storage_manager(storage_manager_arg), buffer_size(buffer_size_arg)
+BufferManager::BufferManager(std::shared_ptr<StorageManager> storage_manager_arg, int buffer_size_arg, int page_size_arg) : storage_manager(storage_manager_arg), buffer_size(buffer_size_arg), page_size(page_size_arg)
 {
     logger = spdlog::get("logger");
     dist = std::uniform_int_distribution<int>(0, buffer_size);
@@ -53,7 +53,7 @@ Header *BufferManager::create_new_page()
     {
         // insert element in the buffer pool and save the index for the page id in the map
         // Frame size is page_size + 4 for the fix_count, the marker and the dirty flag
-        frame_address = (Frame *)malloc(Configuration::page_size + 4);
+        frame_address = (Frame *)malloc(page_size + 4);
         current_buffer_size++;
     }
     // fix page
@@ -142,7 +142,7 @@ void BufferManager::fetch_page_from_disk(uint64_t page_id)
     }
     else
     {
-        frame_address = (Frame *)malloc(Configuration::page_size + 4);
+        frame_address = (Frame *)malloc(page_size + 4);
         current_buffer_size++;
     }
     frame_address->fix_count = 0;

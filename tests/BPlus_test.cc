@@ -10,11 +10,11 @@ constexpr int node_test_size = 96;
 
 class BPlusTest : public ::testing::Test
 {
-    friend class BPlus;
+    friend class BPlus<node_test_size>;
     friend class BufferManager;
 
 protected:
-    std::unique_ptr<BPlus> bplus;
+    std::unique_ptr<BPlus<node_test_size>> bplus;
     std::shared_ptr<BufferManager> buffer_manager;
     std::filesystem::path base_path = "../tests/temp/";
     std::filesystem::path bitmap = "bitmap.bin";
@@ -26,8 +26,8 @@ protected:
     {
         std::filesystem::remove(base_path / bitmap);
         std::filesystem::remove(base_path / data);
-        buffer_manager = std::make_shared<BufferManager>(std::make_shared<StorageManager>(base_path, node_test_size), buffer_size);
-        bplus = std::make_unique<BPlus>(buffer_manager);
+        buffer_manager = std::make_shared<BufferManager>(std::make_shared<StorageManager>(base_path, node_test_size), buffer_size, node_test_size);
+        bplus = std::make_unique<BPlus<node_test_size>>(buffer_manager);
     }
 
     void TearDown() override
@@ -310,7 +310,7 @@ protected:
                 if (!current->inner)
                 {
                     std::ostringstream node;
-                    OuterNode<Configuration::page_size> *outer_node = (OuterNode<Configuration::page_size> *)current;
+                    OuterNode<node_test_size> *outer_node = (OuterNode<node_test_size> *)current;
                     node << "OuterNode:  " << outer_node->header.page_id << " {";
                     for (int j = 0; j < outer_node->current_index; j++)
                     {
@@ -328,7 +328,7 @@ protected:
                 else
                 {
                     std::ostringstream node;
-                    InnerNode<Configuration::page_size> *inner_node = (InnerNode<Configuration::page_size> *)current;
+                    InnerNode<node_test_size> *inner_node = (InnerNode<node_test_size> *)current;
                     node << "InnerNode: " << inner_node->header.page_id << " {";
                     node << " (Child_id: " << inner_node->child_ids[0] << ", ";
                     for (int j = 0; j < inner_node->current_index; j++)
