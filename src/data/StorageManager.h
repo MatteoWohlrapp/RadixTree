@@ -48,12 +48,12 @@ private:
 
     int current_page_count = 0;
 
-    int next_free_space = 1; 
+    int next_free_space = 1;
 
     /**
      * @brief Find the next free space in the bitmap and set the attribute
-    */
-    void find_next_free_space(); 
+     */
+    void find_next_free_space();
 
 public:
     friend class StorageManagerTest;
@@ -70,6 +70,12 @@ public:
      * @param header A pointer to the header (page) that contains the information that should be written to file
      */
     void save_page(Header *header);
+
+    /**
+     * @brief Deletes a page from disc
+     * @param page_id The unique identifier of the page that should be deleted
+     */
+    void delete_page(uint64_t page_id);
 
     /**
      * @brief Loads a page from disc

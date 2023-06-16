@@ -5,3 +5,4 @@ build/
 doxys_documentation/
 logs/
 tests/temp
+**/.DS_Store

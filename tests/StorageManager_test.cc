@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include "../src/data/StorageManager.h"
 #include "../src/Configuration.h"
+#include "../src/utils/File.h"
 
 class StorageManagerTest : public ::testing::Test
 {
@@ -34,6 +35,11 @@ protected:
     int get_next_free_space()
     {
         return storage_manager->next_free_space;
+    }
+
+    std::fstream *get_data_fs()
+    {
+        return &storage_manager->data_fs;
     }
 
     void overwrite_storage_manager()
@@ -238,7 +244,7 @@ TEST_F(StorageManagerTest, WritingBoundaries)
 TEST_F(StorageManagerTest, InsertHigherPagesThanInitialBitmapSize)
 {
     Header *header = (Header *)malloc(page_size);
-    header->page_id = page_size + 10;
+    header->page_id = page_size * 2 - 1;
     char *arr = (char *)header;
     arr[page_size - 2] = 1;
     arr[page_size - 1] = 2;
@@ -249,16 +255,16 @@ TEST_F(StorageManagerTest, InsertHigherPagesThanInitialBitmapSize)
 
     // Re-load the page and check if it was saved correctly
     Header *loaded_header = (Header *)malloc(page_size);
-    storage_manager->load_page(loaded_header, page_size + 10);
+    storage_manager->load_page(loaded_header, page_size * 2 - 1);
 
     // test for header properties
-    ASSERT_EQ(loaded_header->page_id, page_size + 10);
+    ASSERT_EQ(loaded_header->page_id, page_size * 2 - 1);
     arr = (char *)loaded_header;
     ASSERT_EQ(arr[page_size - 2], 1);
     ASSERT_EQ(arr[page_size - 1], 2);
-    // test if the bitmap at that position is set correctly 
-    ASSERT_EQ(get_free_space_map()[loaded_header->page_id], 0);  
-    ASSERT_EQ(get_next_free_space(), 1); 
+    // test if the bitmap at that position is set correctly
+    ASSERT_EQ(get_free_space_map()[loaded_header->page_id], 0);
+    ASSERT_EQ(get_next_free_space(), 1);
 }
 
 TEST_F(StorageManagerTest, CurrentPageCount)
@@ -312,4 +318,89 @@ TEST_F(StorageManagerTest, FirstFreeAfterSaving)
 
     ASSERT_EQ(storage_manager->get_unused_page_id(), 2);
     ASSERT_EQ(storage_manager->get_unused_page_id(), 4);
+}
+
+// check if deleting frees up space in the storage manager; once with
+TEST_F(StorageManagerTest, Delete)
+{
+    Header *header = (Header *)malloc(page_size);
+    header->page_id = 1;
+    storage_manager->save_page(header);
+
+    header->page_id = 2;
+    storage_manager->save_page(header);
+
+    header->page_id = 3;
+    storage_manager->save_page(header);
+
+    storage_manager->delete_page(1);
+    ASSERT_EQ(storage_manager->get_unused_page_id(), 1);
+
+    storage_manager->delete_page(3);
+    ASSERT_EQ(storage_manager->get_unused_page_id(), 3);
+
+    storage_manager->delete_page(2);
+    ASSERT_EQ(storage_manager->get_unused_page_id(), 2);
+}
+
+TEST_F(StorageManagerTest, DeleteOutOfBitmapSize)
+{
+    Header *header = (Header *)malloc(page_size);
+    header->page_id = 1;
+    storage_manager->save_page(header);
+
+    storage_manager->delete_page(1);
+
+    header->page_id = 2;
+    storage_manager->save_page(header);
+
+    header->page_id = 3;
+    storage_manager->save_page(header);
+
+    storage_manager->delete_page(1);
+    ASSERT_EQ(storage_manager->get_unused_page_id(), 1);
+
+    storage_manager->delete_page(3);
+    ASSERT_EQ(storage_manager->get_unused_page_id(), 3);
+
+    storage_manager->delete_page(2);
+    ASSERT_EQ(storage_manager->get_unused_page_id(), 2);
+}
+
+TEST_F(StorageManagerTest, ResiszingWhenDestroying)
+{
+    Header *header = (Header *)malloc(page_size);
+    // interesting size because boundary of page size
+    header->page_id = page_size * 2 - 1;
+    storage_manager->save_page(header);
+    storage_manager->destroy(); 
+
+    overwrite_storage_manager();
+
+    Header* loaded_header = (Header *)malloc(page_size);
+    storage_manager->load_page(loaded_header, page_size * 2 - 1); 
+    ASSERT_EQ(loaded_header->page_id, page_size * 2 - 1); 
+
+    header->page_id = 1;
+    storage_manager->save_page(header);
+    storage_manager->delete_page(page_size * 2 - 1);
+    storage_manager->destroy();
+
+    overwrite_storage_manager();
+
+    ASSERT_EQ(get_free_space_map().size(), 8);
+    ASSERT_EQ(File::get_file_size(get_data_fs()), 8 * page_size);
+
+    header->page_id = 9;
+    storage_manager->save_page(header);
+    storage_manager->destroy();
+
+    overwrite_storage_manager();
+
+    storage_manager->load_page(loaded_header, 9);
+
+    ASSERT_EQ(loaded_header->page_id, 9);
+    ASSERT_EQ(get_free_space_map().size(), 16);
+    // smaller than size of bitmap, and 10 pages -> 0-9
+    ASSERT_EQ(File::get_file_size(get_data_fs()), 10 * page_size);
 }

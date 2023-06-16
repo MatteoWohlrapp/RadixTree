@@ -6,30 +6,40 @@
 
 #include <iostream>
 #include <unistd.h>
+#include <unordered_set>
 
 void RunConfigOne::execute(bool benchmark)
 {
     auto run = [this]
     {
-        std::random_device rd;
-        std::uniform_int_distribution<int64_t> dist = std::uniform_int_distribution<int64_t>(INT64_MIN + 1, INT64_MAX);
+        std::mt19937 generator(42); // 42 is the seed value
+        std::uniform_int_distribution<int64_t> dist(-1000, 1000);
+        std::unordered_set<int64_t> unique_values;
+        int64_t values[100];
 
         auto debuger = Debuger(db_manager.buffer_manager);
-        auto tree = BPlus(db_manager.buffer_manager);
-        int64_t values[10];
-        for (int i = 0; i < 10; i++)
+        auto tree = BPlus<Configuration::page_size>(db_manager.buffer_manager);
+
+        for (int i = 0; i < 100; i++)
         {
-            int64_t value = dist(rd);
+            int64_t value = dist(generator); // generate a random number
+
+            // Ensure we have a unique value, if not, generate another one
+            while (unique_values.count(value))
+            {
+                value = dist(generator);
+            }
+
+            unique_values.insert(value);
             values[i] = value;
-            logger->info("Inserting {}", value);
             tree.insert(value, value);
-            debuger.traverse_tree(&tree);
         }
 
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 100; i++)
         {
-            auto value = tree.get_value(values[i]);
-            logger->info("Get value is equal {}, actual {}, expected {}", value == values[i], value, values[i]);
+            debuger.traverse_tree(&tree);
+            logger->info("Deleting {} at index {}", values[i], i);
+            tree.delete_pair(values[i]);
         }
     };
     this->benchmark.measure(run, benchmark);

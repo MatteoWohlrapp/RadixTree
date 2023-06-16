@@ -42,6 +42,9 @@ private:
     /// how many pages will be stored in the buffer manager
     int buffer_size; 
 
+    /// the size of the page
+    int page_size; 
+
     /**
      * @brief Get a specific page from disc
      * @param page_id The page id of the page that should be retreived
@@ -61,9 +64,10 @@ public:
     /**
      * @brief Constructor for the Buffer Manager
      * @param storage_manager_arg A reference to the storage manager
-     * @param page_id The lowest page it that can be used from here
+     * @param buffer_size_arg The size of the buffer
+     * @param page_size_arg The size of the page that needs to be allocated
      */
-    BufferManager(std::shared_ptr<StorageManager> storage_manager_arg, int buffer_size_arg);
+    BufferManager(std::shared_ptr<StorageManager> storage_manager_arg, int buffer_size_arg, int page_size_arg);
 
     /**
      * @brief Request a page
@@ -96,6 +100,12 @@ public:
      * @param dirty Specifies if the page corresponding to page_id has been modified
      */
     void unfix_page(uint64_t page_id, bool dirty);
+
+    /**
+     * @brief Marks a page dirty
+     * @param page_id The page id of the page that should be fixed
+     */
+    void mark_dirty(uint64_t page_id);
 
     /**
      * @brief Function that needs to be called before exiting the program, saved all pages to the disc, important to be called before the storage manager is destroyed
