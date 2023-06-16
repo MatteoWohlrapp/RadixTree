@@ -20,6 +20,7 @@ void BufferManager::destroy()
         if (pair.second->dirty)
         {
             storage_manager->save_page(&pair.second->header);
+            free(pair.second);
         }
     }
 }
@@ -53,7 +54,7 @@ Header *BufferManager::create_new_page()
     {
         // insert element in the buffer pool and save the index for the page id in the map
         // Frame size is page_size + 4 for the fix_count, the marker and the dirty flag
-        frame_address = (Frame *)malloc(page_size + 4);
+        frame_address = (Frame *)malloc(page_size + 8);
         current_buffer_size++;
     }
     // fix page
@@ -73,9 +74,10 @@ void BufferManager::delete_page(uint64_t page_id)
     if (it != page_id_map.end())
     {
         assert(it->second->fix_count == 0 && "Fix count is not zero when deleting");
-        storage_manager->delete_page(it->second->header.page_id);
-        page_id_map.erase(it->first);
-        free(it->second); 
+        Frame* temp = it->second;
+        page_id_map.erase(it);
+        storage_manager->delete_page(temp->header.page_id);
+        free(temp);
         current_buffer_size--; 
     }
 }
@@ -142,7 +144,7 @@ void BufferManager::fetch_page_from_disk(uint64_t page_id)
     }
     else
     {
-        frame_address = (Frame *)malloc(page_size + 4);
+        frame_address = (Frame *)malloc(page_size + 8);
         current_buffer_size++;
     }
     frame_address->fix_count = 0;

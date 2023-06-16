@@ -704,7 +704,6 @@ public:
     void insert(int64_t key, int64_t value)
     {
         recursive_insert(buffer_manager->request_page(root_id), key, value);
-        buffer_manager->destroy();
     }
 
     /**
@@ -714,7 +713,6 @@ public:
     void delete_pair(int64_t key)
     {
         recursive_delete(buffer_manager->request_page(root_id), key);
-        buffer_manager->destroy();
     }
 
     /**
