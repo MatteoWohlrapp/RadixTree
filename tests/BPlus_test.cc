@@ -51,20 +51,20 @@ protected:
 
     bool is_balanced(uint64_t root_id)
     {
-        Header *root = buffer_manager->request_page(root_id);
+        BHeader *root = buffer_manager->request_page(root_id);
         buffer_manager->unfix_page(root_id, false);
         int balanced = recursive_is_balanced(root);
         return balanced != -1;
     }
 
-    int recursive_is_balanced(Header *header)
+    int recursive_is_balanced(BHeader *header)
     {
         auto page_id = header->page_id;
 
         if (!header->inner)
             return 1;
 
-        InnerNode<node_test_size> *node = (InnerNode<node_test_size> *)header;
+        BInnerNode<node_test_size> *node = (BInnerNode<node_test_size> *)header;
 
         auto current_index = node->current_index;
         uint64_t child_ids[current_index + 1];
@@ -76,7 +76,7 @@ protected:
         int depth = 1;
         if (current_index > 0)
         {
-            Header *child_header = buffer_manager->request_page(child_ids[0]);
+            BHeader *child_header = buffer_manager->request_page(child_ids[0]);
             buffer_manager->unfix_page(child_ids[0], false);
             depth = recursive_is_balanced(child_header);
 
@@ -96,19 +96,19 @@ protected:
 
     bool is_ordered(uint64_t root_id)
     {
-        Header *root = buffer_manager->request_page(root_id);
+        BHeader *root = buffer_manager->request_page(root_id);
         buffer_manager->unfix_page(root_id, false);
         bool ordered = recursive_is_ordered(root);
         return ordered;
     }
 
-    bool recursive_is_ordered(Header *header)
+    bool recursive_is_ordered(BHeader *header)
     {
         logger->debug("Recursive is ordered for page {}", header->page_id);
         if (!header->inner)
             return true;
 
-        InnerNode<node_test_size> *node = (InnerNode<node_test_size> *)header;
+        BInnerNode<node_test_size> *node = (BInnerNode<node_test_size> *)header;
         auto id = node->header.page_id;
         auto current_index = node->current_index;
         uint64_t child_ids[current_index + 1];
@@ -131,7 +131,7 @@ protected:
                 return false;
         }
 
-        Header *child_header;
+        BHeader *child_header;
         for (int i = 0; i <= current_index; i++)
         {
             logger->debug("Ordered for node {}, child {}, index {}", id, child_ids[i], i);
@@ -148,11 +148,11 @@ protected:
     bool smaller_or_equal(uint64_t page_id, int64_t key)
     {
         logger->debug("Smaller or Equal for {}, with key {}", page_id, key);
-        Header *header = buffer_manager->request_page(page_id);
+        BHeader *header = buffer_manager->request_page(page_id);
         if (!header->inner)
         {
             buffer_manager->unfix_page(page_id, false);
-            OuterNode<node_test_size> *node = (OuterNode<node_test_size> *)header;
+            BOuterNode<node_test_size> *node = (BOuterNode<node_test_size> *)header;
 
             for (int i = 0; i < node->current_index; i++)
             {
@@ -164,7 +164,7 @@ protected:
             return true;
         }
 
-        InnerNode<node_test_size> *node = (InnerNode<node_test_size> *)header;
+        BInnerNode<node_test_size> *node = (BInnerNode<node_test_size> *)header;
         auto current_index = node->current_index;
         uint64_t child_ids[current_index + 1];
         for (int i = 0; i <= current_index; i++)
@@ -194,11 +194,11 @@ protected:
     bool bigger(uint64_t page_id, int64_t key)
     {
         logger->debug("Bigger for {}, with key {}", page_id, key);
-        Header *header = buffer_manager->request_page(page_id);
+        BHeader *header = buffer_manager->request_page(page_id);
         if (!header->inner)
         {
             buffer_manager->unfix_page(page_id, false);
-            OuterNode<node_test_size> *node = (OuterNode<node_test_size> *)header;
+            BOuterNode<node_test_size> *node = (BOuterNode<node_test_size> *)header;
 
             for (int i = 0; i < node->current_index; i++)
             {
@@ -210,7 +210,7 @@ protected:
             return true;
         }
 
-        InnerNode<node_test_size> *node = (InnerNode<node_test_size> *)header;
+        BInnerNode<node_test_size> *node = (BInnerNode<node_test_size> *)header;
         auto current_index = node->current_index;
         uint64_t child_ids[current_index + 1];
         for (int i = 0; i <= current_index; i++)
@@ -241,13 +241,13 @@ protected:
     {
         uint64_t page_id = find_leftmost(root_id);
         logger->debug("Leftmost: {}", page_id);
-        Header *header;
-        OuterNode<node_test_size> *node;
+        BHeader *header;
+        BOuterNode<node_test_size> *node;
         int count = 0;
         while (page_id != 0)
         {
             header = buffer_manager->request_page(page_id);
-            node = (OuterNode<node_test_size> *)header;
+            node = (BOuterNode<node_test_size> *)header;
             buffer_manager->unfix_page(page_id, false);
             logger->debug("Page: {}", page_id);
             page_id = node->next_lef_id;
@@ -276,20 +276,20 @@ protected:
 
     uint64_t find_leftmost(uint64_t page_id)
     {
-        Header *header = buffer_manager->request_page(page_id);
+        BHeader *header = buffer_manager->request_page(page_id);
         if (!header->inner)
         {
             buffer_manager->unfix_page(page_id, false);
             return header->page_id;
         }
 
-        InnerNode<node_test_size> *node = (InnerNode<node_test_size> *)header;
+        BInnerNode<node_test_size> *node = (BInnerNode<node_test_size> *)header;
         auto child_id = node->child_ids[0];
         buffer_manager->unfix_page(page_id, false);
         return find_leftmost(child_id);
     }
 
-    bool all(std::function<bool(Header *)> predicate)
+    bool all(std::function<bool(BHeader *)> predicate)
     {
         std::queue<uint64_t> nodes_queue;
         nodes_queue.push(bplus->root_id);
@@ -305,13 +305,13 @@ protected:
             {
                 uint64_t current_id = nodes_queue.front();
                 nodes_queue.pop();
-                Header *current = buffer_manager->request_page(current_id);
+                BHeader *current = buffer_manager->request_page(current_id);
 
                 if (!current->inner)
                 {
                     std::ostringstream node;
-                    OuterNode<node_test_size> *outer_node = (OuterNode<node_test_size> *)current;
-                    node << "OuterNode:  " << outer_node->header.page_id << " {";
+                    BOuterNode<node_test_size> *outer_node = (BOuterNode<node_test_size> *)current;
+                    node << "BOuterNode:  " << outer_node->header.page_id << " {";
                     for (int j = 0; j < outer_node->current_index; j++)
                     {
                         node << " (Key: " << outer_node->keys[j] << ", Value: " << outer_node->values[j] << ")";
@@ -328,8 +328,8 @@ protected:
                 else
                 {
                     std::ostringstream node;
-                    InnerNode<node_test_size> *inner_node = (InnerNode<node_test_size> *)current;
-                    node << "InnerNode: " << inner_node->header.page_id << " {";
+                    BInnerNode<node_test_size> *inner_node = (BInnerNode<node_test_size> *)current;
+                    node << "BInnerNode: " << inner_node->header.page_id << " {";
                     node << " (Child_id: " << inner_node->child_ids[0] << ", ";
                     for (int j = 0; j < inner_node->current_index; j++)
                     {
@@ -361,18 +361,18 @@ protected:
 
     bool minimum_size()
     {
-        std::function<bool(Header *)> predicate = [this](Header *header)
+        std::function<bool(BHeader *)> predicate = [this](BHeader *header)
         {
             if (header->inner)
             {
-                InnerNode<node_test_size> *inner = (InnerNode<node_test_size> *)header;
+                BInnerNode<node_test_size> *inner = (BInnerNode<node_test_size> *)header;
                 if (bplus->root_id == header->page_id)
                     return inner->current_index > 0;
                 return !inner->is_too_empty();
             }
             else
             {
-                OuterNode<node_test_size> *outer = (OuterNode<node_test_size> *)header;
+                BOuterNode<node_test_size> *outer = (BOuterNode<node_test_size> *)header;
                 if (bplus->root_id == header->page_id)
                     return true;
                 return !outer->is_too_empty();
@@ -383,16 +383,16 @@ protected:
 
     bool not_contains(int64_t key)
     {
-        std::function<bool(Header *)> predicate = [&key](Header *header)
+        std::function<bool(BHeader *)> predicate = [&key](BHeader *header)
         {
             if (header->inner)
             {
-                InnerNode<node_test_size> *inner = (InnerNode<node_test_size> *)header;
+                BInnerNode<node_test_size> *inner = (BInnerNode<node_test_size> *)header;
                 return !inner->contains(key);
             }
             else
             {
-                OuterNode<node_test_size> *outer = (OuterNode<node_test_size> *)header;
+                BOuterNode<node_test_size> *outer = (BOuterNode<node_test_size> *)header;
                 return outer->get_value(key) == INT64_MIN;
             }
         };
@@ -403,30 +403,30 @@ protected:
 // Test the controll functions for insert
 TEST_F(BPlusTest, BalanceCorrect)
 {
-    Header *header = buffer_manager->create_new_page();
+    BHeader *header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(2, true);
-    InnerNode<node_test_size> *inner = new (header) InnerNode<node_test_size>();
+    BInnerNode<node_test_size> *inner = new (header) BInnerNode<node_test_size>();
     inner->child_ids[0] = 3;
     inner->child_ids[1] = 4;
     inner->current_index++;
 
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(3, true);
-    inner = new (header) InnerNode<node_test_size>();
+    inner = new (header) BInnerNode<node_test_size>();
     inner->child_ids[0] = 5;
     inner->child_ids[1] = 5;
     inner->current_index++;
 
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(4, true);
-    inner = new (header) InnerNode<node_test_size>();
+    inner = new (header) BInnerNode<node_test_size>();
     inner->child_ids[0] = 5;
     inner->child_ids[1] = 5;
     inner->current_index++;
 
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(5, true);
-    OuterNode<node_test_size> *outer = new (header) OuterNode<node_test_size>();
+    BOuterNode<node_test_size> *outer = new (header) BOuterNode<node_test_size>();
 
     ASSERT_TRUE(is_balanced(2));
     ASSERT_TRUE(all_pages_unfixed());
@@ -434,27 +434,27 @@ TEST_F(BPlusTest, BalanceCorrect)
 
 TEST_F(BPlusTest, BalanceIncorrect)
 {
-    Header *header = buffer_manager->create_new_page();
+    BHeader *header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(2, true);
-    InnerNode<node_test_size> *inner = new (header) InnerNode<node_test_size>();
+    BInnerNode<node_test_size> *inner = new (header) BInnerNode<node_test_size>();
     inner->child_ids[0] = 3;
     inner->child_ids[1] = 4;
     inner->current_index++;
 
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(3, true);
-    inner = new (header) InnerNode<node_test_size>();
+    inner = new (header) BInnerNode<node_test_size>();
     inner->child_ids[0] = 5;
     inner->child_ids[1] = 5;
     inner->current_index++;
 
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(4, true);
-    inner = new (header) InnerNode<node_test_size>();
+    inner = new (header) BInnerNode<node_test_size>();
 
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(5, true);
-    OuterNode<node_test_size> *outer = new (header) OuterNode<node_test_size>();
+    BOuterNode<node_test_size> *outer = new (header) BOuterNode<node_test_size>();
 
     ASSERT_FALSE(is_balanced(2));
     ASSERT_TRUE(all_pages_unfixed());
@@ -463,9 +463,9 @@ TEST_F(BPlusTest, BalanceIncorrect)
 TEST_F(BPlusTest, OrderCorrect)
 {
     // root
-    Header *header = buffer_manager->create_new_page();
+    BHeader *header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(2, true);
-    InnerNode<node_test_size> *inner = new (header) InnerNode<node_test_size>();
+    BInnerNode<node_test_size> *inner = new (header) BInnerNode<node_test_size>();
     inner->keys[0] = 10;
     inner->child_ids[0] = 3;
     inner->child_ids[1] = 4;
@@ -474,7 +474,7 @@ TEST_F(BPlusTest, OrderCorrect)
     // left
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(3, true);
-    inner = new (header) InnerNode<node_test_size>();
+    inner = new (header) BInnerNode<node_test_size>();
     inner->keys[0] = 5;
     inner->child_ids[0] = 5;
     inner->child_ids[1] = 6;
@@ -483,7 +483,7 @@ TEST_F(BPlusTest, OrderCorrect)
     // right
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(4, true);
-    inner = new (header) InnerNode<node_test_size>();
+    inner = new (header) BInnerNode<node_test_size>();
     inner->keys[0] = 15;
     inner->child_ids[0] = 7;
     inner->child_ids[1] = 8;
@@ -492,7 +492,7 @@ TEST_F(BPlusTest, OrderCorrect)
     // first outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(5, true);
-    OuterNode<node_test_size> *outer = new (header) OuterNode<node_test_size>();
+    BOuterNode<node_test_size> *outer = new (header) BOuterNode<node_test_size>();
     outer->keys[0] = 1;
     outer->current_index++;
     outer->next_lef_id = 6;
@@ -500,7 +500,7 @@ TEST_F(BPlusTest, OrderCorrect)
     // second outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(6, true);
-    outer = new (header) OuterNode<node_test_size>();
+    outer = new (header) BOuterNode<node_test_size>();
     outer->keys[0] = 9;
     outer->current_index++;
     outer->next_lef_id = 7;
@@ -508,7 +508,7 @@ TEST_F(BPlusTest, OrderCorrect)
     // third outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(7, true);
-    outer = new (header) OuterNode<node_test_size>();
+    outer = new (header) BOuterNode<node_test_size>();
     outer->keys[0] = 15;
     outer->current_index++;
     outer->next_lef_id = 8;
@@ -516,7 +516,7 @@ TEST_F(BPlusTest, OrderCorrect)
     // fourth outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(8, true);
-    outer = new (header) OuterNode<node_test_size>();
+    outer = new (header) BOuterNode<node_test_size>();
     outer->keys[0] = 21;
     outer->current_index++;
     outer->next_lef_id = 0;
@@ -530,9 +530,9 @@ TEST_F(BPlusTest, OrderCorrect)
 TEST_F(BPlusTest, OrderIncorrectAtLeaf)
 {
     // root
-    Header *header = buffer_manager->create_new_page();
+    BHeader *header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(2, true);
-    InnerNode<node_test_size> *inner = new (header) InnerNode<node_test_size>();
+    BInnerNode<node_test_size> *inner = new (header) BInnerNode<node_test_size>();
     inner->keys[0] = 10;
     inner->child_ids[0] = 3;
     inner->child_ids[1] = 4;
@@ -541,7 +541,7 @@ TEST_F(BPlusTest, OrderIncorrectAtLeaf)
     // left
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(3, true);
-    inner = new (header) InnerNode<node_test_size>();
+    inner = new (header) BInnerNode<node_test_size>();
     inner->keys[0] = 5;
     inner->child_ids[0] = 5;
     inner->child_ids[1] = 6;
@@ -550,7 +550,7 @@ TEST_F(BPlusTest, OrderIncorrectAtLeaf)
     // right
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(4, true);
-    inner = new (header) InnerNode<node_test_size>();
+    inner = new (header) BInnerNode<node_test_size>();
     inner->keys[0] = 15;
     inner->child_ids[0] = 7;
     inner->child_ids[1] = 8;
@@ -559,7 +559,7 @@ TEST_F(BPlusTest, OrderIncorrectAtLeaf)
     // first outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(5, true);
-    OuterNode<node_test_size> *outer = new (header) OuterNode<node_test_size>();
+    BOuterNode<node_test_size> *outer = new (header) BOuterNode<node_test_size>();
     outer->keys[0] = 1;
     outer->current_index++;
     outer->next_lef_id = 6;
@@ -567,7 +567,7 @@ TEST_F(BPlusTest, OrderIncorrectAtLeaf)
     // second outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(6, true);
-    outer = new (header) OuterNode<node_test_size>();
+    outer = new (header) BOuterNode<node_test_size>();
     outer->keys[0] = 9;
     outer->current_index++;
     outer->next_lef_id = 7;
@@ -575,7 +575,7 @@ TEST_F(BPlusTest, OrderIncorrectAtLeaf)
     // third outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(7, true);
-    outer = new (header) OuterNode<node_test_size>();
+    outer = new (header) BOuterNode<node_test_size>();
     outer->keys[0] = 9;
     outer->current_index++;
     outer->next_lef_id = 0;
@@ -583,7 +583,7 @@ TEST_F(BPlusTest, OrderIncorrectAtLeaf)
     // fourth outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(8, true);
-    outer = new (header) OuterNode<node_test_size>();
+    outer = new (header) BOuterNode<node_test_size>();
     outer->keys[0] = 21;
     outer->current_index++;
 
@@ -596,9 +596,9 @@ TEST_F(BPlusTest, OrderIncorrectAtLeaf)
 TEST_F(BPlusTest, OrderIncorrectInner)
 {
     // root
-    Header *header = buffer_manager->create_new_page();
+    BHeader *header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(2, false);
-    InnerNode<node_test_size> *inner = new (header) InnerNode<node_test_size>();
+    BInnerNode<node_test_size> *inner = new (header) BInnerNode<node_test_size>();
     inner->keys[0] = 10;
     inner->child_ids[0] = 3;
     inner->child_ids[1] = 4;
@@ -607,7 +607,7 @@ TEST_F(BPlusTest, OrderIncorrectInner)
     // left
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(3, false);
-    inner = new (header) InnerNode<node_test_size>();
+    inner = new (header) BInnerNode<node_test_size>();
     inner->keys[0] = 11;
     inner->child_ids[0] = 5;
     inner->child_ids[1] = 6;
@@ -616,7 +616,7 @@ TEST_F(BPlusTest, OrderIncorrectInner)
     // right
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(4, false);
-    inner = new (header) InnerNode<node_test_size>();
+    inner = new (header) BInnerNode<node_test_size>();
     inner->keys[0] = 15;
     inner->child_ids[0] = 7;
     inner->child_ids[1] = 8;
@@ -625,28 +625,28 @@ TEST_F(BPlusTest, OrderIncorrectInner)
     // first outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(5, false);
-    OuterNode<node_test_size> *outer = new (header) OuterNode<node_test_size>();
+    BOuterNode<node_test_size> *outer = new (header) BOuterNode<node_test_size>();
     outer->keys[0] = 1;
     outer->current_index++;
 
     // second outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(6, false);
-    outer = new (header) OuterNode<node_test_size>();
+    outer = new (header) BOuterNode<node_test_size>();
     outer->keys[0] = 9;
     outer->current_index++;
 
     // third outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(7, false);
-    outer = new (header) OuterNode<node_test_size>();
+    outer = new (header) BOuterNode<node_test_size>();
     outer->keys[0] = 15;
     outer->current_index++;
 
     // fourth outer
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(8, false);
-    outer = new (header) OuterNode<node_test_size>();
+    outer = new (header) BOuterNode<node_test_size>();
     outer->keys[0] = 21;
     outer->current_index++;
 
@@ -671,7 +671,7 @@ TEST_F(BPlusTest, CorrectRootNodeType)
 
 TEST_F(BPlusTest, EmptyAtBeginning)
 {
-    OuterNode<node_test_size> *node = (OuterNode<node_test_size> *)buffer_manager->request_page(get_root_id());
+    BOuterNode<node_test_size> *node = (BOuterNode<node_test_size> *)buffer_manager->request_page(get_root_id());
 
     ASSERT_EQ(node->current_index, 0);
 }
@@ -830,7 +830,7 @@ TEST_F(BPlusTest, NotMinimumSizeInnerRoot)
 
     ASSERT_TRUE(minimum_size());
 
-    InnerNode<node_test_size> *node = (InnerNode<node_test_size> *)buffer_manager->request_page(bplus->root_id);
+    BInnerNode<node_test_size> *node = (BInnerNode<node_test_size> *)buffer_manager->request_page(bplus->root_id);
     node->current_index = 0;
     buffer_manager->unfix_page(node->header.page_id, true);
 
@@ -848,9 +848,9 @@ TEST_F(BPlusTest, NotMinimumSizeInnerChild)
 
     ASSERT_TRUE(minimum_size());
 
-    InnerNode<node_test_size> *node = (InnerNode<node_test_size> *)buffer_manager->request_page(bplus->root_id);
+    BInnerNode<node_test_size> *node = (BInnerNode<node_test_size> *)buffer_manager->request_page(bplus->root_id);
     buffer_manager->unfix_page(node->header.page_id, false);
-    node = (InnerNode<node_test_size> *)buffer_manager->request_page(node->child_ids[0]);
+    node = (BInnerNode<node_test_size> *)buffer_manager->request_page(node->child_ids[0]);
     node->current_index = 0;
     buffer_manager->unfix_page(node->header.page_id, true);
 
@@ -868,7 +868,7 @@ TEST_F(BPlusTest, NotMinimumSizeLeaf)
     ASSERT_TRUE(minimum_size());
 
     auto leftmost = find_leftmost(bplus->root_id);
-    OuterNode<node_test_size> *node = (OuterNode<node_test_size> *)buffer_manager->request_page(leftmost);
+    BOuterNode<node_test_size> *node = (BOuterNode<node_test_size> *)buffer_manager->request_page(leftmost);
     node->current_index = 0;
     buffer_manager->unfix_page(node->header.page_id, true);
 

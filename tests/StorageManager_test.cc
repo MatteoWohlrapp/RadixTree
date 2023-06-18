@@ -58,7 +58,7 @@ TEST_F(StorageManagerTest, FolderInitialization)
 TEST_F(StorageManagerTest, BitmapSavingAndLoading)
 {
 
-    Header *header = (Header *)malloc(page_size);
+    BHeader *header = (BHeader *)malloc(page_size);
     header->page_id = 1;
 
     storage_manager->save_page(header);
@@ -81,7 +81,7 @@ TEST_F(StorageManagerTest, BitmapSavingAndLoading)
 
 TEST_F(StorageManagerTest, SaveAndLoadNewPage)
 {
-    Header *header = (Header *)malloc(page_size);
+    BHeader *header = (BHeader *)malloc(page_size);
     header->page_id = 1;
     header->inner = true;
 
@@ -94,7 +94,7 @@ TEST_F(StorageManagerTest, SaveAndLoadNewPage)
     storage_manager->save_page(header);
 
     // Re-load the page and check if it was saved correctly
-    Header *loaded_header = (Header *)malloc(page_size);
+    BHeader *loaded_header = (BHeader *)malloc(page_size);
     storage_manager->load_page(loaded_header, 1);
 
     // test for header properties
@@ -108,7 +108,7 @@ TEST_F(StorageManagerTest, SaveAndLoadNewPage)
 
 TEST_F(StorageManagerTest, SaveAndLoadNewPageFromMemory)
 {
-    Header *header = (Header *)malloc(page_size);
+    BHeader *header = (BHeader *)malloc(page_size);
     header->page_id = 1;
     header->inner = true;
 
@@ -124,7 +124,7 @@ TEST_F(StorageManagerTest, SaveAndLoadNewPageFromMemory)
     overwrite_storage_manager();
 
     // Re-load the page and check if it was saved correctly
-    Header *loaded_header = (Header *)malloc(page_size);
+    BHeader *loaded_header = (BHeader *)malloc(page_size);
     storage_manager->load_page(loaded_header, 1);
 
     // test for header properties
@@ -138,7 +138,7 @@ TEST_F(StorageManagerTest, SaveAndLoadNewPageFromMemory)
 
 TEST_F(StorageManagerTest, OverwritePageThenInsertNewThenOverwritePage)
 {
-    Header *header = (Header *)malloc(page_size);
+    BHeader *header = (BHeader *)malloc(page_size);
     header->page_id = 1;
     header->inner = true;
 
@@ -160,7 +160,7 @@ TEST_F(StorageManagerTest, OverwritePageThenInsertNewThenOverwritePage)
 
     // Re-load the page and check if the changes were overwritten correctly
     // If saving new property works was shown before
-    Header *loaded_header = (Header *)malloc(page_size);
+    BHeader *loaded_header = (BHeader *)malloc(page_size);
     storage_manager->load_page(loaded_header, 1);
 
     // test for page id
@@ -213,7 +213,7 @@ TEST_F(StorageManagerTest, OverwritePageThenInsertNewThenOverwritePage)
 
 TEST_F(StorageManagerTest, WritingBoundaries)
 {
-    Header *header = (Header *)malloc(page_size);
+    BHeader *header = (BHeader *)malloc(page_size);
     header->page_id = 2;
 
     // cast to char array and fill latest two bytes with values to check later
@@ -230,7 +230,7 @@ TEST_F(StorageManagerTest, WritingBoundaries)
 
     // Re-load the page and check if the changes were overwritten correctly
     // If saving new property works was shown before
-    Header *loaded_header = (Header *)malloc(page_size);
+    BHeader *loaded_header = (BHeader *)malloc(page_size);
     storage_manager->load_page(loaded_header, 2);
 
     // test for page id
@@ -243,7 +243,7 @@ TEST_F(StorageManagerTest, WritingBoundaries)
 
 TEST_F(StorageManagerTest, InsertHigherPagesThanInitialBitmapSize)
 {
-    Header *header = (Header *)malloc(page_size);
+    BHeader *header = (BHeader *)malloc(page_size);
     header->page_id = page_size * 2 - 1;
     char *arr = (char *)header;
     arr[page_size - 2] = 1;
@@ -254,7 +254,7 @@ TEST_F(StorageManagerTest, InsertHigherPagesThanInitialBitmapSize)
     overwrite_storage_manager();
 
     // Re-load the page and check if it was saved correctly
-    Header *loaded_header = (Header *)malloc(page_size);
+    BHeader *loaded_header = (BHeader *)malloc(page_size);
     storage_manager->load_page(loaded_header, page_size * 2 - 1);
 
     // test for header properties
@@ -272,7 +272,7 @@ TEST_F(StorageManagerTest, CurrentPageCount)
 
     ASSERT_EQ(get_current_page_count(), 0);
 
-    Header *header = (Header *)malloc(page_size);
+    BHeader *header = (BHeader *)malloc(page_size);
     header->page_id = 1;
 
     // save the page to the file
@@ -295,7 +295,7 @@ TEST_F(StorageManagerTest, CurrentPageCount)
 
 TEST_F(StorageManagerTest, UniqueIdAfterSaving)
 {
-    Header *header = (Header *)malloc(page_size);
+    BHeader *header = (BHeader *)malloc(page_size);
     header->page_id = 1;
     storage_manager->save_page(header);
 
@@ -309,7 +309,7 @@ TEST_F(StorageManagerTest, UniqueIdAfterSaving)
 
 TEST_F(StorageManagerTest, FirstFreeAfterSaving)
 {
-    Header *header = (Header *)malloc(page_size);
+    BHeader *header = (BHeader *)malloc(page_size);
     header->page_id = 1;
     storage_manager->save_page(header);
 
@@ -323,7 +323,7 @@ TEST_F(StorageManagerTest, FirstFreeAfterSaving)
 // check if deleting frees up space in the storage manager; once with
 TEST_F(StorageManagerTest, Delete)
 {
-    Header *header = (Header *)malloc(page_size);
+    BHeader *header = (BHeader *)malloc(page_size);
     header->page_id = 1;
     storage_manager->save_page(header);
 
@@ -345,7 +345,7 @@ TEST_F(StorageManagerTest, Delete)
 
 TEST_F(StorageManagerTest, DeleteOutOfBitmapSize)
 {
-    Header *header = (Header *)malloc(page_size);
+    BHeader *header = (BHeader *)malloc(page_size);
     header->page_id = 1;
     storage_manager->save_page(header);
 
@@ -369,7 +369,7 @@ TEST_F(StorageManagerTest, DeleteOutOfBitmapSize)
 
 TEST_F(StorageManagerTest, ResiszingWhenDestroying)
 {
-    Header *header = (Header *)malloc(page_size);
+    BHeader *header = (BHeader *)malloc(page_size);
     // interesting size because boundary of page size
     header->page_id = page_size * 2 - 1;
     storage_manager->save_page(header);
@@ -377,7 +377,7 @@ TEST_F(StorageManagerTest, ResiszingWhenDestroying)
 
     overwrite_storage_manager();
 
-    Header* loaded_header = (Header *)malloc(page_size);
+    BHeader* loaded_header = (BHeader *)malloc(page_size);
     storage_manager->load_page(loaded_header, page_size * 2 - 1); 
     ASSERT_EQ(loaded_header->page_id, page_size * 2 - 1); 
 

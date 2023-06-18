@@ -15,7 +15,7 @@
 class RunConfigOne : public RunConfig
 {
 public:
-    RunConfigOne() : RunConfig() {}
+    RunConfigOne(bool cache = false) : RunConfig(cache) {}
     
     /**
      * @brief Execute a specific run with different operations on the database

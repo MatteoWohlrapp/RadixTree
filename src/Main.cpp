@@ -27,13 +27,18 @@
 
 // gives information if benchmark should be run
 bool benchmark = false;
+
+// wheather cache is activated or deactivated
+bool cache = false;
+
 // configuration that will be executed, default is configuration one
 std::shared_ptr<RunConfig> run;
 
 void print_help()
 {
+    printf(" -c ..................... Activate cache. Creates a radix tree that is placed in front of the b+ tree to act as a cache.\n");
     printf(" -b ..................... Activate benchmark mode, compute mean transaction time for given benchmark. Overwrites any log-level specification to turn all loggers off\n");
-    printf(" -c <run config> ........ Select which run configuration you want to choose. Currently available: 1\n");
+    printf(" -r <run config> ........ Select which run configuration you want to choose. Currently available: 1\n");
     printf(" -v <verbosity_level> ... Sets the verbosity level for the program: 'o' (off), 'e' (error), 'c' (critical), 'w' (warn), 'i' (info), 'd' (debug), 't' (trace). By default info is used\n");
     printf(" -l <log_mode> .......... Specifies where the logs for the program are written to: 'f' (file), 'c' (console). By default, logs are written to the console when opening the menu\n");
     printf(" -h ..................... Help\n");
@@ -45,7 +50,7 @@ const void handle_logging(int argc, char *argsv[])
     char log_mode = 'c';
     while (1)
     {
-        int result = getopt(argc, argsv, "hbc:l:v:");
+        int result = getopt(argc, argsv, "hbcr:l:v:");
         if (result == -1)
         {
             break;
@@ -119,7 +124,7 @@ void handle_arguments(int argc, char *argsv[])
 
     while (1)
     {
-        int result = getopt(argc, argsv, "hbc:l:v:");
+        int result = getopt(argc, argsv, "hbcr:l:v:");
 
         if (result == -1)
         {
@@ -133,7 +138,7 @@ void handle_arguments(int argc, char *argsv[])
         case 'h':
             print_help();
             exit(1);
-        case 'c':
+        case 'r':
         {
             if (std::isdigit(*optarg))
             {
@@ -141,7 +146,7 @@ void handle_arguments(int argc, char *argsv[])
                 switch (config)
                 {
                 case 1:
-                    run.reset(new RunConfigOne());
+                    run.reset(new RunConfigOne(cache));
                     break;
                 default:
                     break;
@@ -155,6 +160,11 @@ void handle_arguments(int argc, char *argsv[])
             }
         }
         break;
+        case 'c':
+        {
+            cache = true;
+        }
+        break;
         default:
             break;
         }
@@ -165,7 +175,7 @@ int main(int argc, char *argsv[])
 {
     // first turn the logging on or off
     handle_logging(argc, argsv);
-    run.reset(new RunConfigOne());
     handle_arguments(argc, argsv);
+    run.reset(new RunConfigOne(cache));
     run->execute(benchmark);
 }

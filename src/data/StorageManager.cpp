@@ -158,7 +158,7 @@ void StorageManager::destroy()
     bitmap_fs.close();
 }
 
-void StorageManager::load_page(Header *header, uint64_t page_id)
+void StorageManager::load_page(BHeader *header, uint64_t page_id)
 {
     if (page_id > current_page_count)
     {
@@ -181,7 +181,7 @@ void StorageManager::load_page(Header *header, uint64_t page_id)
     }
 }
 
-void StorageManager::save_page(Header *header)
+void StorageManager::save_page(BHeader *header)
 {
     while (free_space_map.size() <= header->page_id)
     {

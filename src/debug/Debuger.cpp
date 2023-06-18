@@ -34,13 +34,13 @@ void Debuger::traverse_tree(BPlus<Configuration::page_size> *tree)
         {
             uint64_t current_id = nodes_queue.front();
             nodes_queue.pop();
-            Header* current = buffer_manager->request_page(current_id); 
+            BHeader* current = buffer_manager->request_page(current_id); 
 
             if (!current->inner)
             {
                 std::ostringstream node;
-                OuterNode<Configuration::page_size> *outer_node = (OuterNode<Configuration::page_size> *)current;
-                node << "OuterNode:  " << outer_node->header.page_id << " {";
+                BOuterNode<Configuration::page_size> *outer_node = (BOuterNode<Configuration::page_size> *)current;
+                node << "BOuterNode:  " << outer_node->header.page_id << " {";
                 for (int j = 0; j < outer_node->current_index; j++)
                 {
                     node << " (Key: " << outer_node->keys[j] << ", Value: " << outer_node->values[j] << ")";
@@ -51,8 +51,8 @@ void Debuger::traverse_tree(BPlus<Configuration::page_size> *tree)
             else
             {
                 std::ostringstream node;
-                InnerNode<Configuration::page_size> *inner_node = (InnerNode<Configuration::page_size> *)current;
-                node << "InnerNode: " << inner_node->header.page_id << " {";
+                BInnerNode<Configuration::page_size> *inner_node = (BInnerNode<Configuration::page_size> *)current;
+                node << "BInnerNode: " << inner_node->header.page_id << " {";
                 node << " (Child_id: " << inner_node->child_ids[0] << ", ";
                 for (int j = 0; j < inner_node->current_index; j++)
                 {
@@ -91,10 +91,10 @@ bool Debuger::are_all_child_ids_unique(BPlus<Configuration::page_size> *tree) {
         uint64_t current_id = nodes_queue.front();
         nodes_queue.pop();
 
-        Header* current = buffer_manager->request_page(current_id); 
+        BHeader* current = buffer_manager->request_page(current_id); 
 
         if (current->inner) {
-            InnerNode<Configuration::page_size> *inner_node = (InnerNode<Configuration::page_size> *)current;
+            BInnerNode<Configuration::page_size> *inner_node = (BInnerNode<Configuration::page_size> *)current;
 
             for (int j = 0; j <= inner_node->current_index; j++)
             {
@@ -127,10 +127,10 @@ bool Debuger::contains_key(BPlus<Configuration::page_size> *tree, uint64_t key) 
         uint64_t current_id = nodes_queue.front();
         nodes_queue.pop();
 
-        Header* current = buffer_manager->request_page(current_id); 
+        BHeader* current = buffer_manager->request_page(current_id); 
 
         if (current->inner) {
-            InnerNode<Configuration::page_size> *inner_node = (InnerNode<Configuration::page_size> *)current;
+            BInnerNode<Configuration::page_size> *inner_node = (BInnerNode<Configuration::page_size> *)current;
 
             for (int j = 0; j < inner_node->current_index; j++) {
                 if (inner_node->keys[j] == key) {
@@ -143,7 +143,7 @@ bool Debuger::contains_key(BPlus<Configuration::page_size> *tree, uint64_t key) 
                 nodes_queue.push(inner_node->child_ids[j]);
             }
         } else {
-            OuterNode<Configuration::page_size> *outer_node = (OuterNode<Configuration::page_size> *)current;
+            BOuterNode<Configuration::page_size> *outer_node = (BOuterNode<Configuration::page_size> *)current;
 
             for (int j = 0; j < outer_node->current_index; j++) {
                 if (outer_node->keys[j] == key) {

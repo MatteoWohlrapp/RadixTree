@@ -51,7 +51,7 @@ namespace File
         std::vector<char> buffer(size);
         logger->info("File content: ");
 
-        Header *header = (Header *)malloc(96);
+        BHeader *header = (BHeader *)malloc(96);
         while (file.read(reinterpret_cast<char *>(header), 96))
         {
             std::stringstream ss;

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "../model/Header.h"
+#include "../model/BHeader.h"
 #include <map>
 #include <iostream>
 #include <filesystem>
@@ -69,7 +69,7 @@ public:
      * @brief Saves a page to disc
      * @param header A pointer to the header (page) that contains the information that should be written to file
      */
-    void save_page(Header *header);
+    void save_page(BHeader *header);
 
     /**
      * @brief Deletes a page from disc
@@ -82,7 +82,7 @@ public:
      * @param header A pointer to the header (page) that should be written to
      * @param page_id The unique identifier of the page that should be loaded
      */
-    void load_page(Header *header, uint64_t page_id);
+    void load_page(BHeader *header, uint64_t page_id);
 
     /**
      * @brief Gives an unsued page_id, when requesting a new unused page_id, the bitmap is already set, so its important to write the page at the end

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "./Header.h"
+#include "./BHeader.h"
 #include <stdint.h>
 
 /**
@@ -22,5 +22,5 @@ struct Frame
     /// used to implement a simple heuristic for the eviction of pages
     bool marked = false;
     /// contains the data of the page
-    Header header;
+    BHeader header;
 };

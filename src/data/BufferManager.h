@@ -74,13 +74,13 @@ public:
      * @param page_id The identifier of the page to retrieve
      * @return A pointer to the page
      */
-    Header *request_page(uint64_t page_id);
+    BHeader *request_page(uint64_t page_id);
 
     /**
      * @brief Creates a new page
      * @return A pointer to the page
      */
-    Header *create_new_page();
+    BHeader *create_new_page();
 
     /**
      * @brief Deletes a page from the buffer

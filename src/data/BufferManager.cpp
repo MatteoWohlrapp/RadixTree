@@ -25,7 +25,7 @@ void BufferManager::destroy()
     }
 }
 
-Header *BufferManager::request_page(uint64_t page_id)
+BHeader *BufferManager::request_page(uint64_t page_id)
 {
     std::map<uint64_t, Frame *>::iterator it = page_id_map.find(page_id);
     if (it == page_id_map.end())
@@ -42,7 +42,7 @@ Header *BufferManager::request_page(uint64_t page_id)
     return &it->second->header;
 }
 
-Header *BufferManager::create_new_page()
+BHeader *BufferManager::create_new_page()
 {
     Frame *frame_address;
     // check if buffer is full and then evict pages
