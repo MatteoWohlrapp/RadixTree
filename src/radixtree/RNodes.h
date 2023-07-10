@@ -68,6 +68,7 @@ struct RNode4
 
     /**
      * @brief insert a new element with key
+     * @param key the key which identifies the value
      * @param page_id the page_id where the information can be found
      * @param bheader the btree node where the value can be found
      */
@@ -98,7 +99,7 @@ struct RNode4
 
     /**
      * @brief finds and returns the next node in the tree
-     * @brief the key where the next node is located
+     * @param key the key where the next node is located
      * @return the pointer to the next node
      */
     void *get_next_page(uint8_t key)
@@ -219,6 +220,7 @@ struct RNode16
 
     /**
      * @brief insert a new element with key
+     * @param key the key which identifies the value
      * @param page_id the page_id where the information can be found
      * @param bheader the btree node where the value can be found
      */
@@ -248,7 +250,7 @@ struct RNode16
 
     /**
      * @brief finds and returns the next node in the tree
-     * @brief the key where the next node is located
+     * @param key the key where the next node is located
      * @return the pointer to the next node
      */
     void *get_next_page(uint8_t key)
@@ -367,6 +369,7 @@ struct RNode48
 
     /**
      * @brief insert a new element with key
+     * @param key the key which identifies the value
      * @param page_id the page_id where the information can be found
      * @param bheader the btree node where the value can be found
      */
@@ -393,7 +396,7 @@ struct RNode48
 
     /**
      * @brief finds and returns the next node in the tree
-     * @brief the key where the next node is located
+     * @param key the key where the next node is located
      * @return the pointer to the next node
      */
     void *get_next_page(uint8_t key)
@@ -497,6 +500,7 @@ struct RNode256
 
     /**
      * @brief insert a new element with key
+     * @param key the key which identifies the value
      * @param page_id the page_id where the information can be found
      * @param bheader the btree node where the value can be found
      */
@@ -521,7 +525,7 @@ struct RNode256
 
     /**
      * @brief finds and returns the next node in the tree
-     * @brief the key where the next node is located
+     * @param key the key where the next node is located
      * @return the pointer to the next node
      */
     void *get_next_page(uint8_t key)

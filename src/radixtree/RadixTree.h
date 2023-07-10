@@ -24,7 +24,7 @@ private:
      * @param rheader The current node of the radix tree
      * @param key The key that will be inserted
      * @param page_id The page id of the page where the key is located
-     * @param header The pointer to the header where the key is located
+     * @param bheader The pointer to the header where the key is located
      */
     void insert_recursive(RHeader *rheader, int64_t key, uint64_t page_id, BHeader *bheader);
 
@@ -98,7 +98,7 @@ private:
 
     /**
      * @brief Get the next page in the tree
-     * @param parent The radix tree node
+     * @param header The radix tree node
      * @param key The key where the next child is
      * @return A pointer to the next page
      */
@@ -150,7 +150,7 @@ public:
      * @brief Insert an element into the radixtree
      * @param key The key that will be inserted
      * @param page_id The page id of the page where the key is located
-     * @param header The pointer to the header where the key is located
+     * @param bheader The pointer to the header where the key is located
      */
     void insert(int64_t key, uint64_t page_id, BHeader *bheader);
 

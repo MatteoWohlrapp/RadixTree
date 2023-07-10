@@ -36,13 +36,18 @@ struct RHeader
 
     /**
      * @brief Constructor for the header
-     * @param type of the node
+     * @param type_arg Type of the node
+     * @param leaf_arg If the node is a leaf or not
      */
     RHeader(uint16_t type_arg, bool leaf_arg) : type(type_arg), leaf(leaf_arg){};
 
     /**
      * @brief Constructor for the header
-     * @param type of the node
+     * @param type_arg Type of the node
+     * @param leaf_arg If the node is a leaf or not
+     * @param depth_arg The depth of the node
+     * @param key_arg The key of the node 
+     * @param current_size_arg The current size of the node
      */
     RHeader(uint16_t type_arg, bool leaf_arg, uint8_t depth_arg, int64_t key_arg, uint16_t current_size_arg) : type(type_arg), leaf(leaf_arg), depth(depth_arg), key(key_arg), current_size(current_size_arg){};
 

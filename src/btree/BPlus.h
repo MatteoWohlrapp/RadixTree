@@ -728,9 +728,8 @@ private:
     }
 
     /**
-     * @brief Finds the next smaller element
+     * @brief Finds the next bigger element
      * @param header The parent node of which an element will be deleted
-     * @param child_header The node which needs substitution to be able to delete
      * @return the biggest element in the tree smaller than the actual rightmost element in the outer node
      */
     int64_t find_biggest(BHeader *header)
@@ -760,6 +759,7 @@ public:
     /**
      * @brief Constructor for the B+ tree
      * @param buffer_manager_arg The buffer manager
+     * @param cache_arg The chache
      */
     BPlus(std::shared_ptr<BufferManager> buffer_manager_arg, RadixTree *cache_arg = nullptr) : buffer_manager(buffer_manager_arg), cache(cache_arg)
     {
