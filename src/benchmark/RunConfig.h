@@ -8,7 +8,7 @@
 #pragma once
 
 #include "Benchmark.h"
-#include "../data/DBManager.h"
+#include "../data/DataManager.h"
 #include "spdlog/spdlog.h"
 
 /**
@@ -18,20 +18,22 @@ class RunConfig
 {
 public:
     Benchmark benchmark;
-    DBManager db_manager;
+    DataManager data_manager;
     std::shared_ptr<spdlog::logger> logger;
-
-    /**
-     * @brief Destructor
-    */
-    virtual ~RunConfig() {}
 
     /**
      * @brief Constructor
     */
-    RunConfig() : benchmark(), db_manager()
+    RunConfig(bool cache) : benchmark(), data_manager(cache)
     {
         logger = spdlog::get("logger");
+    }
+
+    /**
+     * @brief Destructor
+    */
+    virtual ~RunConfig(){
+        data_manager.destroy(); 
     }
 
     /**

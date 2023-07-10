@@ -31,7 +31,7 @@ protected:
         return buffer_manager->current_buffer_size;
     }
 
-    std::map<uint64_t, Frame *> get_page_id_map()
+    std::map<uint64_t, BFrame *> get_page_id_map()
     {
         return buffer_manager->page_id_map;
     }
@@ -39,11 +39,11 @@ protected:
 
 TEST_F(BufferManagerTest, PageCreation)
 {
-    Header *header = buffer_manager->create_new_page();
+    BHeader *header = buffer_manager->create_new_page();
     ASSERT_EQ(header->page_id, 1);
     ASSERT_EQ(get_current_buffer_size(), 1);
     auto page_id_map = get_page_id_map();
-    std::map<uint64_t, Frame *>::iterator it = page_id_map.find(header->page_id);
+    std::map<uint64_t, BFrame *>::iterator it = page_id_map.find(header->page_id);
     ASSERT_EQ(it->second->dirty, true);
     ASSERT_EQ(it->second->marked, true);
 
@@ -56,16 +56,16 @@ TEST_F(BufferManagerTest, PageRequest)
     buffer_manager->create_new_page();
     buffer_manager->create_new_page();
 
-    Header *header = buffer_manager->request_page(1);
+    BHeader *header = buffer_manager->request_page(1);
     ASSERT_EQ(header->page_id, 1);
     ASSERT_EQ(get_current_buffer_size(), 2);
 }
 
 TEST_F(BufferManagerTest, FixAndUnfixPage)
 {
-    Header *header = buffer_manager->create_new_page();
+    BHeader *header = buffer_manager->create_new_page();
     auto page_id_map = get_page_id_map();
-    std::map<uint64_t, Frame *>::iterator it = page_id_map.find(header->page_id);
+    std::map<uint64_t, BFrame *>::iterator it = page_id_map.find(header->page_id);
     ASSERT_EQ(it->second->fix_count, 1);
     buffer_manager->unfix_page(1, true);
     ASSERT_EQ(it->second->fix_count, 0);
@@ -73,7 +73,7 @@ TEST_F(BufferManagerTest, FixAndUnfixPage)
 
 TEST_F(BufferManagerTest, BufferFullWhenCreatingPage)
 {
-    Header *header = buffer_manager->create_new_page();
+    BHeader *header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(header->page_id, false);
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(header->page_id, false);
@@ -86,7 +86,7 @@ TEST_F(BufferManagerTest, BufferFullWhenCreatingPage)
 
 TEST_F(BufferManagerTest, BufferFullWhenRequestingPage)
 {
-    Header *header = buffer_manager->create_new_page();
+    BHeader *header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(header->page_id, false);
     header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(header->page_id, false);
@@ -106,7 +106,7 @@ TEST_F(BufferManagerTest, BufferFullWhenRequestingPage)
 
 TEST_F(BufferManagerTest, DeletingPage)
 {
-    Header *header = buffer_manager->create_new_page();
+    BHeader *header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(1, false); 
 
     auto page_id_map = get_page_id_map();
@@ -118,12 +118,12 @@ TEST_F(BufferManagerTest, DeletingPage)
 
 TEST_F(BufferManagerTest, DestroyPage)
 {
-    Header *header = buffer_manager->create_new_page();
+    BHeader *header = buffer_manager->create_new_page();
 
     buffer_manager->destroy(); 
     
     overwrite_buffer_manager(); 
 
-    Header *loaded_header = buffer_manager->request_page(1); 
+    BHeader *loaded_header = buffer_manager->request_page(1); 
     ASSERT_EQ(header->page_id, 1);
 }

@@ -1,5 +1,5 @@
 /**
- * @file    Nodes.h
+ * @file    BNodes.h
  *
  * @author  Matteo Wohlrapp
  * @date    16.05.2023
@@ -11,10 +11,10 @@
  * @brief Structure for the inner node
  */
 template <int PAGE_SIZE>
-struct InnerNode
+struct BInnerNode
 {
     // 16 bytes
-    Header header;
+    BHeader header;
     // 4 bytes
     /// info about current capacity of node
     int current_index;
@@ -30,7 +30,7 @@ struct InnerNode
     /**
      * @brief Constructor for the inner node
      */
-    InnerNode()
+    BInnerNode()
     {
         header.inner = true;
         current_index = 0;
@@ -194,10 +194,10 @@ struct InnerNode
  * @brief Structure for the outer node
  */
 template <int PAGE_SIZE>
-struct OuterNode
+struct BOuterNode
 {
     // 16 bytes
-    Header header;
+    BHeader header;
     // 4 bytes
     /// info about current capacity of node
     int current_index;
@@ -214,7 +214,7 @@ struct OuterNode
     /**
      * @brief Constructor for the outer node
      */
-    OuterNode()
+    BOuterNode()
     {
         header.inner = false;
         current_index = 0;

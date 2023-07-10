@@ -1,8 +1,8 @@
 /**
- * @file    RunConfigOne.h
+ * @file    RunConfigTwo.h
  *
  * @author  Matteo Wohlrapp
- * @date    16.05.2023
+ * @date    20.06.2023
  */
 
 #pragma once
@@ -12,10 +12,10 @@
 /**
  * @brief A class that can executes scenario
  */
-class RunConfigOne : public RunConfig
+class RunConfigTwo : public RunConfig
 {
 public:
-    RunConfigOne(bool cache = false) : RunConfig(cache) {}
+    RunConfigTwo(bool cache = false) : RunConfig(cache) {}
     
     /**
      * @brief Execute a specific run with different operations on the database

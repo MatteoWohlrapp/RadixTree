@@ -1,6 +1,6 @@
 #include "RunConfigOne.h"
 
-#include "../data/DBManager.h"
+#include "../data/DataManager.h"
 #include "./btree/BPlus.h"
 #include "./debug/Debuger.h"
 
@@ -17,8 +17,7 @@ void RunConfigOne::execute(bool benchmark)
         std::unordered_set<int64_t> unique_values;
         int64_t values[100];
 
-        auto debuger = Debuger(db_manager.buffer_manager);
-        auto tree = BPlus<Configuration::page_size>(db_manager.buffer_manager);
+        auto debuger = Debuger(data_manager.buffer_manager);
 
         for (int i = 0; i < 100; i++)
         {
@@ -33,16 +32,15 @@ void RunConfigOne::execute(bool benchmark)
 
             unique_values.insert(value);
             values[i] = value;
-            tree.insert(value, value);
+            data_manager.insert(value, value);
         }
 
         for (int i = 0; i < 100; i++)
         {
-            debuger.traverse_tree(&tree);
+            debuger.traverse_btree(data_manager.btree);
             logger->info("Deleting {} at index {}", values[i], i);
-            tree.delete_pair(values[i]);
+            data_manager.delete_pair(values[i]);
         }
-        db_manager.destroy(); 
     };
     this->benchmark.measure(run, benchmark);
 }

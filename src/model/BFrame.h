@@ -1,5 +1,5 @@
 /**
- * @file    Frame.h
+ * @file    BFrame.h
  *
  * @author  Matteo Wohlrapp
  * @date    16.05.2023
@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include "./Header.h"
+#include "./BHeader.h"
 #include <stdint.h>
 
 /**
  * @brief Frame that wraps around a header to store additional information used by the buffer manager
  */
-struct Frame
+struct BFrame
 {
     /// used to fix and unfix page and protect memory access
     uint16_t fix_count = 0;
@@ -22,5 +22,5 @@ struct Frame
     /// used to implement a simple heuristic for the eviction of pages
     bool marked = false;
     /// contains the data of the page
-    Header header;
+    BHeader header;
 };

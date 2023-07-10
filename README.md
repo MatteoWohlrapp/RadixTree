@@ -25,7 +25,7 @@ docker run -v <path_to_project>:/app -p 8000:8000 -it radixtree
 ### Build without Doxygen
 
 1. Navigate into the build folder: `cd build`
-2. Run `cmake ..` to create the makefile. Version 10.0.0-4ubuntu1 of the clang compiler is used.
+2. Run `cmake ..` to create the makefile. Version 10.0.0-4ubuntu1 of the clang compiler is used. If you want to build in debug, use `cmake -DCMAKE_BUILD_TYPE=Debug ..`
 3. Run `make` to generate the executable and tests.
 
 ### Build with Doxygen

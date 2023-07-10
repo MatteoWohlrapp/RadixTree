@@ -52,6 +52,9 @@ target_link_options(RadixTree
 #include modules 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
+message("CMAKE_BUILD_TYPE is set to ${CMAKE_BUILD_TYPE}")
+
+
 include(doxygen)
 include(googletest)
 include(boost)

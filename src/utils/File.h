@@ -17,7 +17,7 @@ namespace File
 {
     /**
      * @brief prints the content of a binary file
-     * @param data_fs a file handle
+     * @param file a file handle
      */
     inline void print_file_content(std::fstream &file)
     {
@@ -51,7 +51,7 @@ namespace File
         std::vector<char> buffer(size);
         logger->info("File content: ");
 
-        Header *header = (Header *)malloc(96);
+        BHeader *header = (BHeader *)malloc(96);
         while (file.read(reinterpret_cast<char *>(header), 96))
         {
             std::stringstream ss;
@@ -68,7 +68,7 @@ namespace File
 
     /**
      * @brief calculates the file size of a file in byte
-     * @param a file handle
+     * @param file a file handle
      * @return the size of the file
      */
     inline int get_file_size(std::fstream *file)

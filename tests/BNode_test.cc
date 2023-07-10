@@ -5,18 +5,17 @@
 
 constexpr int node_test_size = 96;
 
-class NodeTest : public ::testing::Test
+class BNodeTest : public ::testing::Test
 {
-    friend class BPlus<node_test_size>;
 
 protected:
     int buffer_size = 2;
     std::shared_ptr<spdlog::logger> logger = spdlog::get("logger");
-    Header *header;
+    BHeader *header;
 
     void SetUp() override
     {
-        header = (Header *)malloc(node_test_size);
+        header = (BHeader *)malloc(node_test_size);
     }
 
     void TearDown() override
@@ -25,13 +24,13 @@ protected:
     }
 };
 
-TEST_F(NodeTest, InnerNodeConstructor)
+TEST_F(BNodeTest, BBInnerNodeConstructor)
 {
     header->inner = false;
     header->page_id = 3;
-    InnerNode<node_test_size> *node = new (header) InnerNode<node_test_size>();
+    BInnerNode<node_test_size> *node = new (header) BInnerNode<node_test_size>();
 
-    ASSERT_EQ(sizeof(InnerNode<node_test_size>), node_test_size);
+    ASSERT_EQ(sizeof(BInnerNode<node_test_size>), node_test_size);
     ASSERT_EQ(node->header.inner, true);
     ASSERT_EQ(node->header.page_id, 3);
     ASSERT_EQ(node->current_index, 0);
@@ -40,9 +39,9 @@ TEST_F(NodeTest, InnerNodeConstructor)
     ASSERT_EQ(sizeof(node->child_ids) / sizeof(node->child_ids[0]), ((node_test_size - 24) / 2) / 8);
 }
 
-TEST_F(NodeTest, InnerNodeFindNextPage)
+TEST_F(BNodeTest, BInnerNodeFindNextPage)
 {
-    InnerNode<node_test_size> *node = new (header) InnerNode<node_test_size>();
+    BInnerNode<node_test_size> *node = new (header) BInnerNode<node_test_size>();
 
     node->child_ids[0] = 0;
     node->insert(5, 5);
@@ -58,9 +57,9 @@ TEST_F(NodeTest, InnerNodeFindNextPage)
     ASSERT_EQ(node->next_page(6), 5);
 }
 
-TEST_F(NodeTest, InnerNodeInsert)
+TEST_F(BNodeTest, BInnerNodeInsert)
 {
-    InnerNode<node_test_size> *node = new (header) InnerNode<node_test_size>();
+    BInnerNode<node_test_size> *node = new (header) BInnerNode<node_test_size>();
     node->child_ids[0] = 1;
     node->insert(4, 5);
 
@@ -78,9 +77,9 @@ TEST_F(NodeTest, InnerNodeInsert)
     ASSERT_EQ(node->child_ids[2], 5);
 }
 
-TEST_F(NodeTest, InnerNodeFull)
+TEST_F(BNodeTest, BInnerNodeFull)
 {
-    InnerNode<node_test_size> *node = new (header) InnerNode<node_test_size>();
+    BInnerNode<node_test_size> *node = new (header) BInnerNode<node_test_size>();
 
     node->insert(3, 3);
     node->insert(1, 1);
@@ -91,13 +90,13 @@ TEST_F(NodeTest, InnerNodeFull)
     ASSERT_TRUE(node->is_full());
 }
 
-TEST_F(NodeTest, OuterNodeConstructor)
+TEST_F(BNodeTest, BOuterNodeConstructor)
 {
     header->inner = true;
     header->page_id = 3;
-    OuterNode<node_test_size> *node = new (header) OuterNode<node_test_size>();
+    BOuterNode<node_test_size> *node = new (header) BOuterNode<node_test_size>();
 
-    ASSERT_EQ(sizeof(OuterNode<node_test_size>), node_test_size);
+    ASSERT_EQ(sizeof(BOuterNode<node_test_size>), node_test_size);
     ASSERT_EQ(node->header.inner, false);
     ASSERT_EQ(node->header.page_id, 3);
     ASSERT_EQ(node->current_index, 0);
@@ -106,9 +105,9 @@ TEST_F(NodeTest, OuterNodeConstructor)
     ASSERT_EQ(sizeof(node->values) / sizeof(node->values[0]), ((node_test_size - 24) / 2) / 8);
 }
 
-TEST_F(NodeTest, OuterNodeInsert)
+TEST_F(BNodeTest, BOuterNodeInsert)
 {
-    OuterNode<node_test_size> *node = new (header) OuterNode<node_test_size>();
+    BOuterNode<node_test_size> *node = new (header) BOuterNode<node_test_size>();
     node->insert(3, 4);
 
     ASSERT_EQ(node->keys[0], 3);
@@ -123,18 +122,18 @@ TEST_F(NodeTest, OuterNodeInsert)
     ASSERT_EQ(node->current_index, 2);
 }
 
-TEST_F(NodeTest, OuterNodeGetValue)
+TEST_F(BNodeTest, BOuterNodeGetValue)
 {
-    OuterNode<node_test_size> *node = new (header) OuterNode<node_test_size>();
+    BOuterNode<node_test_size> *node = new (header) BOuterNode<node_test_size>();
     node->insert(3, 4);
     node->insert(1, 2);
 
     ASSERT_EQ(node->get_value(3), 4);
 }
 
-TEST_F(NodeTest, OuterNodeFull)
+TEST_F(BNodeTest, BOuterNodeFull)
 {
-    OuterNode<node_test_size> *node = new (header) OuterNode<node_test_size>();
+    BOuterNode<node_test_size> *node = new (header) BOuterNode<node_test_size>();
 
     node->insert(3, 3);
     node->insert(1, 1);
@@ -146,9 +145,9 @@ TEST_F(NodeTest, OuterNodeFull)
     ASSERT_TRUE(node->is_full());
 }
 
-TEST_F(NodeTest, InnerNodeCanDelete)
+TEST_F(BNodeTest, BInnerNodeCanDelete)
 {
-    InnerNode<node_test_size> *node = new (header) InnerNode<node_test_size>();
+    BInnerNode<node_test_size> *node = new (header) BInnerNode<node_test_size>();
 
     node->insert(1, 1);
     ASSERT_FALSE(node->can_delete());
@@ -156,9 +155,9 @@ TEST_F(NodeTest, InnerNodeCanDelete)
     ASSERT_TRUE(node->can_delete());
 }
 
-TEST_F(NodeTest, InnerNodeContains)
+TEST_F(BNodeTest, BInnerNodeContains)
 {
-    InnerNode<node_test_size> *node = new (header) InnerNode<node_test_size>();
+    BInnerNode<node_test_size> *node = new (header) BInnerNode<node_test_size>();
 
     node->insert(2, 2);
     node->insert(1, 1);
@@ -177,9 +176,9 @@ TEST_F(NodeTest, InnerNodeContains)
     ASSERT_FALSE(node->contains(1));
 }
 
-TEST_F(NodeTest, InnerNodeDelete)
+TEST_F(BNodeTest, BInnerNodeDelete)
 {
-    InnerNode<node_test_size> *node = new (header) InnerNode<node_test_size>();
+    BInnerNode<node_test_size> *node = new (header) BInnerNode<node_test_size>();
 
     node->insert(2, 2);
     node->insert(1, 1);
@@ -194,9 +193,9 @@ TEST_F(NodeTest, InnerNodeDelete)
     ASSERT_FALSE(node->contains(1));
 }
 
-TEST_F(NodeTest, InnerNodeExchange)
+TEST_F(BNodeTest, BInnerNodeExchange)
 {
-    InnerNode<node_test_size> *node = new (header) InnerNode<node_test_size>();
+    BInnerNode<node_test_size> *node = new (header) BInnerNode<node_test_size>();
 
     node->insert(2, 2);
     node->insert(1, 1);
@@ -208,9 +207,9 @@ TEST_F(NodeTest, InnerNodeExchange)
     ASSERT_TRUE(node->contains(4));
 }
 
-TEST_F(NodeTest, OuterNodeCanDelete)
+TEST_F(BNodeTest, BOuterNodeCanDelete)
 {
-    OuterNode<node_test_size> *node = new (header) OuterNode<node_test_size>();
+    BOuterNode<node_test_size> *node = new (header) BOuterNode<node_test_size>();
 
     node->insert(1, 1);
     node->insert(1, 1);
@@ -219,9 +218,9 @@ TEST_F(NodeTest, OuterNodeCanDelete)
     ASSERT_TRUE(node->can_delete());
 }
 
-TEST_F(NodeTest, OuterNodeDelete)
+TEST_F(BNodeTest, BOuterNodeDelete)
 {
-    OuterNode<node_test_size> *node = new (header) OuterNode<node_test_size>();
+    BOuterNode<node_test_size> *node = new (header) BOuterNode<node_test_size>();
 
     node->insert(1, 1);
     node->insert(3, 3);
