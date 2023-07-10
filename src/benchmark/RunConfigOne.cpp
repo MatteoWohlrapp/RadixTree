@@ -37,7 +37,7 @@ void RunConfigOne::execute(bool benchmark)
 
         for (int i = 0; i < 100; i++)
         {
-            debuger.traverse_tree(data_manager.btree);
+            debuger.traverse_btree(data_manager.btree);
             logger->info("Deleting {} at index {}", values[i], i);
             data_manager.delete_pair(values[i]);
         }

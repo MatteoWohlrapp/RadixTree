@@ -27,13 +27,12 @@ private:
     /// gives information if cache is enabled or not
     bool cache = false;
 
-    RadixTree *rtree = nullptr;
-
 public:
     std::shared_ptr<StorageManager> storage_manager;
     std::shared_ptr<BufferManager> buffer_manager;
 
     BPlus<Configuration::page_size> *btree;
+    RadixTree *rtree = nullptr;
 
     /**
      * @brief Constructor for the DataManager

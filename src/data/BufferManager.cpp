@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <random>
 
-
 BufferManager::BufferManager(std::shared_ptr<StorageManager> storage_manager_arg, int buffer_size_arg, int page_size_arg) : storage_manager(storage_manager_arg), buffer_size(buffer_size_arg), page_size(page_size_arg)
 {
     logger = spdlog::get("logger");
@@ -20,14 +19,14 @@ void BufferManager::destroy()
         if (pair.second->dirty)
         {
             storage_manager->save_page(&pair.second->header);
-            free(pair.second);
         }
+        free(pair.second);
     }
 }
 
 BHeader *BufferManager::request_page(uint64_t page_id)
 {
-    std::map<uint64_t, Frame *>::iterator it = page_id_map.find(page_id);
+    std::map<uint64_t, BFrame *>::iterator it = page_id_map.find(page_id);
     if (it == page_id_map.end())
     {
         logger->debug("Page {} not in memory", page_id);
@@ -44,7 +43,7 @@ BHeader *BufferManager::request_page(uint64_t page_id)
 
 BHeader *BufferManager::create_new_page()
 {
-    Frame *frame_address;
+    BFrame *frame_address;
     // check if buffer is full and then evict pages
     if (current_buffer_size >= buffer_size)
     {
@@ -54,7 +53,7 @@ BHeader *BufferManager::create_new_page()
     {
         // insert element in the buffer pool and save the index for the page id in the map
         // Frame size is page_size + 4 for the fix_count, the marker and the dirty flag
-        frame_address = (Frame *)malloc(page_size + 8);
+        frame_address = (BFrame *)malloc(page_size + 8);
         current_buffer_size++;
     }
     // fix page
@@ -70,21 +69,22 @@ BHeader *BufferManager::create_new_page()
 
 void BufferManager::delete_page(uint64_t page_id)
 {
-    std::map<uint64_t, Frame *>::iterator it = page_id_map.find(page_id);
+    logger->info("Deleting page"); 
+    std::map<uint64_t, BFrame *>::iterator it = page_id_map.find(page_id);
     if (it != page_id_map.end())
     {
         assert(it->second->fix_count == 0 && "Fix count is not zero when deleting");
-        Frame* temp = it->second;
+        BFrame *temp = it->second;
         page_id_map.erase(it);
         storage_manager->delete_page(temp->header.page_id);
         free(temp);
-        current_buffer_size--; 
+        current_buffer_size--;
     }
 }
 
 void BufferManager::fix_page(uint64_t page_id)
 {
-    std::map<uint64_t, Frame *>::iterator it = page_id_map.find(page_id);
+    std::map<uint64_t, BFrame *>::iterator it = page_id_map.find(page_id);
     if (it != page_id_map.end())
     {
         assert(it->second->fix_count == 0 && "Trying to fix page that is not unfixed");
@@ -95,7 +95,7 @@ void BufferManager::fix_page(uint64_t page_id)
 
 void BufferManager::unfix_page(uint64_t page_id, bool dirty)
 {
-    std::map<uint64_t, Frame *>::iterator it = page_id_map.find(page_id);
+    std::map<uint64_t, BFrame *>::iterator it = page_id_map.find(page_id);
     if (it != page_id_map.end())
     {
         assert(it->second->fix_count == 1 && "Trying to unfix page that is not fixed with 1");
@@ -104,13 +104,13 @@ void BufferManager::unfix_page(uint64_t page_id, bool dirty)
     }
 }
 
-Frame *BufferManager::evict_page()
+BFrame *BufferManager::evict_page()
 {
     //  Randomly access a page from the map and evict if unmarked - if marked, set to unmark and try next page
     while (true)
     {
         int random_index = dist(rd) % current_buffer_size;
-        std::map<uint64_t, Frame *>::iterator it = page_id_map.begin();
+        std::map<uint64_t, BFrame *>::iterator it = page_id_map.begin();
         std::advance(it, random_index);
 
         if (it->second->fix_count == 0)
@@ -125,7 +125,7 @@ Frame *BufferManager::evict_page()
                 {
                     storage_manager->save_page(&it->second->header);
                 }
-                Frame *frame = it->second;
+                BFrame *frame = it->second;
                 page_id_map.erase(it->second->header.page_id);
                 return frame;
             }
@@ -136,7 +136,7 @@ Frame *BufferManager::evict_page()
 void BufferManager::fetch_page_from_disk(uint64_t page_id)
 {
     logger->debug("Fetching page {} from disk", page_id);
-    Frame *frame_address;
+    BFrame *frame_address;
     if (current_buffer_size >= buffer_size)
     {
         logger->debug("Buffer full, evicting page");
@@ -144,7 +144,7 @@ void BufferManager::fetch_page_from_disk(uint64_t page_id)
     }
     else
     {
-        frame_address = (Frame *)malloc(page_size + 8);
+        frame_address = (BFrame *)malloc(page_size + 8);
         current_buffer_size++;
     }
     frame_address->fix_count = 0;
@@ -156,7 +156,7 @@ void BufferManager::fetch_page_from_disk(uint64_t page_id)
 
 void BufferManager::mark_dirty(uint64_t page_id)
 {
-    std::map<uint64_t, Frame *>::iterator it = page_id_map.find(page_id);
+    std::map<uint64_t, BFrame *>::iterator it = page_id_map.find(page_id);
     if (it != page_id_map.end())
     {
         it->second->dirty = true;

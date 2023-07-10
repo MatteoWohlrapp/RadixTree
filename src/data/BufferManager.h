@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "../model/Frame.h"
+#include "../model/BFrame.h"
 #include "StorageManager.h"
 #include <stdint.h>
 #include <vector>
@@ -30,7 +30,7 @@ private:
     /// write and read to disc
     std::shared_ptr<StorageManager> storage_manager;
     /// data structure for page id mapping
-    std::map<uint64_t, Frame *> page_id_map;
+    std::map<uint64_t, BFrame *> page_id_map;
     /// information about how full the buffer is right now
     uint64_t current_buffer_size = 0;
 
@@ -55,7 +55,7 @@ private:
      * @brief Removes pages from memory to free space for further pages
      * @returns A free frame that can be used to write again
      */
-    Frame *evict_page();
+    BFrame *evict_page();
 
 public:
     friend class BufferManagerTest;

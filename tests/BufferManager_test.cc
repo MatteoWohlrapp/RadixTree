@@ -31,7 +31,7 @@ protected:
         return buffer_manager->current_buffer_size;
     }
 
-    std::map<uint64_t, Frame *> get_page_id_map()
+    std::map<uint64_t, BFrame *> get_page_id_map()
     {
         return buffer_manager->page_id_map;
     }
@@ -43,7 +43,7 @@ TEST_F(BufferManagerTest, PageCreation)
     ASSERT_EQ(header->page_id, 1);
     ASSERT_EQ(get_current_buffer_size(), 1);
     auto page_id_map = get_page_id_map();
-    std::map<uint64_t, Frame *>::iterator it = page_id_map.find(header->page_id);
+    std::map<uint64_t, BFrame *>::iterator it = page_id_map.find(header->page_id);
     ASSERT_EQ(it->second->dirty, true);
     ASSERT_EQ(it->second->marked, true);
 
@@ -65,7 +65,7 @@ TEST_F(BufferManagerTest, FixAndUnfixPage)
 {
     BHeader *header = buffer_manager->create_new_page();
     auto page_id_map = get_page_id_map();
-    std::map<uint64_t, Frame *>::iterator it = page_id_map.find(header->page_id);
+    std::map<uint64_t, BFrame *>::iterator it = page_id_map.find(header->page_id);
     ASSERT_EQ(it->second->fix_count, 1);
     buffer_manager->unfix_page(1, true);
     ASSERT_EQ(it->second->fix_count, 0);

@@ -1,5 +1,5 @@
 /**
- * @file    Frame.h
+ * @file    BFrame.h
  *
  * @author  Matteo Wohlrapp
  * @date    16.05.2023
@@ -13,7 +13,7 @@
 /**
  * @brief Frame that wraps around a header to store additional information used by the buffer manager
  */
-struct Frame
+struct BFrame
 {
     /// used to fix and unfix page and protect memory access
     uint16_t fix_count = 0;

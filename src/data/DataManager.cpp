@@ -19,6 +19,8 @@ void DataManager::destroy()
 {
     buffer_manager->destroy();
     storage_manager->destroy();
+    if(rtree)
+        rtree->destroy(); 
     delete rtree; 
     delete btree; 
 }
@@ -41,7 +43,7 @@ int64_t DataManager::get_value(int64_t key)
     if (cache)
     {
         int64_t value = rtree->get_value(key);
-        if (value != INT64_MIN)
+        if (value == INT64_MIN)
             return value;
     }
     return btree->get_value(key);
