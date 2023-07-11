@@ -5,8 +5,8 @@
 DataManager::DataManager(bool cache_arg) : cache(cache_arg)
 {
     logger = spdlog::get("logger");
-    storage_manager = std::make_shared<StorageManager>(base_path, Configuration::page_size);
-    buffer_manager = std::make_shared<BufferManager>(storage_manager, Configuration::max_buffer_size, Configuration::page_size);
+    storage_manager = new StorageManager(base_path, Configuration::page_size);
+    buffer_manager = new BufferManager(storage_manager, Configuration::max_buffer_size, Configuration::page_size);
     if (cache_arg)
     {
         logger->info("Cache enabled");
@@ -19,10 +19,14 @@ void DataManager::destroy()
 {
     buffer_manager->destroy();
     storage_manager->destroy();
-    if(rtree)
-        rtree->destroy(); 
-    delete rtree; 
-    delete btree; 
+    if (rtree)
+    {
+        rtree->destroy();
+        delete rtree;
+    }
+    delete storage_manager; 
+    delete buffer_manager; 
+    delete btree;
 }
 
 void DataManager::insert(int64_t key, int64_t value)
@@ -33,8 +37,7 @@ void DataManager::insert(int64_t key, int64_t value)
 
 void DataManager::delete_pair(int64_t key)
 {
-    if (cache)
-        rtree->delete_reference(key);
+    // automatically deleted in btree
     btree->delete_pair(key);
 }
 

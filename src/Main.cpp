@@ -35,7 +35,7 @@ bool benchmark = false;
 bool cache = false;
 
 // configuration that will be executed, default is configuration one
-std::shared_ptr<RunConfig> run;
+std::unique_ptr<RunConfig> run;
 
 void print_help()
 {
@@ -186,23 +186,6 @@ void handle_arguments(int argc, char *argsv[])
 
 int main(int argc, char *argsv[])
 {
-    RNode4 *node4 = new RNode4(false);
-    std::cout << sizeof(*node4) << std::endl;
-    delete node4;
-
-    RNode16 *node16 = new RNode16(false);
-    std::cout << sizeof(*node16) << std::endl;
-    delete node16;
-
-    RNode48 *node48 = new RNode48(false);
-    std::cout << sizeof(*node48) << std::endl;
-    delete node48;
-
-    RNode256 *node256 = new RNode256(false);
-    std::cout << sizeof(*node256) << std::endl;
-    delete node256;
-
-    // first turn the logging on or off
     handle_logging(argc, argsv);
     handle_arguments(argc, argsv);
     run->execute(benchmark);

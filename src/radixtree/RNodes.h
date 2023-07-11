@@ -276,8 +276,11 @@ struct RNode16
             if (keys[i] == key)
             {
                 free(children[i]);
-                keys[i] = keys[header.current_size - 1];
-                children[i] = children[header.current_size - 1];
+                if (i != header.current_size - 1)
+                {
+                    keys[i] = keys[header.current_size - 1];
+                    children[i] = children[header.current_size - 1];
+                }
                 header.current_size--;
                 return;
             }

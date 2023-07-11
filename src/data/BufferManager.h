@@ -28,7 +28,7 @@ class BufferManager
 private:
     std::shared_ptr<spdlog::logger> logger;
     /// write and read to disc
-    std::shared_ptr<StorageManager> storage_manager;
+    StorageManager *storage_manager;
     /// data structure for page id mapping
     std::map<uint64_t, BFrame *> page_id_map;
     /// information about how full the buffer is right now
@@ -67,7 +67,7 @@ public:
      * @param buffer_size_arg The size of the buffer
      * @param page_size_arg The size of the page that needs to be allocated
      */
-    BufferManager(std::shared_ptr<StorageManager> storage_manager_arg, int buffer_size_arg, int page_size_arg);
+    BufferManager(StorageManager *storage_manager_arg, int buffer_size_arg, int page_size_arg);
 
     /**
      * @brief Request a page

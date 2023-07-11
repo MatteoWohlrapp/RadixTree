@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <random>
 
-BufferManager::BufferManager(std::shared_ptr<StorageManager> storage_manager_arg, int buffer_size_arg, int page_size_arg) : storage_manager(storage_manager_arg), buffer_size(buffer_size_arg), page_size(page_size_arg)
+BufferManager::BufferManager(StorageManager* storage_manager_arg, int buffer_size_arg, int page_size_arg) : storage_manager(storage_manager_arg), buffer_size(buffer_size_arg), page_size(page_size_arg)
 {
     logger = spdlog::get("logger");
     dist = std::uniform_int_distribution<int>(0, buffer_size);

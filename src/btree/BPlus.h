@@ -28,7 +28,7 @@ class BPlus
 private:
     std::shared_ptr<spdlog::logger> logger;
 
-    std::shared_ptr<BufferManager> buffer_manager;
+    BufferManager *buffer_manager;
 
     RadixTree *cache;
 
@@ -761,7 +761,7 @@ public:
      * @param buffer_manager_arg The buffer manager
      * @param cache_arg The chache
      */
-    BPlus(std::shared_ptr<BufferManager> buffer_manager_arg, RadixTree *cache_arg = nullptr) : buffer_manager(buffer_manager_arg), cache(cache_arg)
+    BPlus(BufferManager *buffer_manager_arg, RadixTree *cache_arg = nullptr) : buffer_manager(buffer_manager_arg), cache(cache_arg)
     {
         logger = spdlog::get("logger");
         BHeader *root = buffer_manager->create_new_page();

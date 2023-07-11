@@ -7,7 +7,7 @@
 #include <sstream>
 #include <set>
 
-Debuger::Debuger(std::shared_ptr<BufferManager> buffer_manager_arg) : buffer_manager(buffer_manager_arg)
+Debuger::Debuger(BufferManager *buffer_manager_arg) : buffer_manager(buffer_manager_arg)
 {
     logger = spdlog::get("logger");
 }
@@ -308,7 +308,8 @@ void Debuger::traverse_rtree(RadixTree *radixtree)
                 {
                     if (node->keys[i] != 256)
                     {
-                        RFrame *frame = (RFrame *)node->children[i];
+                        logger->info("Accessing key: {}", i); 
+                        RFrame *frame = (RFrame *)node->children[node->keys[i]];
                         std::stringstream ss_frame;
                         ss_frame << "leaf_child_frame_id: " << frame->page_id;
                         logger->info(ss_frame.str());

@@ -14,8 +14,8 @@ class BPlusTest : public ::testing::Test
     friend class BufferManager;
 
 protected:
-    std::unique_ptr<BPlus<node_test_size>> bplus;
-    std::shared_ptr<BufferManager> buffer_manager;
+    BPlus<node_test_size> *bplus;
+    BufferManager *buffer_manager;
     std::filesystem::path base_path = "../tests/temp/";
     std::filesystem::path bitmap = "bitmap.bin";
     std::filesystem::path data = "data.bin";
@@ -26,8 +26,8 @@ protected:
     {
         std::filesystem::remove(base_path / bitmap);
         std::filesystem::remove(base_path / data);
-        buffer_manager = std::make_shared<BufferManager>(std::make_shared<StorageManager>(base_path, node_test_size), buffer_size, node_test_size);
-        bplus = std::make_unique<BPlus<node_test_size>>(buffer_manager);
+        buffer_manager = new BufferManager(new StorageManager(base_path, node_test_size), buffer_size, node_test_size); 
+        bplus = new BPlus<node_test_size>(buffer_manager);
     }
 
     void TearDown() override

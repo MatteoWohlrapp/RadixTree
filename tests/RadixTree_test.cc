@@ -14,9 +14,9 @@ class RadixTreeTest : public ::testing::Test
     friend class RadixTree;
 
 protected:
-    std::shared_ptr<RadixTree> radixtree;
-    std::shared_ptr<StorageManager> storage_manager;
-    std::shared_ptr<BufferManager> buffer_manager;
+    RadixTree *radixtree;
+    StorageManager *storage_manager;
+    BufferManager *buffer_manager;
     BPlus<Configuration::page_size> *btree;
     std::filesystem::path base_path = "../tests/temp/";
     std::filesystem::path bitmap = "bitmap.bin";
@@ -27,10 +27,10 @@ protected:
     {
         std::filesystem::remove(base_path / bitmap);
         std::filesystem::remove(base_path / data);
-        radixtree = std::make_shared<RadixTree>();
-        storage_manager = std::make_shared<StorageManager>(base_path, node_test_size);
-        buffer_manager = std::make_shared<BufferManager>(storage_manager, buffer_size, node_test_size);
-        btree = new BPlus<node_test_size>(buffer_manager, radixtree.get());
+        radixtree = new RadixTree();
+        storage_manager = new StorageManager(base_path, node_test_size);
+        buffer_manager = new BufferManager(storage_manager, buffer_size, node_test_size);
+        btree = new BPlus<node_test_size>(buffer_manager, radixtree);
     }
 
     void TearDown() override

@@ -18,14 +18,14 @@ class Debuger
 {
 private:
     std::shared_ptr<spdlog::logger> logger;
-    std::shared_ptr<BufferManager> buffer_manager;
+    BufferManager *buffer_manager;
 
 public:
     /**
      * @brief Constructor for the Debuger
      * @param buffer_manager_arg Reference to the buffer manager that implements the tree
      */
-    Debuger(std::shared_ptr<BufferManager> buffer_manager_arg);
+    Debuger(BufferManager *buffer_manager_arg);
 
     /**
      * @brief traverses the btree with BFS

@@ -194,11 +194,13 @@ void RadixTree::insert_recursive(RHeader *rheader, int64_t key, uint64_t page_id
             // check if there is already an entry
             if (leaf)
             {
+                logger->info("Leaf true, current size of node is: {}", rheader->type);
                 leaf->header = bheader;
                 leaf->page_id = page_id;
             }
             else
             {
+                logger->info("Leaf true");
                 node_insert(rheader, partial_key, key, page_id, bheader);
             }
             rheader->unfix_node();
@@ -618,12 +620,12 @@ void RadixTree::delete_reference(int64_t key)
                         RHeader *temp = root;
                         root = (RHeader *)get_single_child(root);
                         free(temp);
-                        return; 
+                        return;
                     }
                     else if (!can_delete(root))
                     {
                         root = decrease_node_size(root);
-                        return; 
+                        return;
                     }
                 }
                 else if (!can_delete(child_header))
@@ -714,14 +716,12 @@ void RadixTree::node_delete(RHeader *header, uint8_t key)
     {
     case 4:
     {
-        logger->info("Deleting page 4");
         RNode4 *node = (RNode4 *)header;
         node->delete_pair(key);
     }
     break;
     case 16:
     {
-        logger->info("Deleting page 16");
         RNode16 *node = (RNode16 *)header;
         node->delete_pair(key);
     }
