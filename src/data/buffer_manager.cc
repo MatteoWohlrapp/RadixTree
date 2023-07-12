@@ -1,11 +1,11 @@
 
-#include "BufferManager.h"
-#include "../Configuration.h"
+#include "buffer_manager.h"
+#include "../configuration.h"
 #include <iostream>
 #include <stdlib.h>
 #include <random>
 
-BufferManager::BufferManager(std::shared_ptr<StorageManager> storage_manager_arg, int buffer_size_arg, int page_size_arg) : storage_manager(storage_manager_arg), buffer_size(buffer_size_arg), page_size(page_size_arg)
+BufferManager::BufferManager(StorageManager* storage_manager_arg, int buffer_size_arg, int page_size_arg) : storage_manager(storage_manager_arg), buffer_size(buffer_size_arg), page_size(page_size_arg)
 {
     logger = spdlog::get("logger");
     dist = std::uniform_int_distribution<int>(0, buffer_size);
@@ -69,7 +69,7 @@ BHeader *BufferManager::create_new_page()
 
 void BufferManager::delete_page(uint64_t page_id)
 {
-    logger->info("Deleting page"); 
+    logger->debug("Deleting page"); 
     std::map<uint64_t, BFrame *>::iterator it = page_id_map.find(page_id);
     if (it != page_id_map.end())
     {

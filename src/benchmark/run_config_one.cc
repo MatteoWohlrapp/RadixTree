@@ -1,8 +1,9 @@
-#include "RunConfigOne.h"
 
-#include "../data/DataManager.h"
-#include "./btree/BPlus.h"
-#include "./debug/Debuger.h"
+#include "run_config_one.h"
+#include "../data/data_manager.h"
+#include "./bplus_tree/bplus_tree.h"
+#include "./radix_tree/radix_tree.h"
+#include "./debug/debuger.h"
 
 #include <iostream>
 #include <unistd.h>
@@ -13,15 +14,15 @@ void RunConfigOne::execute(bool benchmark)
     auto run = [this]
     {
         std::mt19937 generator(42); // 42 is the seed value
-        std::uniform_int_distribution<int64_t> dist(-1000, 1000);
+        std::uniform_int_distribution<int64_t> dist(0, 255);
         std::unordered_set<int64_t> unique_values;
         int64_t values[100];
 
-        auto debuger = Debuger(data_manager.buffer_manager);
+        auto debuger = Debuger(&data_manager);
 
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 40; i++)
         {
-            logger->info("Inserting"); 
+            logger->debug("Inserting");
             int64_t value = dist(generator); // generate a random number
 
             // Ensure we have a unique value, if not, generate another one
@@ -35,11 +36,12 @@ void RunConfigOne::execute(bool benchmark)
             data_manager.insert(value, value);
         }
 
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 40; i++)
         {
-            debuger.traverse_btree(data_manager.btree);
-            logger->info("Deleting {} at index {}", values[i], i);
-            data_manager.delete_pair(values[i]);
+            logger->debug("Deleting {} at index {}", values[i], i);
+            data_manager.delete_value(values[i]);
+            debuger.traverse_bplus_tree();
+            debuger.traverse_radix_tree();
         }
     };
     this->benchmark.measure(run, benchmark);

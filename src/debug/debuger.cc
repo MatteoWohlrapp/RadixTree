@@ -1,35 +1,38 @@
 
-#include "Debuger.h"
-#include "../Configuration.h"
-#include "../radixtree/RNodes.h"
+#include "debuger.h"
+#include "../configuration.h"
+#include "../radix_tree/r_nodes.h"
 #include <iostream>
 #include <queue>
 #include <sstream>
 #include <set>
 
-Debuger::Debuger(std::shared_ptr<BufferManager> buffer_manager_arg) : buffer_manager(buffer_manager_arg)
+Debuger::Debuger(DataManager *data_manager_arg) : data_manager(data_manager_arg)
 {
     logger = spdlog::get("logger");
+    bplus_tree = data_manager->bplus_tree; 
+    radix_tree = data_manager->radix_tree; 
+    buffer_manager = data_manager->buffer_manager; 
 }
 
 // BFS
-void Debuger::traverse_btree(BPlus<Configuration::page_size> *tree)
+void Debuger::traverse_bplus_tree()
 {
-    if (!tree)
+    if (bplus_tree->root_id == 0)
     {
-        logger->info("Empty tree");
+        logger->debug("Empty tree");
         return;
     }
 
     std::queue<uint64_t> nodes_queue;
-    nodes_queue.push(tree->root_id);
+    nodes_queue.push(bplus_tree->root_id);
     int level = 0;
 
-    logger->info("Starting traversing on root node: {}", tree->root_id);
+    logger->debug("Starting traversing on root node: {}", bplus_tree->root_id);
     while (!nodes_queue.empty())
     {
         int level_size = nodes_queue.size();
-        logger->info("Level {} :", level);
+        logger->debug("Level {} :", level);
 
         for (int i = 0; i < level_size; i++)
         {
@@ -47,7 +50,7 @@ void Debuger::traverse_btree(BPlus<Configuration::page_size> *tree)
                     node << " (Key: " << outer_node->keys[j] << ", Value: " << outer_node->values[j] << ")";
                 }
                 node << "; Next Leaf: " << outer_node->next_lef_id << " }";
-                logger->info(node.str());
+                logger->debug(node.str());
             }
             else
             {
@@ -60,7 +63,7 @@ void Debuger::traverse_btree(BPlus<Configuration::page_size> *tree)
                     node << " Key: " << inner_node->keys[j] << ", Child_id: " << inner_node->child_ids[j + 1] << "";
                 }
                 node << ") }";
-                logger->info(node.str());
+                logger->debug(node.str());
 
                 // <= because the child array is one position bigger
                 for (int j = 0; j <= inner_node->current_index; j++)
@@ -73,20 +76,20 @@ void Debuger::traverse_btree(BPlus<Configuration::page_size> *tree)
 
         level++;
     }
-    logger->info("Finished traversing");
+    logger->debug("Finished traversing");
 }
 
-bool Debuger::are_all_child_ids_unique(BPlus<Configuration::page_size> *tree)
+bool Debuger::are_all_child_ids_unique()
 {
-    if (!tree)
+    if (bplus_tree->root_id == 0)
     {
-        logger->info("Empty tree");
+        logger->debug("Empty tree");
         return true;
     }
 
     std::set<uint64_t> unique_child_ids;
     std::queue<uint64_t> nodes_queue;
-    nodes_queue.push(tree->root_id);
+    nodes_queue.push(bplus_tree->root_id);
 
     while (!nodes_queue.empty())
     {
@@ -118,16 +121,16 @@ bool Debuger::are_all_child_ids_unique(BPlus<Configuration::page_size> *tree)
     return true;
 }
 
-bool Debuger::contains_key(BPlus<Configuration::page_size> *tree, uint64_t key)
+bool Debuger::contains_key(int64_t key)
 {
-    if (!tree)
+    if (bplus_tree->root_id == 0)
     {
-        logger->info("Empty tree");
+        logger->debug("Empty tree");
         return false;
     }
 
     std::queue<uint64_t> nodes_queue;
-    nodes_queue.push(tree->root_id);
+    nodes_queue.push(bplus_tree->root_id);
 
     while (!nodes_queue.empty())
     {
@@ -174,15 +177,15 @@ bool Debuger::contains_key(BPlus<Configuration::page_size> *tree, uint64_t key)
     return false;
 }
 
-void Debuger::traverse_rtree(RadixTree *radixtree)
+void Debuger::traverse_radix_tree()
 {
-    if (!radixtree->root)
+    if (!radix_tree->root)
     {
-        logger->info("RTree null"); 
+        logger->debug("Radixtree null"); 
         return; 
     }
     std::queue<RHeader *> nodes_queue;
-    nodes_queue.push(radixtree->root);
+    nodes_queue.push(radix_tree->root);
 
     while (!nodes_queue.empty())
     {
@@ -208,7 +211,7 @@ void Debuger::traverse_rtree(RadixTree *radixtree)
         }
 
         ss << "]";
-        logger->info(ss.str());
+        logger->debug(ss.str());
 
         if (!header->leaf)
         {
@@ -222,7 +225,7 @@ void Debuger::traverse_rtree(RadixTree *radixtree)
                 {
                     std::stringstream ss_frame;
                     ss_frame << "child_key: " << static_cast<unsigned int>(node->keys[i]) << ", child_address: " << node->children[i];
-                    logger->info(ss_frame.str());
+                    logger->debug(ss_frame.str());
                     nodes_queue.push((RHeader *)node->children[i]);
                 }
                 break;
@@ -234,7 +237,7 @@ void Debuger::traverse_rtree(RadixTree *radixtree)
                 {
                     std::stringstream ss_frame;
                     ss_frame << "child_key: " << static_cast<unsigned int>(node->keys[i]) << ", child_address: " << node->children[i];
-                    logger->info(ss_frame.str());
+                    logger->debug(ss_frame.str());
                     nodes_queue.push((RHeader *)node->children[i]);
                 }
                 break;
@@ -244,11 +247,11 @@ void Debuger::traverse_rtree(RadixTree *radixtree)
                 RNode48 *node = (RNode48 *)header;
                 for (int i = 0; i < 256; ++i)
                 {
-                    if (node->keys[i] != 256)
+                    if (node->keys[i] != 255)
                     {
                         std::stringstream ss_frame;
                         ss_frame << "child_key: " << static_cast<unsigned int>(i) << ", child_address: " << node->children[i];
-                        logger->info(ss_frame.str());
+                        logger->debug(ss_frame.str());
                         nodes_queue.push((RHeader *)node->children[i]);
                     }
                 }
@@ -263,7 +266,7 @@ void Debuger::traverse_rtree(RadixTree *radixtree)
                     {
                         std::stringstream ss_frame;
                         ss_frame << "child_key: " << static_cast<unsigned int>(i) << ", child_address: " << node->children[i];
-                        logger->info(ss_frame.str());
+                        logger->debug(ss_frame.str());
                         nodes_queue.push((RHeader *)node->children[i]);
                     }
                 }
@@ -284,7 +287,7 @@ void Debuger::traverse_rtree(RadixTree *radixtree)
                     RFrame *frame = (RFrame *)node->children[i];
                     std::stringstream ss_frame;
                     ss_frame << "leaf_child_frame_id: " << frame->page_id;
-                    logger->info(ss_frame.str());
+                    logger->debug(ss_frame.str());
                 }
                 break;
             }
@@ -297,7 +300,7 @@ void Debuger::traverse_rtree(RadixTree *radixtree)
                     RFrame *frame = (RFrame *)node->children[i];
                     std::stringstream ss_frame;
                     ss_frame << "leaf_child_frame_id: " << frame->page_id;
-                    logger->info(ss_frame.str());
+                    logger->debug(ss_frame.str());
                 }
                 break;
             }
@@ -306,12 +309,13 @@ void Debuger::traverse_rtree(RadixTree *radixtree)
                 RNode48 *node = (RNode48 *)header;
                 for (int i = 0; i < 256; ++i)
                 {
-                    if (node->keys[i] != 256)
+                    if (node->keys[i] != 255)
                     {
-                        RFrame *frame = (RFrame *)node->children[i];
+                        logger->debug("Accessing key: {}", i); 
+                        RFrame *frame = (RFrame *)node->children[node->keys[i]];
                         std::stringstream ss_frame;
                         ss_frame << "leaf_child_frame_id: " << frame->page_id;
-                        logger->info(ss_frame.str());
+                        logger->debug(ss_frame.str());
                     }
                 }
                 break;
@@ -326,7 +330,7 @@ void Debuger::traverse_rtree(RadixTree *radixtree)
                         RFrame *frame = (RFrame *)node->children[i];
                         std::stringstream ss_frame;
                         ss_frame << "leaf_child_frame_id: " << frame->page_id;
-                        logger->info(ss_frame.str());
+                        logger->debug(ss_frame.str());
                     }
                 }
                 break;

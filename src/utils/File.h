@@ -1,5 +1,5 @@
 /**
- * @file    File.h
+ * @file    file.h
  *
  * @author  Matteo Wohlrapp
  * @date    23.05.2023
@@ -7,8 +7,11 @@
 
 #pragma once
 
+#include "../model/b_header.h"
 #include <fstream>
 #include <iostream>
+#include <sstream>
+#include <spdlog/logger.h>
 
 /**
  * @brief namespace contains helper functions for file access
@@ -49,7 +52,7 @@ namespace File
         file.seekg(0, std::ios::beg);
 
         std::vector<char> buffer(size);
-        logger->info("File content: ");
+        logger->debug("File content: ");
 
         BHeader *header = (BHeader *)malloc(96);
         while (file.read(reinterpret_cast<char *>(header), 96))
@@ -59,7 +62,7 @@ namespace File
                << ", Inner: " << std::boolalpha << header->inner;
 
             std::string result = ss.str();
-            logger->info(result);
+            logger->debug(result);
         }
         free(header);
 

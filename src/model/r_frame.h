@@ -1,5 +1,5 @@
 /**
- * @file    RFrame.h
+ * @file    r_frame.h
  *
  * @author  Matteo Wohlrapp
  * @date    18.06.2023
@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "./BHeader.h"
+#include "./b_header.h"
 #include <stdint.h>
 
 /**

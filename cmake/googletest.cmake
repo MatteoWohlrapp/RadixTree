@@ -21,7 +21,7 @@ enable_testing()
 
 
 file(GLOB_RECURSE TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/*/*.cpp" #include everything except MolSim.cpp
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*/*.cc" #include everything
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cc"
     # header don't need to be included but this might be necessary for some IDEs
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"

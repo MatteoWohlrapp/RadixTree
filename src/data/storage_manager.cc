@@ -1,11 +1,10 @@
 
-#include "StorageManager.h"
-
+#include "storage_manager.h"
+#include "../utils/file.h"
 #include <cstring>
 #include <cerrno>
 #include <cassert>
 #include <cmath>
-#include "../utils/File.h"
 
 StorageManager::StorageManager(std::filesystem::path base_path_arg, int page_size_arg)
     : base_path(base_path_arg), page_size(page_size_arg)

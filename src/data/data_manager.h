@@ -1,5 +1,5 @@
 /**
- * @file    DataManager.h
+ * @file    data_manager.h
  *
  * @author  Matteo Wohlrapp
  * @date    16.05.2023
@@ -7,11 +7,13 @@
 
 #pragma once
 
-#include "BufferManager.h"
-#include "StorageManager.h"
-#include "../radixtree/RadixTree.h"
-#include "../Configuration.h"
-#include "../btree/BPlus.h"
+#include "buffer_manager.h"
+#include "storage_manager.h"
+#include "../radix_tree/radix_tree.h"
+#include "../configuration.h"
+#include "../bplus_tree/bplus_tree.h"
+
+class Debuger;
 
 /**
  * @brief Makes sure that the DB is initialized correctly and hold all variables necessary to run the system
@@ -24,15 +26,14 @@ private:
 
     std::shared_ptr<spdlog::logger> logger;
 
-    /// gives information if cache is enabled or not
-    bool cache = false;
+    StorageManager *storage_manager;
+    BufferManager *buffer_manager;
+
+    BPlusTree<Configuration::page_size> *bplus_tree;
+    RadixTree<Configuration::page_size> *radix_tree = nullptr;
 
 public:
-    std::shared_ptr<StorageManager> storage_manager;
-    std::shared_ptr<BufferManager> buffer_manager;
-
-    BPlus<Configuration::page_size> *btree;
-    RadixTree *rtree = nullptr;
+    friend class Debuger;
 
     /**
      * @brief Constructor for the DataManager
@@ -48,7 +49,7 @@ public:
      * @brief Delete an element from the tree
      * @param key The key that will be deleted
      */
-    void delete_pair(int64_t key);
+    void delete_value(int64_t key);
 
     /**
      * @brief Insert an element into the tree

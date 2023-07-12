@@ -1,5 +1,5 @@
 /**
- * @file    BNodes.h
+ * @file    b_nodes.h
  *
  * @author  Matteo Wohlrapp
  * @date    16.05.2023
@@ -113,7 +113,7 @@ struct BInnerNode
      * @brief Ineserting a key and child pair: the child id will be deleted on the right side of the key
      * @param key The key to delete
      */
-    void delete_pair(int64_t key)
+    void delete_value(int64_t key)
     {
         // we always delete key and the right child because the new elements will be in the left node from the key
         int index = binary_search(key);;
@@ -267,7 +267,7 @@ struct BOuterNode
      * @brief Deleting key and value pair
      * @param key Key that should be deleted
      */
-    void delete_pair(int64_t key)
+    void delete_value(int64_t key)
     {
         int index = binary_search(key);
 

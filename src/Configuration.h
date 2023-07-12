@@ -1,5 +1,5 @@
 /**
- * @file    Configuration.h
+ * @file    cofiguration.h
  *
  * @author  Matteo Wohlrapp
  * @date    16.05.2023

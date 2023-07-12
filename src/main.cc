@@ -1,17 +1,17 @@
 /*
- *  RadixTree.h
+ *   main.cc
  *
  *  Created on: 16.05.2023
  *      Author: Matteo Wohlrapp
  */
 
 /**
- * Codebase for the Thesis: Evaluation of a RadixTree Cache for Database Management Systems
+ * Codebase for the Thesis: Evaluation of a Radix Tree Cache for Database Management Systems
  * This file marks the entry point into the program
  */
 
-#include "benchmark/RunConfigOne.h"
-#include "benchmark/RunConfigTwo.h"
+#include "benchmark/run_config_one.h"
+#include "benchmark/run_config_two.h"
 #include <iostream>
 #include <stdio.h>
 #include <ctype.h>
@@ -23,10 +23,7 @@
 #include <spdlog/logger.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "utils/Logger.h"
-#include "Configuration.h"
 #include <boost/dynamic_bitset.hpp>
-
-#include "radixtree/RNodes.h"
 
 // gives information if benchmark should be run
 bool benchmark = false;
@@ -35,7 +32,7 @@ bool benchmark = false;
 bool cache = false;
 
 // configuration that will be executed, default is configuration one
-std::shared_ptr<RunConfig> run;
+std::unique_ptr<RunConfig> run;
 
 void print_help()
 {
@@ -186,23 +183,6 @@ void handle_arguments(int argc, char *argsv[])
 
 int main(int argc, char *argsv[])
 {
-    RNode4 *node4 = new RNode4(false);
-    std::cout << sizeof(*node4) << std::endl;
-    delete node4;
-
-    RNode16 *node16 = new RNode16(false);
-    std::cout << sizeof(*node16) << std::endl;
-    delete node16;
-
-    RNode48 *node48 = new RNode48(false);
-    std::cout << sizeof(*node48) << std::endl;
-    delete node48;
-
-    RNode256 *node256 = new RNode256(false);
-    std::cout << sizeof(*node256) << std::endl;
-    delete node256;
-
-    // first turn the logging on or off
     handle_logging(argc, argsv);
     handle_arguments(argc, argsv);
     run->execute(benchmark);

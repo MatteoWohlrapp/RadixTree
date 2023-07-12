@@ -1,5 +1,5 @@
 /**
- * @file    StorageManager.h
+ * @file    storage_manager.h
  *
  * @author  Matteo Wohlrapp
  * @date    16.05.2023
@@ -7,14 +7,14 @@
 
 #pragma once
 
-#include "../model/BHeader.h"
+#include "../model/b_header.h"
 #include <map>
 #include <iostream>
 #include <filesystem>
 #include <fstream>
 #include "spdlog/spdlog.h"
 #include <boost/dynamic_bitset.hpp>
-#include "../Configuration.h"
+#include "../configuration.h"
 
 /// forward declaration
 class StorageManagerTest;
@@ -39,15 +39,19 @@ private:
     /// file handle for the data file
     std::fstream data_fs;
 
+    /// the page size for a bplus node
     int page_size;
 
+    /// how much the bitmap increments each time
     int bitmap_increment;
 
     /// data structure that shows if page_id is currently in use, 1 is free, 0 is occupied
     boost::dynamic_bitset<> free_space_map;
 
+    /// how many pages there are saved
     int current_page_count = 0;
 
+    /// where to find the next free space
     int next_free_space = 1;
 
     /**

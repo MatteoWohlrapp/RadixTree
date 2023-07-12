@@ -1,14 +1,14 @@
 #include "gtest/gtest.h"
-#include "../src/data/StorageManager.h"
-#include "../src/Configuration.h"
-#include "../src/utils/File.h"
+#include "../src/data/storage_manager.h"
+#include "../src/configuration.h"
+#include "../src/utils/file.h"
 
 class StorageManagerTest : public ::testing::Test
 {
     friend class StorageManager;
 
 protected:
-    std::unique_ptr<StorageManager> storage_manager;
+    StorageManager *storage_manager;
     std::filesystem::path base_path = "../tests/temp/";
     std::filesystem::path bitmap = "bitmap.bin";
     std::filesystem::path data = "data.bin";
@@ -19,7 +19,7 @@ protected:
     {
         std::filesystem::remove(base_path / bitmap);
         std::filesystem::remove(base_path / data);
-        storage_manager = std::make_unique<StorageManager>(base_path, page_size);
+        storage_manager = new StorageManager(base_path, page_size);
     }
 
     boost::dynamic_bitset<> get_free_space_map()
@@ -44,7 +44,7 @@ protected:
 
     void overwrite_storage_manager()
     {
-        storage_manager = std::make_unique<StorageManager>(base_path, page_size);
+        storage_manager = new StorageManager(base_path, page_size);
     }
 };
 

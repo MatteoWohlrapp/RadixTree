@@ -1,29 +1,30 @@
 /**
- * @file    RunConfig.h
- * 
+ * @file    run_config.h
+ *
  * @author  Matteo Wohlrapp
  * @date    16.05.2023
-*/
+ */
 
 #pragma once
 
-#include "Benchmark.h"
-#include "../data/DataManager.h"
+#include "benchmark.h"
+#include "../data/data_manager.h"
 #include "spdlog/spdlog.h"
 
 /**
  * @brief A class that can execute a specific scenario for the database
-*/
+ */
 class RunConfig
 {
-public:
+protected:
     Benchmark benchmark;
     DataManager data_manager;
     std::shared_ptr<spdlog::logger> logger;
 
+public:
     /**
      * @brief Constructor
-    */
+     */
     RunConfig(bool cache) : benchmark(), data_manager(cache)
     {
         logger = spdlog::get("logger");
@@ -31,14 +32,15 @@ public:
 
     /**
      * @brief Destructor
-    */
-    virtual ~RunConfig(){
-        data_manager.destroy(); 
+     */
+    virtual ~RunConfig()
+    {
+        data_manager.destroy();
     }
 
     /**
      * @brief Execute a specific run with different operations on the database
      * @param benchmark If the run should be benchmarked or not
-    */
+     */
     virtual void execute(bool benchmark) = 0;
 };

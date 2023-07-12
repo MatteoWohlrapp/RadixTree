@@ -1,9 +1,9 @@
 #include "gtest/gtest.h"
-#include "../src/btree/BPlus.h"
-#include "../src/data/BufferManager.h"
-#include "../src/Configuration.h"
+#include "../src/bplus_tree/bplus_tree.h"
+#include "../src/data/buffer_manager.h"
+#include "../src/configuration.h"
 
-constexpr int node_test_size = 96;
+constexpr int PAGE_SIZE = 96;
 
 class BNodeTest : public ::testing::Test
 {
@@ -15,7 +15,7 @@ protected:
 
     void SetUp() override
     {
-        header = (BHeader *)malloc(node_test_size);
+        header = (BHeader *)malloc(PAGE_SIZE);
     }
 
     void TearDown() override
@@ -28,20 +28,20 @@ TEST_F(BNodeTest, BBInnerNodeConstructor)
 {
     header->inner = false;
     header->page_id = 3;
-    BInnerNode<node_test_size> *node = new (header) BInnerNode<node_test_size>();
+    BInnerNode<PAGE_SIZE> *node = new (header) BInnerNode<PAGE_SIZE>();
 
-    ASSERT_EQ(sizeof(BInnerNode<node_test_size>), node_test_size);
+    ASSERT_EQ(sizeof(BInnerNode<PAGE_SIZE>), PAGE_SIZE);
     ASSERT_EQ(node->header.inner, true);
     ASSERT_EQ(node->header.page_id, 3);
     ASSERT_EQ(node->current_index, 0);
-    ASSERT_EQ(node->max_size, ((node_test_size - 24) / 2) / 8 - 1);
-    ASSERT_EQ(sizeof(node->keys) / sizeof(node->keys[0]), ((node_test_size - 24) / 2) / 8);
-    ASSERT_EQ(sizeof(node->child_ids) / sizeof(node->child_ids[0]), ((node_test_size - 24) / 2) / 8);
+    ASSERT_EQ(node->max_size, ((PAGE_SIZE - 24) / 2) / 8 - 1);
+    ASSERT_EQ(sizeof(node->keys) / sizeof(node->keys[0]), ((PAGE_SIZE - 24) / 2) / 8);
+    ASSERT_EQ(sizeof(node->child_ids) / sizeof(node->child_ids[0]), ((PAGE_SIZE - 24) / 2) / 8);
 }
 
 TEST_F(BNodeTest, BInnerNodeFindNextPage)
 {
-    BInnerNode<node_test_size> *node = new (header) BInnerNode<node_test_size>();
+    BInnerNode<PAGE_SIZE> *node = new (header) BInnerNode<PAGE_SIZE>();
 
     node->child_ids[0] = 0;
     node->insert(5, 5);
@@ -59,7 +59,7 @@ TEST_F(BNodeTest, BInnerNodeFindNextPage)
 
 TEST_F(BNodeTest, BInnerNodeInsert)
 {
-    BInnerNode<node_test_size> *node = new (header) BInnerNode<node_test_size>();
+    BInnerNode<PAGE_SIZE> *node = new (header) BInnerNode<PAGE_SIZE>();
     node->child_ids[0] = 1;
     node->insert(4, 5);
 
@@ -79,7 +79,7 @@ TEST_F(BNodeTest, BInnerNodeInsert)
 
 TEST_F(BNodeTest, BInnerNodeFull)
 {
-    BInnerNode<node_test_size> *node = new (header) BInnerNode<node_test_size>();
+    BInnerNode<PAGE_SIZE> *node = new (header) BInnerNode<PAGE_SIZE>();
 
     node->insert(3, 3);
     node->insert(1, 1);
@@ -94,20 +94,20 @@ TEST_F(BNodeTest, BOuterNodeConstructor)
 {
     header->inner = true;
     header->page_id = 3;
-    BOuterNode<node_test_size> *node = new (header) BOuterNode<node_test_size>();
+    BOuterNode<PAGE_SIZE> *node = new (header) BOuterNode<PAGE_SIZE>();
 
-    ASSERT_EQ(sizeof(BOuterNode<node_test_size>), node_test_size);
+    ASSERT_EQ(sizeof(BOuterNode<PAGE_SIZE>), PAGE_SIZE);
     ASSERT_EQ(node->header.inner, false);
     ASSERT_EQ(node->header.page_id, 3);
     ASSERT_EQ(node->current_index, 0);
-    ASSERT_EQ(node->max_size, ((node_test_size - 24) / 2) / 8);
-    ASSERT_EQ(sizeof(node->keys) / sizeof(node->keys[0]), ((node_test_size - 24) / 2) / 8);
-    ASSERT_EQ(sizeof(node->values) / sizeof(node->values[0]), ((node_test_size - 24) / 2) / 8);
+    ASSERT_EQ(node->max_size, ((PAGE_SIZE - 24) / 2) / 8);
+    ASSERT_EQ(sizeof(node->keys) / sizeof(node->keys[0]), ((PAGE_SIZE - 24) / 2) / 8);
+    ASSERT_EQ(sizeof(node->values) / sizeof(node->values[0]), ((PAGE_SIZE - 24) / 2) / 8);
 }
 
 TEST_F(BNodeTest, BOuterNodeInsert)
 {
-    BOuterNode<node_test_size> *node = new (header) BOuterNode<node_test_size>();
+    BOuterNode<PAGE_SIZE> *node = new (header) BOuterNode<PAGE_SIZE>();
     node->insert(3, 4);
 
     ASSERT_EQ(node->keys[0], 3);
@@ -124,7 +124,7 @@ TEST_F(BNodeTest, BOuterNodeInsert)
 
 TEST_F(BNodeTest, BOuterNodeGetValue)
 {
-    BOuterNode<node_test_size> *node = new (header) BOuterNode<node_test_size>();
+    BOuterNode<PAGE_SIZE> *node = new (header) BOuterNode<PAGE_SIZE>();
     node->insert(3, 4);
     node->insert(1, 2);
 
@@ -133,7 +133,7 @@ TEST_F(BNodeTest, BOuterNodeGetValue)
 
 TEST_F(BNodeTest, BOuterNodeFull)
 {
-    BOuterNode<node_test_size> *node = new (header) BOuterNode<node_test_size>();
+    BOuterNode<PAGE_SIZE> *node = new (header) BOuterNode<PAGE_SIZE>();
 
     node->insert(3, 3);
     node->insert(1, 1);
@@ -147,7 +147,7 @@ TEST_F(BNodeTest, BOuterNodeFull)
 
 TEST_F(BNodeTest, BInnerNodeCanDelete)
 {
-    BInnerNode<node_test_size> *node = new (header) BInnerNode<node_test_size>();
+    BInnerNode<PAGE_SIZE> *node = new (header) BInnerNode<PAGE_SIZE>();
 
     node->insert(1, 1);
     ASSERT_FALSE(node->can_delete());
@@ -157,7 +157,7 @@ TEST_F(BNodeTest, BInnerNodeCanDelete)
 
 TEST_F(BNodeTest, BInnerNodeContains)
 {
-    BInnerNode<node_test_size> *node = new (header) BInnerNode<node_test_size>();
+    BInnerNode<PAGE_SIZE> *node = new (header) BInnerNode<PAGE_SIZE>();
 
     node->insert(2, 2);
     node->insert(1, 1);
@@ -167,9 +167,9 @@ TEST_F(BNodeTest, BInnerNodeContains)
     ASSERT_TRUE(node->contains(1));
     ASSERT_FALSE(node->contains(4));
 
-    node->delete_pair(2);
-    node->delete_pair(3);
-    node->delete_pair(1);
+    node->delete_value(2);
+    node->delete_value(3);
+    node->delete_value(1);
 
     ASSERT_FALSE(node->contains(3));
     ASSERT_FALSE(node->contains(2));
@@ -178,16 +178,16 @@ TEST_F(BNodeTest, BInnerNodeContains)
 
 TEST_F(BNodeTest, BInnerNodeDelete)
 {
-    BInnerNode<node_test_size> *node = new (header) BInnerNode<node_test_size>();
+    BInnerNode<PAGE_SIZE> *node = new (header) BInnerNode<PAGE_SIZE>();
 
     node->insert(2, 2);
     node->insert(1, 1);
     node->insert(3, 3);
-    node->delete_pair(2);
-    node->delete_pair(3);
-    node->delete_pair(1);
+    node->delete_value(2);
+    node->delete_value(3);
+    node->delete_value(1);
 
-    ASSERT_EQ(node->current_index, 0); 
+    ASSERT_EQ(node->current_index, 0);
     ASSERT_FALSE(node->contains(3));
     ASSERT_FALSE(node->contains(2));
     ASSERT_FALSE(node->contains(1));
@@ -195,7 +195,7 @@ TEST_F(BNodeTest, BInnerNodeDelete)
 
 TEST_F(BNodeTest, BInnerNodeExchange)
 {
-    BInnerNode<node_test_size> *node = new (header) BInnerNode<node_test_size>();
+    BInnerNode<PAGE_SIZE> *node = new (header) BInnerNode<PAGE_SIZE>();
 
     node->insert(2, 2);
     node->insert(1, 1);
@@ -209,7 +209,7 @@ TEST_F(BNodeTest, BInnerNodeExchange)
 
 TEST_F(BNodeTest, BOuterNodeCanDelete)
 {
-    BOuterNode<node_test_size> *node = new (header) BOuterNode<node_test_size>();
+    BOuterNode<PAGE_SIZE> *node = new (header) BOuterNode<PAGE_SIZE>();
 
     node->insert(1, 1);
     node->insert(1, 1);
@@ -220,16 +220,16 @@ TEST_F(BNodeTest, BOuterNodeCanDelete)
 
 TEST_F(BNodeTest, BOuterNodeDelete)
 {
-    BOuterNode<node_test_size> *node = new (header) BOuterNode<node_test_size>();
+    BOuterNode<PAGE_SIZE> *node = new (header) BOuterNode<PAGE_SIZE>();
 
     node->insert(1, 1);
     node->insert(3, 3);
     node->insert(2, 2);
-    node->delete_pair(1);
-    node->delete_pair(3);
-    node->delete_pair(2);
+    node->delete_value(1);
+    node->delete_value(3);
+    node->delete_value(2);
 
-    ASSERT_EQ(node->current_index, 0); 
+    ASSERT_EQ(node->current_index, 0);
     ASSERT_EQ(node->get_value(1), INT64_MIN);
     ASSERT_EQ(node->get_value(2), INT64_MIN);
     ASSERT_EQ(node->get_value(3), INT64_MIN);

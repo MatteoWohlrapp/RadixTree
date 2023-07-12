@@ -1,5 +1,5 @@
 /**
- * @file    RNodes.h
+ * @file    r_nodes.h
  *
  * @author  Matteo Wohlrapp
  * @date    18.06.2023
@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "../model/RHeader.h"
-#include "../model/RFrame.h"
+#include "../model/r_header.h"
+#include "../model/r_frame.h"
 #include <cassert>
 #include <iostream>
 
@@ -70,7 +70,7 @@ struct RNode4
      * @brief insert a new element with key
      * @param key the key which identifies the value
      * @param page_id the page_id where the information can be found
-     * @param bheader the btree node where the value can be found
+     * @param bheader the bplus tree node where the value can be found
      */
     void insert(uint8_t key, uint64_t page_id, BHeader *bheader)
     {
@@ -118,7 +118,7 @@ struct RNode4
      * @brief deletes an element from the tree
      * @brief the key that corresponds to the child that should be deleted
      */
-    void delete_pair(uint8_t key)
+    void delete_reference(uint8_t key)
     {
         for (int i = 0; i < header.current_size; i++)
         {
@@ -222,7 +222,7 @@ struct RNode16
      * @brief insert a new element with key
      * @param key the key which identifies the value
      * @param page_id the page_id where the information can be found
-     * @param bheader the btree node where the value can be found
+     * @param bheader the bplus tree node where the value can be found
      */
     void insert(uint8_t key, uint64_t page_id, BHeader *bheader)
     {
@@ -269,15 +269,18 @@ struct RNode16
      * @brief deletes an element from the tree
      * @brief the key that corresponds to the child that should be deleted
      */
-    void delete_pair(uint8_t key)
+    void delete_reference(uint8_t key)
     {
         for (int i = 0; i < header.current_size; i++)
         {
             if (keys[i] == key)
             {
                 free(children[i]);
-                keys[i] = keys[header.current_size - 1];
-                children[i] = children[header.current_size - 1];
+                if (i != header.current_size - 1)
+                {
+                    keys[i] = keys[header.current_size - 1];
+                    children[i] = children[header.current_size - 1];
+                }
                 header.current_size--;
                 return;
             }
@@ -301,7 +304,7 @@ struct RNode16
      */
     bool can_delete()
     {
-        return header.current_size > 2;
+        return header.current_size > 4;
     }
 
     /**
@@ -319,8 +322,8 @@ struct RNode16
 struct RNode48
 {
     RHeader header;
-    /// 8 byte part of the key
-    uint16_t keys[256];
+    /// 8 byte part of the key, 255 means not filled
+    uint8_t keys[256];
     /// Pointer to the children
     void *children[48];
 
@@ -330,7 +333,8 @@ struct RNode48
      */
     RNode48(bool leaf) : header{48, leaf, 0, 0, 0}
     {
-        std::fill_n(keys, 256, 256);
+        // need to fill the node because 255 cant be initialized into every element
+        std::fill_n(keys, 256, 255);
     }
 
     /**
@@ -342,8 +346,8 @@ struct RNode48
      */
     RNode48(bool leaf, uint8_t depth, int64_t key, uint16_t current_size) : header{48, leaf, depth, key, current_size}
     {
-        // need to fill the node because 256 cant be initialized into every element
-        std::fill_n(keys, 256, 256);
+        // need to fill the node because 255 cant be initialized into every element
+        std::fill_n(keys, 256, 255);
     }
 
     /**
@@ -354,7 +358,7 @@ struct RNode48
     void insert(uint8_t key, void *child)
     {
 
-        if (keys[key] != 256)
+        if (keys[key] != 255)
         {
             children[keys[key]] = child;
         }
@@ -371,13 +375,13 @@ struct RNode48
      * @brief insert a new element with key
      * @param key the key which identifies the value
      * @param page_id the page_id where the information can be found
-     * @param bheader the btree node where the value can be found
+     * @param bheader the bplus tree node where the value can be found
      */
     void insert(uint8_t key, uint64_t page_id, BHeader *bheader)
     {
         assert(header.leaf && "Inserting a new frame in a non leaf node");
 
-        if (keys[key] == 256)
+        if (keys[key] == 255)
         {
             assert(header.current_size < 48 && "Trying to insert into full node");
             RFrame *frame = (RFrame *)malloc(16);
@@ -401,7 +405,7 @@ struct RNode48
      */
     void *get_next_page(uint8_t key)
     {
-        if (keys[key] == 256)
+        if (keys[key] == 255)
             return nullptr;
         else
             return children[keys[key]];
@@ -411,12 +415,12 @@ struct RNode48
      * @brief deletes an element from the tree
      * @brief the key that corresponds to the child that should be deleted
      */
-    void delete_pair(uint8_t key)
+    void delete_reference(uint8_t key)
     {
-        if (keys[key] != 256)
+        if (keys[key] != 255)
         {
             free(children[keys[key]]);
-            keys[key] = 256;
+            keys[key] = 255;
             header.current_size--;
             return;
         }
@@ -432,7 +436,7 @@ struct RNode48
 
         for (int i = 0; i < 256; i++)
         {
-            if (keys[i] != 256)
+            if (keys[i] != 255)
                 return children[keys[i]];
         }
         return nullptr;
@@ -444,7 +448,7 @@ struct RNode48
      */
     bool can_delete()
     {
-        return header.current_size > 8;
+        return header.current_size > 16;
     }
 
     /**
@@ -502,7 +506,7 @@ struct RNode256
      * @brief insert a new element with key
      * @param key the key which identifies the value
      * @param page_id the page_id where the information can be found
-     * @param bheader the btree node where the value can be found
+     * @param bheader the bplus tree node where the value can be found
      */
     void insert(uint8_t key, uint64_t page_id, BHeader *bheader)
     {
@@ -537,7 +541,7 @@ struct RNode256
      * @brief deletes an element from the tree
      * @brief the key that corresponds to the child that should be deleted
      */
-    void delete_pair(uint8_t key)
+    void delete_reference(uint8_t key)
     {
         if (children[key])
         {
@@ -570,7 +574,7 @@ struct RNode256
      */
     bool can_delete()
     {
-        return header.current_size > 44;
+        return header.current_size > 48;
     }
 
     /**
