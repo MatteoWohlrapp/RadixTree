@@ -304,7 +304,7 @@ struct RNode16
      */
     bool can_delete()
     {
-        return header.current_size > 2;
+        return header.current_size > 4;
     }
 
     /**
@@ -448,7 +448,7 @@ struct RNode48
      */
     bool can_delete()
     {
-        return header.current_size > 8;
+        return header.current_size > 16;
     }
 
     /**
@@ -574,7 +574,7 @@ struct RNode256
      */
     bool can_delete()
     {
-        return header.current_size > 44;
+        return header.current_size > 48;
     }
 
     /**
