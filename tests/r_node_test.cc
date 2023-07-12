@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
-#include "../src/radixtree/Radixtree.h"
-#include "../src/radixtree/RNodes.h"
+#include "../src/radix_tree/radix_tree.h"
+#include "../src/radix_tree/r_nodes.h"
 
 class RNodeTest : public ::testing::Test
 {

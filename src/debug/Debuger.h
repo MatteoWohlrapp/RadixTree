@@ -1,5 +1,5 @@
 /**
- * @file    Debuger.h
+ * @file    debuger.h
  *
  * @author  Matteo Wohlrapp
  * @date    16.05.2023
@@ -7,8 +7,7 @@
 
 #pragma once
 
-#include "../bplustree/BPlusTree.h"
-#include "../radixtree/RadixTree.h"
+#include "../bplus_tree/bplus_tree.h"
 #include "spdlog/spdlog.h"
 
 /**
@@ -28,16 +27,16 @@ public:
     Debuger(BufferManager *buffer_manager_arg);
 
     /**
-     * @brief traverses the bplustree with BFS
+     * @brief traverses the bplus tree with BFS
      * @param tree The tree that should be traverses, root node must be accesible
      */
-    void traverse_bplustree(BPlusTree<Configuration::page_size> *tree);
+    void traverse_bplus_tree(BPlusTree<Configuration::page_size> *tree);
 
     /**
-     * @brief traverses the radixtree with BFS
+     * @brief traverses the radix_treee with BFS
      * @param tree The tree that should be traverses, root node must be accesible
      */
-    void traverse_radixtree(RadixTree *tree);
+    void traverse_radix_tree(RadixTree *tree);
 
     /**
      * @brief Traverses the tree and checks if all saved page_ids are unique

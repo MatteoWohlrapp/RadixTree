@@ -1,5 +1,5 @@
 /**
- * @file    BufferManager.h
+ * @file    buffer_manager.h
  *
  * @author  Matteo Wohlrapp
  * @date    16.05.2023
@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "../model/BFrame.h"
-#include "StorageManager.h"
+#include "../model/b_frame.h"
+#include "storage_manager.h"
 #include <stdint.h>
 #include <vector>
 #include <map>

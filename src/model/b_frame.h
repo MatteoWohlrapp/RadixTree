@@ -1,5 +1,5 @@
 /**
- * @file    BFrame.h
+ * @file    b_frame.h
  *
  * @author  Matteo Wohlrapp
  * @date    16.05.2023
@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "./BHeader.h"
+#include "./b_header.h"
 #include <stdint.h>
 
 /**

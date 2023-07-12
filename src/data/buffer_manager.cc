@@ -1,6 +1,6 @@
 
-#include "BufferManager.h"
-#include "../Configuration.h"
+#include "buffer_manager.h"
+#include "../configuration.h"
 #include <iostream>
 #include <stdlib.h>
 #include <random>

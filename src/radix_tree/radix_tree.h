@@ -1,5 +1,5 @@
 /**
- * @file    RadixTree.h
+ * @file    radix_tree.h
  *
  * @author  Matteo Wohlrapp
  * @date    17.06.2023
@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "../model/BHeader.h"
-#include "../model/RHeader.h"
+#include "../model/b_header.h"
+#include "../model/r_header.h"
 #include "spdlog/spdlog.h"
 
 /// friend class
@@ -20,7 +20,7 @@ private:
     std::shared_ptr<spdlog::logger> logger;
 
     /**
-     * @brief Insert an element into the radixtree recursively
+     * @brief Insert an element into the radix_tree recursively
      * @param rheader The current node of the radix tree
      * @param key The key that will be inserted
      * @param page_id The page id of the page where the key is located
@@ -147,7 +147,7 @@ public:
     RadixTree();
 
     /**
-     * @brief Insert an element into the radixtree
+     * @brief Insert an element into the radix_tree
      * @param key The key that will be inserted
      * @param page_id The page id of the page where the key is located
      * @param bheader The pointer to the header where the key is located

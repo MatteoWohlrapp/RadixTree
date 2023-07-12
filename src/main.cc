@@ -1,17 +1,17 @@
 /*
- *  RadixTree.h
+ *   main.cc
  *
  *  Created on: 16.05.2023
  *      Author: Matteo Wohlrapp
  */
 
 /**
- * Codebase for the Thesis: Evaluation of a RadixTree Cache for Database Management Systems
+ * Codebase for the Thesis: Evaluation of a Radix Tree Cache for Database Management Systems
  * This file marks the entry point into the program
  */
 
-#include "benchmark/RunConfigOne.h"
-#include "benchmark/RunConfigTwo.h"
+#include "benchmark/run_config_one.h"
+#include "benchmark/run_config_two.h"
 #include <iostream>
 #include <stdio.h>
 #include <ctype.h>
@@ -23,10 +23,7 @@
 #include <spdlog/logger.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "utils/Logger.h"
-#include "Configuration.h"
 #include <boost/dynamic_bitset.hpp>
-
-#include "radixtree/RNodes.h"
 
 // gives information if benchmark should be run
 bool benchmark = false;

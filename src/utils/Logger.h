@@ -1,5 +1,5 @@
 /**
- * @file    Logger.h
+ * @file    logger.h
  * 
  * @author  Matteo Wohlrapp
  * @date    16.05.2023

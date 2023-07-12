@@ -1,8 +1,8 @@
-#include "RunConfigOne.h"
 
-#include "../data/DataManager.h"
-#include "./bplustree/BPlusTree.h"
-#include "./debug/Debuger.h"
+#include "run_config_one.h"
+#include "../data/data_manager.h"
+#include "./bplus_tree/bplus_tree.h"
+#include "./debug/debuger.h"
 
 #include <iostream>
 #include <unistd.h>
@@ -40,8 +40,8 @@ void RunConfigOne::execute(bool benchmark)
             logger->debug("Deleting {} at index {}", values[i], i);
             logger->flush();
             data_manager.delete_pair(values[i]);
-            debuger.traverse_bplustree(data_manager.bplustree);
-            debuger.traverse_radixtree(data_manager.radixtree);
+            debuger.traverse_bplus_tree(data_manager.bplus_tree);
+            debuger.traverse_radix_tree(data_manager.radix_tree);
         }
     };
     this->benchmark.measure(run, benchmark);

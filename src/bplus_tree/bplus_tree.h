@@ -1,5 +1,5 @@
 /**
- * @file    BPlusTree.h
+ * @file    bplus_tree.h
  *
  * @author  Matteo Wohlrapp
  * @date    16.05.2023
@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include "../data/BufferManager.h"
-#include "../radixtree/RadixTree.h"
-#include "BNodes.h"
+#include "../data/buffer_manager.h"
+#include "../radix_tree/radix_tree.h"
+#include "b_nodes.h"
 #include <array>
 #include <math.h>
 #include <iostream>

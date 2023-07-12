@@ -1,5 +1,5 @@
 /**
- * @file    RunConfig.h
+ * @file    run_config.h
  * 
  * @author  Matteo Wohlrapp
  * @date    16.05.2023
@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "Benchmark.h"
-#include "../data/DataManager.h"
+#include "benchmark.h"
+#include "../data/data_manager.h"
 #include "spdlog/spdlog.h"
 
 /**

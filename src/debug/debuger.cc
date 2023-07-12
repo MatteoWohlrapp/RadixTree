@@ -1,7 +1,7 @@
 
-#include "Debuger.h"
-#include "../Configuration.h"
-#include "../radixtree/RNodes.h"
+#include "debuger.h"
+#include "../configuration.h"
+#include "../radix_tree/r_nodes.h"
 #include <iostream>
 #include <queue>
 #include <sstream>
@@ -13,7 +13,7 @@ Debuger::Debuger(BufferManager *buffer_manager_arg) : buffer_manager(buffer_mana
 }
 
 // BFS
-void Debuger::traverse_bplustree(BPlusTree<Configuration::page_size> *tree)
+void Debuger::traverse_bplus_tree(BPlusTree<Configuration::page_size> *tree)
 {
     if (!tree)
     {
@@ -174,15 +174,15 @@ bool Debuger::contains_key(BPlusTree<Configuration::page_size> *tree, uint64_t k
     return false;
 }
 
-void Debuger::traverse_radixtree(RadixTree *radixtree)
+void Debuger::traverse_radix_tree(RadixTree *radix_tree)
 {
-    if (!radixtree->root)
+    if (!radix_tree->root)
     {
         logger->debug("Radixtree null"); 
         return; 
     }
     std::queue<RHeader *> nodes_queue;
-    nodes_queue.push(radixtree->root);
+    nodes_queue.push(radix_tree->root);
 
     while (!nodes_queue.empty())
     {

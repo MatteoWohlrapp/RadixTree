@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
-#include "../src/data/StorageManager.h"
-#include "../src/Configuration.h"
-#include "../src/utils/File.h"
+#include "../src/data/storage_manager.h"
+#include "../src/configuration.h"
+#include "../src/utils/file.h"
 
 class StorageManagerTest : public ::testing::Test
 {

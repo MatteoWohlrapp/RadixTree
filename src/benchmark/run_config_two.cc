@@ -1,9 +1,8 @@
-#include "RunConfigTwo.h"
 
-#include "../data/DataManager.h"
-#include "./bplustree/BPlusTree.h"
-#include "./debug/Debuger.h"
-
+#include "run_config_two.h"
+#include "../data/data_manager.h"
+#include "./bplus_tree/bplus_tree.h"
+#include "./debug/debuger.h"
 #include <iostream>
 #include <unistd.h>
 #include <unordered_set>
@@ -32,25 +31,25 @@ void RunConfigTwo::execute(bool benchmark)
         data_manager.insert(3, 3);
         data_manager.insert(4, 4);
 
-        debuger.traverse_bplustree(data_manager.bplustree);
-        debuger.traverse_radixtree(data_manager.radixtree);
+        debuger.traverse_bplus_tree(data_manager.bplus_tree);
+        debuger.traverse_radix_tree(data_manager.radix_tree);
 
         data_manager.delete_pair(2);
         data_manager.delete_pair(0);
         data_manager.delete_pair(1);
 
-        debuger.traverse_bplustree(data_manager.bplustree);
-        debuger.traverse_radixtree(data_manager.radixtree);
+        debuger.traverse_bplus_tree(data_manager.bplus_tree);
+        debuger.traverse_radix_tree(data_manager.radix_tree);
 
         data_manager.delete_pair(3);
 
-        debuger.traverse_bplustree(data_manager.bplustree);
-        debuger.traverse_radixtree(data_manager.radixtree);
+        debuger.traverse_bplus_tree(data_manager.bplus_tree);
+        debuger.traverse_radix_tree(data_manager.radix_tree);
 
         data_manager.delete_pair(4);
 
-        debuger.traverse_bplustree(data_manager.bplustree);
-        debuger.traverse_radixtree(data_manager.radixtree);
+        debuger.traverse_bplus_tree(data_manager.bplus_tree);
+        debuger.traverse_radix_tree(data_manager.radix_tree);
     };
     this->benchmark.measure(run, benchmark);
 }

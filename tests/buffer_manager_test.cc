@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
-#include "../src/data/BufferManager.h"
-#include "../src/Configuration.h"
+#include "../src/data/buffer_manager.h"
+#include "../src/configuration.h"
 
 class BufferManagerTest : public ::testing::Test
 {

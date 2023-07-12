@@ -1,5 +1,5 @@
 /**
- * @file    BHeader.h
+ * @file    b_header.h
  *
  * @author  Matteo Wohlrapp
  * @date    16.05.2023

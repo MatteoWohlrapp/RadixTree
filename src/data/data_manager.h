@@ -1,5 +1,5 @@
 /**
- * @file    DataManager.h
+ * @file    data_manager.h
  *
  * @author  Matteo Wohlrapp
  * @date    16.05.2023
@@ -7,11 +7,11 @@
 
 #pragma once
 
-#include "BufferManager.h"
-#include "StorageManager.h"
-#include "../radixtree/RadixTree.h"
-#include "../Configuration.h"
-#include "../bplustree/BPlusTree.h"
+#include "buffer_manager.h"
+#include "storage_manager.h"
+#include "../radix_tree/radix_tree.h"
+#include "../configuration.h"
+#include "../bplus_tree/bplus_tree.h"
 
 /**
  * @brief Makes sure that the DB is initialized correctly and hold all variables necessary to run the system
@@ -31,8 +31,8 @@ public:
     StorageManager *storage_manager;
     BufferManager *buffer_manager;
 
-    BPlusTree<Configuration::page_size> *bplustree;
-    RadixTree *radixtree = nullptr;
+    BPlusTree<Configuration::page_size> *bplus_tree;
+    RadixTree *radix_tree = nullptr;
 
     /**
      * @brief Constructor for the DataManager

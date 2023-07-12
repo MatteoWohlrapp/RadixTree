@@ -1,5 +1,5 @@
 /**
- * @file    RunConfigOne.h
+ * @file    run_config_one.h
  *
  * @author  Matteo Wohlrapp
  * @date    16.05.2023
@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "RunConfig.h"
+#include "run_config.h"
 
 /**
  * @brief A class that can executes scenario

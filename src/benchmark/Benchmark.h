@@ -1,5 +1,5 @@
 /**
- * @file    Benchmark.h
+ * @file    benchmark.h
  * 
  * @author  Matteo Wohlrapp
  * @date    16.05.2023

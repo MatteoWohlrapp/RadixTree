@@ -1,5 +1,5 @@
 /**
- * @file    File.h
+ * @file    file.h
  *
  * @author  Matteo Wohlrapp
  * @date    23.05.2023
@@ -7,8 +7,11 @@
 
 #pragma once
 
+#include "../model/b_header.h"
 #include <fstream>
 #include <iostream>
+#include <sstream>
+#include <spdlog/logger.h>
 
 /**
  * @brief namespace contains helper functions for file access

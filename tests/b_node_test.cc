@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
-#include "../src/bplustree/BPlusTree.h"
-#include "../src/data/BufferManager.h"
-#include "../src/Configuration.h"
+#include "../src/bplus_tree/bplus_tree.h"
+#include "../src/data/buffer_manager.h"
+#include "../src/configuration.h"
 
 constexpr int node_test_size = 96;
 

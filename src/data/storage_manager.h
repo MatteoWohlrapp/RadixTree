@@ -1,5 +1,5 @@
 /**
- * @file    StorageManager.h
+ * @file    storage_manager.h
  *
  * @author  Matteo Wohlrapp
  * @date    16.05.2023
@@ -7,14 +7,14 @@
 
 #pragma once
 
-#include "../model/BHeader.h"
+#include "../model/b_header.h"
 #include <map>
 #include <iostream>
 #include <filesystem>
 #include <fstream>
 #include "spdlog/spdlog.h"
 #include <boost/dynamic_bitset.hpp>
-#include "../Configuration.h"
+#include "../configuration.h"
 
 /// forward declaration
 class StorageManagerTest;

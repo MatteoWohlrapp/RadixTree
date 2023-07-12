@@ -1,5 +1,5 @@
 /**
- * @file    Time.h
+ * @file    time.h
  * 
  * @author  Matteo Wohlrapp
  * @date    16.05.2023
