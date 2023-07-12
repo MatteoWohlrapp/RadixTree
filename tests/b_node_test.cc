@@ -167,9 +167,9 @@ TEST_F(BNodeTest, BInnerNodeContains)
     ASSERT_TRUE(node->contains(1));
     ASSERT_FALSE(node->contains(4));
 
-    node->delete_pair(2);
-    node->delete_pair(3);
-    node->delete_pair(1);
+    node->delete_value(2);
+    node->delete_value(3);
+    node->delete_value(1);
 
     ASSERT_FALSE(node->contains(3));
     ASSERT_FALSE(node->contains(2));
@@ -183,9 +183,9 @@ TEST_F(BNodeTest, BInnerNodeDelete)
     node->insert(2, 2);
     node->insert(1, 1);
     node->insert(3, 3);
-    node->delete_pair(2);
-    node->delete_pair(3);
-    node->delete_pair(1);
+    node->delete_value(2);
+    node->delete_value(3);
+    node->delete_value(1);
 
     ASSERT_EQ(node->current_index, 0); 
     ASSERT_FALSE(node->contains(3));
@@ -225,9 +225,9 @@ TEST_F(BNodeTest, BOuterNodeDelete)
     node->insert(1, 1);
     node->insert(3, 3);
     node->insert(2, 2);
-    node->delete_pair(1);
-    node->delete_pair(3);
-    node->delete_pair(2);
+    node->delete_value(1);
+    node->delete_value(3);
+    node->delete_value(2);
 
     ASSERT_EQ(node->current_index, 0); 
     ASSERT_EQ(node->get_value(1), INT64_MIN);

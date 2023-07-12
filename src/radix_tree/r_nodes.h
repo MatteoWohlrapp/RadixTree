@@ -118,7 +118,7 @@ struct RNode4
      * @brief deletes an element from the tree
      * @brief the key that corresponds to the child that should be deleted
      */
-    void delete_pair(uint8_t key)
+    void delete_reference(uint8_t key)
     {
         for (int i = 0; i < header.current_size; i++)
         {
@@ -269,7 +269,7 @@ struct RNode16
      * @brief deletes an element from the tree
      * @brief the key that corresponds to the child that should be deleted
      */
-    void delete_pair(uint8_t key)
+    void delete_reference(uint8_t key)
     {
         for (int i = 0; i < header.current_size; i++)
         {
@@ -414,7 +414,7 @@ struct RNode48
      * @brief deletes an element from the tree
      * @brief the key that corresponds to the child that should be deleted
      */
-    void delete_pair(uint8_t key)
+    void delete_reference(uint8_t key)
     {
         if (keys[key] != 256)
         {
@@ -540,7 +540,7 @@ struct RNode256
      * @brief deletes an element from the tree
      * @brief the key that corresponds to the child that should be deleted
      */
-    void delete_pair(uint8_t key)
+    void delete_reference(uint8_t key)
     {
         if (children[key])
         {

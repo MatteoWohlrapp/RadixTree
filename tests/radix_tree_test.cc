@@ -780,7 +780,7 @@ TEST_F(RadixTreeTest, DeleteWithoutResizing)
 
     ASSERT_EQ(radix_tree->get_value(0), 0);
 
-    bplus_tree->delete_pair(0);
+    bplus_tree->delete_value(0);
 
     ASSERT_EQ(radix_tree->get_value(0), INT64_MIN);
     ASSERT_EQ(radix_tree->get_value(1), 1);
@@ -816,9 +816,9 @@ TEST_F(RadixTreeTest, DeleteWithResizing)
     ASSERT_EQ(radix_tree->get_value(3), 3);
     ASSERT_EQ(radix_tree->get_value(4), 4);
 
-    bplus_tree->delete_pair(2);
-    bplus_tree->delete_pair(3);
-    bplus_tree->delete_pair(4);
+    bplus_tree->delete_value(2);
+    bplus_tree->delete_value(3);
+    bplus_tree->delete_value(4);
 
     ASSERT_EQ(radix_tree->get_value(0), 0);
     ASSERT_EQ(radix_tree->get_value(1), 1);
@@ -859,11 +859,11 @@ TEST_F(RadixTreeTest, DeleteWithRemovalOfNode)
     ASSERT_EQ(radix_tree->get_value(0), 0);
     ASSERT_EQ(radix_tree->get_value(1), 1);
 
-    bplus_tree->delete_pair(2);
-    bplus_tree->delete_pair(3);
-    bplus_tree->delete_pair(4);
-    bplus_tree->delete_pair(0);
-    bplus_tree->delete_pair(1);
+    bplus_tree->delete_value(2);
+    bplus_tree->delete_value(3);
+    bplus_tree->delete_value(4);
+    bplus_tree->delete_value(0);
+    bplus_tree->delete_value(1);
 
     ASSERT_EQ(radix_tree->get_value(0), INT64_MIN);
     ASSERT_EQ(radix_tree->get_value(1), INT64_MIN);
@@ -904,11 +904,11 @@ TEST_F(RadixTreeTest, DeleteWithRemovalOfNodeFurtherUpTheTree)
     ASSERT_EQ(radix_tree->get_value(4294967299), 4294967299);
     ASSERT_EQ(radix_tree->get_value(4294967300), 4294967300);
 
-    bplus_tree->delete_pair(4294967296);
-    bplus_tree->delete_pair(4294967297);
-    bplus_tree->delete_pair(4294967298);
-    bplus_tree->delete_pair(4294967299);
-    bplus_tree->delete_pair(4294967300);
+    bplus_tree->delete_value(4294967296);
+    bplus_tree->delete_value(4294967297);
+    bplus_tree->delete_value(4294967298);
+    bplus_tree->delete_value(4294967299);
+    bplus_tree->delete_value(4294967300);
 
     ASSERT_EQ(radix_tree->get_value(0), 0);
     ASSERT_EQ(radix_tree->get_value(256), 256);
@@ -949,11 +949,11 @@ TEST_F(RadixTreeTest, DeleteWithDecreaseAndDeleteOfInnerNode)
     ASSERT_EQ(radix_tree->get_value(17179869184), 17179869184);
     ASSERT_EQ(radix_tree->get_value(21474836480), 21474836480);
 
-    bplus_tree->delete_pair(4294967296);
-    bplus_tree->delete_pair(8589934592);
-    bplus_tree->delete_pair(12884901888);
-    bplus_tree->delete_pair(17179869184);
-    bplus_tree->delete_pair(21474836480);
+    bplus_tree->delete_value(4294967296);
+    bplus_tree->delete_value(8589934592);
+    bplus_tree->delete_value(12884901888);
+    bplus_tree->delete_value(17179869184);
+    bplus_tree->delete_value(21474836480);
 
     ASSERT_EQ(radix_tree->get_value(0), 0);
     ASSERT_EQ(radix_tree->get_value(256), 256);
@@ -987,10 +987,10 @@ TEST_F(RadixTreeTest, DeleteFromLeafRoot)
     ASSERT_EQ(radix_tree->get_value(3), 3);
     ASSERT_EQ(radix_tree->get_value(4), 4);
 
-    bplus_tree->delete_pair(0);
-    bplus_tree->delete_pair(1);
-    bplus_tree->delete_pair(2);
-    bplus_tree->delete_pair(3);
+    bplus_tree->delete_value(0);
+    bplus_tree->delete_value(1);
+    bplus_tree->delete_value(2);
+    bplus_tree->delete_value(3);
 
     ASSERT_EQ(radix_tree->get_value(0), INT64_MIN);
     ASSERT_EQ(radix_tree->get_value(1), INT64_MIN);
@@ -1001,7 +1001,7 @@ TEST_F(RadixTreeTest, DeleteFromLeafRoot)
     ASSERT_TRUE(leaf_depth_correct(get_root()));
     ASSERT_TRUE(key_matches(get_root()));
 
-    bplus_tree->delete_pair(4);
+    bplus_tree->delete_value(4);
     ASSERT_EQ(radix_tree->get_value(4), INT64_MIN);
 }
 
@@ -1020,10 +1020,10 @@ TEST_F(RadixTreeTest, DeleteWithDepthTwo)
     ASSERT_EQ(radix_tree->get_value(3), 3);
     ASSERT_EQ(radix_tree->get_value(4), 4);
 
-    bplus_tree->delete_pair(0);
-    bplus_tree->delete_pair(1);
-    bplus_tree->delete_pair(2);
-    bplus_tree->delete_pair(3);
+    bplus_tree->delete_value(0);
+    bplus_tree->delete_value(1);
+    bplus_tree->delete_value(2);
+    bplus_tree->delete_value(3);
 
     ASSERT_EQ(radix_tree->get_value(0), INT64_MIN);
     ASSERT_EQ(radix_tree->get_value(1), INT64_MIN);
@@ -1034,7 +1034,7 @@ TEST_F(RadixTreeTest, DeleteWithDepthTwo)
     ASSERT_TRUE(leaf_depth_correct(get_root()));
     ASSERT_TRUE(key_matches(get_root()));
 
-    bplus_tree->delete_pair(4);
+    bplus_tree->delete_value(4);
     ASSERT_EQ(radix_tree->get_value(4), INT64_MIN);
 }
 
@@ -1074,7 +1074,7 @@ TEST_F(RadixTreeTest, InsertAndDeleteWithSeed42)
     {
         int64_t value = values[i];
         unique_values.erase(value);
-        bplus_tree->delete_pair(value);
+        bplus_tree->delete_value(value);
     }
 
     for (int i = 0; i < 500; i++)
@@ -1114,7 +1114,7 @@ TEST_F(RadixTreeTest, InsertAndDeleteWithSeed42)
     {
         int64_t value = values[i];
         unique_values.erase(value);
-        bplus_tree->delete_pair(value);
+        bplus_tree->delete_value(value);
 
         ASSERT_TRUE(is_compressed(get_root()));
         ASSERT_TRUE(leaf_depth_correct(get_root()));
@@ -1159,7 +1159,7 @@ TEST_F(RadixTreeTest, InsertAndDeleteRandom)
     {
         int64_t value = values[i];
         unique_values.erase(value);
-        bplus_tree->delete_pair(value);
+        bplus_tree->delete_value(value);
     }
 
     for (int i = 0; i < 500; i++)
@@ -1199,7 +1199,7 @@ TEST_F(RadixTreeTest, InsertAndDeleteRandom)
     {
         int64_t value = values[i];
         unique_values.erase(value);
-        bplus_tree->delete_pair(value);
+        bplus_tree->delete_value(value);
 
         ASSERT_TRUE(is_compressed(get_root()));
         ASSERT_TRUE(leaf_depth_correct(get_root()));

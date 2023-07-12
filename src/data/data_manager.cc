@@ -35,10 +35,10 @@ void DataManager::insert(int64_t key, int64_t value)
     bplus_tree->insert(key, value);
 }
 
-void DataManager::delete_pair(int64_t key)
+void DataManager::delete_value(int64_t key)
 {
     // automatically deleted in bplustree
-    bplus_tree->delete_pair(key);
+    bplus_tree->delete_value(key);
 }
 
 int64_t DataManager::get_value(int64_t key)

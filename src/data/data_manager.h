@@ -48,7 +48,7 @@ public:
      * @brief Delete an element from the tree
      * @param key The key that will be deleted
      */
-    void delete_pair(int64_t key);
+    void delete_value(int64_t key);
 
     /**
      * @brief Insert an element into the tree

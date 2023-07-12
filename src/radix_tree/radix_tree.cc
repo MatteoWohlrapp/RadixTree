@@ -717,25 +717,25 @@ void RadixTree::node_delete(RHeader *header, uint8_t key)
     case 4:
     {
         RNode4 *node = (RNode4 *)header;
-        node->delete_pair(key);
+        node->delete_reference(key);
     }
     break;
     case 16:
     {
         RNode16 *node = (RNode16 *)header;
-        node->delete_pair(key);
+        node->delete_reference(key);
     }
     break;
     case 48:
     {
         RNode48 *node = (RNode48 *)header;
-        node->delete_pair(key);
+        node->delete_reference(key);
     }
     break;
     case 256:
     {
         RNode256 *node = (RNode256 *)header;
-        node->delete_pair(key);
+        node->delete_reference(key);
     }
     break;
     }

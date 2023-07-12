@@ -34,19 +34,19 @@ void RunConfigTwo::execute(bool benchmark)
         debuger.traverse_bplus_tree(data_manager.bplus_tree);
         debuger.traverse_radix_tree(data_manager.radix_tree);
 
-        data_manager.delete_pair(2);
-        data_manager.delete_pair(0);
-        data_manager.delete_pair(1);
+        data_manager.delete_value(2);
+        data_manager.delete_value(0);
+        data_manager.delete_value(1);
 
         debuger.traverse_bplus_tree(data_manager.bplus_tree);
         debuger.traverse_radix_tree(data_manager.radix_tree);
 
-        data_manager.delete_pair(3);
+        data_manager.delete_value(3);
 
         debuger.traverse_bplus_tree(data_manager.bplus_tree);
         debuger.traverse_radix_tree(data_manager.radix_tree);
 
-        data_manager.delete_pair(4);
+        data_manager.delete_value(4);
 
         debuger.traverse_bplus_tree(data_manager.bplus_tree);
         debuger.traverse_radix_tree(data_manager.radix_tree);

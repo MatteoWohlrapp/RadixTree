@@ -39,7 +39,7 @@ void RunConfigOne::execute(bool benchmark)
         {
             logger->debug("Deleting {} at index {}", values[i], i);
             logger->flush();
-            data_manager.delete_pair(values[i]);
+            data_manager.delete_value(values[i]);
             debuger.traverse_bplus_tree(data_manager.bplus_tree);
             debuger.traverse_radix_tree(data_manager.radix_tree);
         }

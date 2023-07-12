@@ -203,7 +203,7 @@ private:
             // outer node
             BOuterNode<NODE_SIZE> *node = (BOuterNode<NODE_SIZE> *)header;
             logger->flush();
-            node->delete_pair(key);
+            node->delete_value(key);
             if(cache)
                 cache->delete_reference(key); 
             buffer_manager->unfix_page(header->page_id, true);
@@ -220,7 +220,7 @@ private:
                 root_id = node->child_ids[0];
                 buffer_manager->unfix_page(header->page_id, false);
                 buffer_manager->delete_page(header->page_id);
-                delete_pair(key);
+                delete_value(key);
             }
             else
             {
@@ -463,7 +463,7 @@ private:
                             child->insert_first(node->keys[index - 1], substitute->child_ids[substitute->current_index]);
                             node->keys[index - 1] = substitute->keys[substitute->current_index - 1];
 
-                            substitute->delete_pair(substitute->keys[substitute->current_index - 1]);
+                            substitute->delete_value(substitute->keys[substitute->current_index - 1]);
                             buffer_manager->unfix_page(node->child_ids[index - 1], true);
                             return true;
                         }
@@ -514,7 +514,7 @@ private:
                             child->insert(substitute->keys[substitute->current_index - 1], substitute->values[substitute->current_index - 1]);
                             if (cache)
                                 cache->insert(substitute->keys[substitute->current_index - 1], child_header->page_id, child_header);
-                            substitute->delete_pair(substitute->keys[substitute->current_index - 1]);
+                            substitute->delete_value(substitute->keys[substitute->current_index - 1]);
                             node->keys[index - 1] = substitute->keys[substitute->current_index - 1];
 
                             // unfix
@@ -538,7 +538,7 @@ private:
                             if (cache)
                                 cache->insert(substitute->keys[0], child_header->page_id, child_header);
                             node->keys[index] = substitute->keys[0];
-                            substitute->delete_pair(substitute->keys[0]);
+                            substitute->delete_value(substitute->keys[0]);
 
                             // unfix
                             buffer_manager->unfix_page(node->child_ids[index + 1], true);
@@ -590,7 +590,7 @@ private:
                             {
                                 merge->insert(child->keys[i], child->child_ids[i + 1]);
                             }
-                            node->delete_pair(node->keys[index - 1]);
+                            node->delete_value(node->keys[index - 1]);
                             buffer_manager->unfix_page(child->header.page_id, false);
                             buffer_manager->delete_page(child->header.page_id);
 
@@ -615,7 +615,7 @@ private:
                                 child->insert(merge->keys[i], merge->child_ids[i + 1]);
                             }
 
-                            node->delete_pair(node->keys[index]);
+                            node->delete_value(node->keys[index]);
 
                             buffer_manager->unfix_page(merge->header.page_id, false);
                             buffer_manager->delete_page(merge->header.page_id);
@@ -669,7 +669,7 @@ private:
                             }
 
                             merge->next_lef_id = child->next_lef_id;
-                            node->delete_pair(node->keys[index - 1]);
+                            node->delete_value(node->keys[index - 1]);
                             buffer_manager->unfix_page(child->header.page_id, false);
                             buffer_manager->delete_page(child->header.page_id);
 
@@ -707,7 +707,7 @@ private:
                             }
        
                             child->next_lef_id = merge->next_lef_id;
-                            node->delete_pair(node->keys[index]);
+                            node->delete_value(node->keys[index]);
                             buffer_manager->unfix_page(merge->header.page_id, false);
                             buffer_manager->delete_page(merge->header.page_id);
 
@@ -784,7 +784,7 @@ public:
      * @brief Delete an element from the tree
      * @param key The key that will be deleted
      */
-    void delete_pair(int64_t key)
+    void delete_value(int64_t key)
     {
         recursive_delete(buffer_manager->request_page(root_id), key);
     }
