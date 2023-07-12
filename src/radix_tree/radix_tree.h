@@ -256,7 +256,7 @@ private:
                 RNode48 *node = (RNode48 *)header;
                 for (int i = 0; i < 256; ++i)
                 {
-                    if (node->keys[i] != 256)
+                    if (node->keys[i] != 255)
                     {
                         free(node->children[node->keys[i]]);
                     }
@@ -306,7 +306,7 @@ private:
             RNode48 *node = (RNode48 *)header;
             for (int i = 0; i < 256; ++i)
             {
-                if (node->keys[i] != 256)
+                if (node->keys[i] != 255)
                 {
                     destroy_recursive((RHeader *)node->children[node->keys[i]]);
                     free(node->children[node->keys[i]]);
@@ -389,7 +389,7 @@ private:
 
             for (int i = 0; i < 256; i++)
             {
-                if (node->keys[i] != 256)
+                if (node->keys[i] != 255)
                 {
                     new_node->insert(i, node->children[node->keys[i]]);
                 }
@@ -436,7 +436,7 @@ private:
 
             for (int i = 0; i < 256; i++)
             {
-                if (node->keys[i] != 256)
+                if (node->keys[i] != 255)
                 {
                     new_node->insert(i, node->children[node->keys[i]]);
                 }

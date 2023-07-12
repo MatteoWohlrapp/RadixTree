@@ -99,7 +99,7 @@ protected:
             RNode48 *node = (RNode48 *)header;
             for (int i = 0; i < 256; i++)
             {
-                if (node->keys[i] != 256)
+                if (node->keys[i] != 255)
                 {
                     RHeader *child = (RHeader *)node->children[node->keys[i]];
                     if (!child->leaf)
@@ -191,7 +191,7 @@ protected:
             RNode48 *node = (RNode48 *)header;
             for (int i = 0; i < 256; i++)
             {
-                if (node->keys[i] != 256)
+                if (node->keys[i] != 255)
                 {
                     RHeader *child = (RHeader *)node->children[node->keys[i]];
                     if (!child->leaf)
@@ -276,7 +276,7 @@ protected:
             RNode48 *node = (RNode48 *)header;
             for (int i = 0; i < 256; i++)
             {
-                if (node->keys[i] != 256)
+                if (node->keys[i] != 255)
                 {
                     RHeader *child = (RHeader *)node->children[node->keys[i]];
                     if (header->depth - 1 > radix_tree->longest_common_prefix(header->key, child->key) || !key_matches(child))

@@ -247,7 +247,7 @@ void Debuger::traverse_radix_tree()
                 RNode48 *node = (RNode48 *)header;
                 for (int i = 0; i < 256; ++i)
                 {
-                    if (node->keys[i] != 256)
+                    if (node->keys[i] != 255)
                     {
                         std::stringstream ss_frame;
                         ss_frame << "child_key: " << static_cast<unsigned int>(i) << ", child_address: " << node->children[i];
@@ -309,7 +309,7 @@ void Debuger::traverse_radix_tree()
                 RNode48 *node = (RNode48 *)header;
                 for (int i = 0; i < 256; ++i)
                 {
-                    if (node->keys[i] != 256)
+                    if (node->keys[i] != 255)
                     {
                         logger->debug("Accessing key: {}", i); 
                         RFrame *frame = (RFrame *)node->children[node->keys[i]];

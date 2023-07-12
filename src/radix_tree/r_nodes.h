@@ -322,8 +322,8 @@ struct RNode16
 struct RNode48
 {
     RHeader header;
-    /// 8 byte part of the key
-    uint16_t keys[256];
+    /// 8 byte part of the key, 255 means not filled
+    uint8_t keys[256];
     /// Pointer to the children
     void *children[48];
 
@@ -333,7 +333,8 @@ struct RNode48
      */
     RNode48(bool leaf) : header{48, leaf, 0, 0, 0}
     {
-        std::fill_n(keys, 256, 256);
+        // need to fill the node because 255 cant be initialized into every element
+        std::fill_n(keys, 256, 255);
     }
 
     /**
@@ -345,8 +346,8 @@ struct RNode48
      */
     RNode48(bool leaf, uint8_t depth, int64_t key, uint16_t current_size) : header{48, leaf, depth, key, current_size}
     {
-        // need to fill the node because 256 cant be initialized into every element
-        std::fill_n(keys, 256, 256);
+        // need to fill the node because 255 cant be initialized into every element
+        std::fill_n(keys, 256, 255);
     }
 
     /**
@@ -357,7 +358,7 @@ struct RNode48
     void insert(uint8_t key, void *child)
     {
 
-        if (keys[key] != 256)
+        if (keys[key] != 255)
         {
             children[keys[key]] = child;
         }
@@ -380,7 +381,7 @@ struct RNode48
     {
         assert(header.leaf && "Inserting a new frame in a non leaf node");
 
-        if (keys[key] == 256)
+        if (keys[key] == 255)
         {
             assert(header.current_size < 48 && "Trying to insert into full node");
             RFrame *frame = (RFrame *)malloc(16);
@@ -404,7 +405,7 @@ struct RNode48
      */
     void *get_next_page(uint8_t key)
     {
-        if (keys[key] == 256)
+        if (keys[key] == 255)
             return nullptr;
         else
             return children[keys[key]];
@@ -416,10 +417,10 @@ struct RNode48
      */
     void delete_reference(uint8_t key)
     {
-        if (keys[key] != 256)
+        if (keys[key] != 255)
         {
             free(children[keys[key]]);
-            keys[key] = 256;
+            keys[key] = 255;
             header.current_size--;
             return;
         }
@@ -435,7 +436,7 @@ struct RNode48
 
         for (int i = 0; i < 256; i++)
         {
-            if (keys[i] != 256)
+            if (keys[i] != 255)
                 return children[keys[i]];
         }
         return nullptr;
