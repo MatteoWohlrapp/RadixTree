@@ -21,7 +21,7 @@ void RunConfigOne::execute(bool benchmark)
 
         for (int i = 0; i < 40; i++)
         {
-            logger->info("Inserting");
+            logger->debug("Inserting");
             int64_t value = dist(generator); // generate a random number
 
             // Ensure we have a unique value, if not, generate another one
@@ -37,7 +37,7 @@ void RunConfigOne::execute(bool benchmark)
 
         for (int i = 0; i < 40; i++)
         {
-            logger->info("Deleting {} at index {}", values[i], i);
+            logger->debug("Deleting {} at index {}", values[i], i);
             logger->flush();
             data_manager.delete_pair(values[i]);
             debuger.traverse_btree(data_manager.btree);

@@ -9,7 +9,7 @@ DataManager::DataManager(bool cache_arg) : cache(cache_arg)
     buffer_manager = new BufferManager(storage_manager, Configuration::max_buffer_size, Configuration::page_size);
     if (cache_arg)
     {
-        logger->info("Cache enabled");
+        logger->debug("Cache enabled");
         rtree = new RadixTree();
     }
     btree = new BPlus<Configuration::page_size>(buffer_manager, rtree);

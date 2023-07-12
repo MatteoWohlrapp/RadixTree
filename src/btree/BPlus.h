@@ -234,7 +234,7 @@ private:
 
                     if (!child->can_delete())
                     {
-                        logger->info("Cant delete inner child");
+                        logger->debug("Cant delete inner child");
                         /**
                          * 1. Substitute with left or right if you can
                          * 2. If not, merge with left or right
@@ -366,7 +366,7 @@ private:
         {
             for (int i = index_to_split; i < node->max_size; i++)
             {
-                logger->info("Splitting outer node and updating key {} with page id {}", node->keys[i], new_header->page_id);
+                logger->debug("Splitting outer node and updating key {} with page id {}", node->keys[i], new_header->page_id);
                 cache->insert(node->keys[i], new_header->page_id, new_header);
                 new_outer_node->insert(node->keys[i], node->values[i]);
                 node->current_index--;

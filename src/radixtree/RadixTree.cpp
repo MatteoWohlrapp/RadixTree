@@ -133,14 +133,14 @@ void RadixTree::insert(int64_t key, uint64_t page_id, BHeader *bheader)
 
 void RadixTree::insert_recursive(RHeader *rheader, int64_t key, uint64_t page_id, BHeader *bheader)
 {
-    logger->info("In recursive insert");
+    logger->debug("In recursive insert");
     if (!root)
     {
-        logger->info("Root is nullptr");
+        logger->debug("Root is nullptr");
         // insert first element
         RHeader *new_root_header = (RHeader *)malloc(size_4);
         RNode4 *new_root = new (new_root_header) RNode4(true, 8, key, 0);
-        logger->info("Partial key; {}", get_key(key, 8));
+        logger->debug("Partial key; {}", get_key(key, 8));
 
         new_root->insert(get_key(key, 8), page_id, bheader);
 
@@ -153,7 +153,7 @@ void RadixTree::insert_recursive(RHeader *rheader, int64_t key, uint64_t page_id
         {
             if (!can_insert(rheader))
             {
-                logger->info("Cant insert into root");
+                logger->debug("Cant insert into root");
                 root = increase_node_size(rheader);
                 insert(key, page_id, bheader);
                 return;
@@ -161,7 +161,7 @@ void RadixTree::insert_recursive(RHeader *rheader, int64_t key, uint64_t page_id
             if (rheader->depth != 1)
             {
                 // compressed
-                logger->info("Header depth not 1");
+                logger->debug("Header depth not 1");
                 // check similarities between existing element and new key
                 int prefix_length = longest_common_prefix(root->key, key);
 
@@ -188,19 +188,19 @@ void RadixTree::insert_recursive(RHeader *rheader, int64_t key, uint64_t page_id
 
         if (rheader->leaf)
         {
-            logger->info("Header is leaf");
+            logger->debug("Header is leaf");
             // we reached a leaf node
             RFrame *leaf = (RFrame *)get_next_page(rheader, partial_key);
             // check if there is already an entry
             if (leaf)
             {
-                logger->info("Leaf true, current size of node is: {}", rheader->type);
+                logger->debug("Leaf true, current size of node is: {}", rheader->type);
                 leaf->header = bheader;
                 leaf->page_id = page_id;
             }
             else
             {
-                logger->info("Leaf true");
+                logger->debug("Leaf true");
                 node_insert(rheader, partial_key, key, page_id, bheader);
             }
             rheader->unfix_node();
@@ -211,7 +211,7 @@ void RadixTree::insert_recursive(RHeader *rheader, int64_t key, uint64_t page_id
 
             if (!child_header)
             {
-                logger->info("Child header null");
+                logger->debug("Child header null");
                 // will do lazy expansion to save information
                 node_insert(rheader, partial_key, key, page_id, bheader);
                 rheader->unfix_node();
@@ -229,7 +229,7 @@ void RadixTree::insert_recursive(RHeader *rheader, int64_t key, uint64_t page_id
 
                 if (prefix_length + 1 < child_header->depth)
                 {
-                    logger->info("Prefix length is {} for child depth {}, so wrong for key {}, need to create new node", prefix_length + 1, child_header->depth, key);
+                    logger->debug("Prefix length is {} for child depth {}, so wrong for key {}, need to create new node", prefix_length + 1, child_header->depth, key);
                     // compression
                     // create new node
                     RHeader *new_node_header = (RHeader *)malloc(size_4);
@@ -243,7 +243,7 @@ void RadixTree::insert_recursive(RHeader *rheader, int64_t key, uint64_t page_id
                 else
                 {
                     child_header->fix_node();
-                    logger->info("Fixing header at depth: {} with key: {}", child_header->depth, child_header->key);
+                    logger->debug("Fixing header at depth: {} with key: {}", child_header->depth, child_header->key);
                     rheader->unfix_node();
                     // in this case the prefix of the numbers matches and we know that we can insert, so calling recursive insert instead
                     insert_recursive(child_header, key, page_id, bheader);
@@ -363,7 +363,7 @@ void RadixTree::node_insert(RHeader *parent, uint8_t key, void *child)
     {
     case 4:
     {
-        logger->info("Inserting child as void pointer");
+        logger->debug("Inserting child as void pointer");
         RNode4 *node = (RNode4 *)parent;
         node->insert(key, child);
     }
@@ -479,18 +479,18 @@ int64_t RadixTree::get_value_recursive(RHeader *header, int64_t key)
     {
         if (header->leaf)
         {
-            logger->info("Header is leaf");
+            logger->debug("Header is leaf");
             RFrame *frame = (RFrame *)next;
             if (frame->header->page_id == frame->page_id)
             {
                 int64_t value = ((BOuterNode<Configuration::page_size> *)frame->header)->get_value(key);
-                logger->info("Page id {} matching, value is: {}", frame->page_id, value);
+                logger->debug("Page id {} matching, value is: {}", frame->page_id, value);
                 header->unfix_node();
                 return value;
             }
             else
             {
-                logger->info("Page id from header {} not matching saved id {}", frame->header->page_id, frame->page_id);
+                logger->debug("Page id from header {} not matching saved id {}", frame->header->page_id, frame->page_id);
                 header->unfix_node();
                 // Delete from tree as the reference is not matching and the page_id is wrong
                 delete_reference(key);
@@ -499,7 +499,7 @@ int64_t RadixTree::get_value_recursive(RHeader *header, int64_t key)
         }
         else
         {
-            logger->info("Header is not leaf");
+            logger->debug("Header is not leaf");
             RHeader *child = (RHeader *)next;
             child->fix_node();
             header->unfix_node();
@@ -508,7 +508,7 @@ int64_t RadixTree::get_value_recursive(RHeader *header, int64_t key)
     }
     else
     {
-        logger->info("Next was null");
+        logger->debug("Next was null");
         header->unfix_node();
         return INT64_MIN;
     }
@@ -573,7 +573,7 @@ void RadixTree::delete_reference_recursive(RHeader *parent, RHeader *child, int6
 
 void RadixTree::delete_reference(int64_t key)
 {
-    logger->info("Deleting: {}", key);
+    logger->debug("Deleting: {}", key);
     if (!root)
         return;
 

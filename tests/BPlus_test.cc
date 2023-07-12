@@ -1184,7 +1184,7 @@ TEST_F(BPlusTest, InsertAndDeleteRandom)
 
         unique_values.insert(value);
         values[i] = value;
-        logger->info("Inserting {}", value);
+        logger->debug("Inserting {}", value);
         bplus->insert(value, value);
     }
 
@@ -1199,7 +1199,7 @@ TEST_F(BPlusTest, InsertAndDeleteRandom)
 
     for (int i = 0; i < 50; i++)
     {
-        logger->info("Deleting {} at index {}", values[i], i);
+        logger->debug("Deleting {} at index {}", values[i], i);
         bplus->delete_pair(values[i]);
     }
     for (int i = 0; i < 50; i++)
@@ -1270,7 +1270,7 @@ TEST_F(BPlusTest, InsertDelteWithSeed42)
 
     for (int i = 0; i < 100; i++)
     {
-        logger->info("Deleting {} at index {}", values[i], i);
+        logger->debug("Deleting {} at index {}", values[i], i);
         bplus->delete_pair(values[i]);
         ASSERT_TRUE(is_ordered(bplus->root_id));
         ASSERT_TRUE(is_balanced(bplus->root_id));

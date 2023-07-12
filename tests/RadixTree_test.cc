@@ -254,7 +254,7 @@ protected:
                 RHeader *child = (RHeader *)node->children[i];
                 if (header->depth - 1 > radixtree->longest_common_prefix(header->key, child->key) || !key_matches(child))
                 {
-                    logger->info("Not matching for keys: {}, and {}; depth {}, lcp {}", header->key, child->key, header->depth, radixtree->longest_common_prefix(header->key, child->key));
+                    logger->debug("Not matching for keys: {}, and {}; depth {}, lcp {}", header->key, child->key, header->depth, radixtree->longest_common_prefix(header->key, child->key));
                     return false;
                 }
             }
@@ -688,13 +688,13 @@ TEST_F(RadixTreeTest, InsertWithSeed42)
 
         unique_values.insert(value);
         values[i] = value;
-        logger->info("Inserting {}", value);
+        logger->debug("Inserting {}", value);
         btree->insert(value, value);
     }
 
     for (int i = 0; i < 1000; i++)
     {
-        logger->info("i: {}, value: {}", i, values[i]);
+        logger->debug("i: {}, value: {}", i, values[i]);
         ASSERT_EQ(radixtree->get_value(values[i]), values[i]);
         ASSERT_TRUE(is_compressed(get_root()));
         ASSERT_TRUE(leaf_depth_correct(get_root()));
@@ -736,13 +736,13 @@ TEST_F(RadixTreeTest, InsertRandom)
 
         unique_values.insert(value);
         values[i] = value;
-        logger->info("Inserting {}", value);
+        logger->debug("Inserting {}", value);
         btree->insert(value, value);
     }
 
     for (int i = 0; i < 1000; i++)
     {
-        logger->info("i: {}, value: {}", i, values[i]);
+        logger->debug("i: {}, value: {}", i, values[i]);
         ASSERT_EQ(radixtree->get_value(values[i]), values[i]);
         ASSERT_TRUE(is_compressed(get_root()));
         ASSERT_TRUE(leaf_depth_correct(get_root()));

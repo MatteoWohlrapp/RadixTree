@@ -69,7 +69,7 @@ BHeader *BufferManager::create_new_page()
 
 void BufferManager::delete_page(uint64_t page_id)
 {
-    logger->info("Deleting page"); 
+    logger->debug("Deleting page"); 
     std::map<uint64_t, BFrame *>::iterator it = page_id_map.find(page_id);
     if (it != page_id_map.end())
     {
