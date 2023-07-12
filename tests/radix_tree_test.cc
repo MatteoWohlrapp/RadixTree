@@ -6,18 +6,18 @@
 #include "../src/bplus_tree/bplus_tree.h"
 #include <unordered_set>
 
-constexpr int node_test_size = 96;
-int buffer_size = 1000;
+constexpr int PAGE_SIZE = 96;
 
 class RadixTreeTest : public ::testing::Test
 {
-    friend class RadixTree;
+    friend class RadixTree<PAGE_SIZE>;
 
 protected:
-    RadixTree *radix_tree;
+    int buffer_size = 1000;
+    RadixTree<PAGE_SIZE> *radix_tree;
     StorageManager *storage_manager;
     BufferManager *buffer_manager;
-    BPlusTree<Configuration::page_size> *bplus_tree;
+    BPlusTree<PAGE_SIZE> *bplus_tree;
     std::filesystem::path base_path = "../tests/temp/";
     std::filesystem::path bitmap = "bitmap.bin";
     std::filesystem::path data = "data.bin";
@@ -27,10 +27,10 @@ protected:
     {
         std::filesystem::remove(base_path / bitmap);
         std::filesystem::remove(base_path / data);
-        radix_tree = new RadixTree();
-        storage_manager = new StorageManager(base_path, node_test_size);
-        buffer_manager = new BufferManager(storage_manager, buffer_size, node_test_size);
-        bplus_tree = new BPlusTree<node_test_size>(buffer_manager, radix_tree);
+        radix_tree = new RadixTree<PAGE_SIZE>();
+        storage_manager = new StorageManager(base_path, PAGE_SIZE);
+        buffer_manager = new BufferManager(storage_manager, buffer_size, PAGE_SIZE);
+        bplus_tree = new BPlusTree<PAGE_SIZE>(buffer_manager, radix_tree);
     }
 
     void TearDown() override

@@ -2,7 +2,7 @@
 #include "data_manager.h"
 #include "../bplus_tree/bplus_tree.h"
 
-DataManager::DataManager(bool cache_arg) : cache(cache_arg)
+DataManager::DataManager(bool cache_arg)
 {
     logger = spdlog::get("logger");
     storage_manager = new StorageManager(base_path, Configuration::page_size);
@@ -10,7 +10,7 @@ DataManager::DataManager(bool cache_arg) : cache(cache_arg)
     if (cache_arg)
     {
         logger->debug("Cache enabled");
-        radix_tree = new RadixTree();
+        radix_tree = new RadixTree<Configuration::page_size>();
     }
     bplus_tree = new BPlusTree<Configuration::page_size>(buffer_manager, radix_tree);
 }
@@ -43,7 +43,7 @@ void DataManager::delete_value(int64_t key)
 
 int64_t DataManager::get_value(int64_t key)
 {
-    if (cache)
+    if (radix_tree)
     {
         int64_t value = radix_tree->get_value(key);
         if (value == INT64_MIN)

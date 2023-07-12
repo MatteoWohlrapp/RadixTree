@@ -22,7 +22,7 @@ class BPlusTest;
 /**
  * @brief Implements the B+ Tree of the Database
  */
-template <int NODE_SIZE>
+template <int PAGE_SIZE>
 class BPlusTree
 {
 private:
@@ -30,7 +30,7 @@ private:
 
     BufferManager *buffer_manager;
 
-    RadixTree *cache;
+    RadixTree<PAGE_SIZE> *cache;
 
     /**
      * @brief Inserts recursively into the tree
@@ -44,7 +44,7 @@ private:
         if (!header->inner)
         {
             // outer node
-            BOuterNode<NODE_SIZE> *node = (BOuterNode<NODE_SIZE> *)header;
+            BOuterNode<PAGE_SIZE> *node = (BOuterNode<PAGE_SIZE> *)header;
             // case where the tree only has one outer node
             if (root_id == node->header.page_id && node->is_full())
             {
@@ -58,7 +58,7 @@ private:
 
                 // create new inner node for root
                 BHeader *new_root_node_address = buffer_manager->create_new_page();
-                BInnerNode<NODE_SIZE> *new_root_node = new (new_root_node_address) BInnerNode<NODE_SIZE>();
+                BInnerNode<PAGE_SIZE> *new_root_node = new (new_root_node_address) BInnerNode<PAGE_SIZE>();
 
                 new_root_node->child_ids[0] = node->header.page_id;
                 new_root_node->insert(split_key, new_outer_id);
@@ -85,7 +85,7 @@ private:
         else
         {
             // Inner node
-            BInnerNode<NODE_SIZE> *node = (BInnerNode<NODE_SIZE> *)header;
+            BInnerNode<PAGE_SIZE> *node = (BInnerNode<PAGE_SIZE> *)header;
 
             if (node->header.page_id == root_id && node->is_full())
             {
@@ -98,7 +98,7 @@ private:
 
                 // create new inner node for root
                 BHeader *new_root_node_address = buffer_manager->create_new_page();
-                BInnerNode<NODE_SIZE> *new_root_node = new (new_root_node_address) BInnerNode<NODE_SIZE>();
+                BInnerNode<PAGE_SIZE> *new_root_node = new (new_root_node_address) BInnerNode<PAGE_SIZE>();
 
                 new_root_node->child_ids[0] = node->header.page_id;
                 new_root_node->insert(split_key, new_inner_id);
@@ -121,7 +121,7 @@ private:
 
                 if (child_header->inner)
                 {
-                    BInnerNode<NODE_SIZE> *child = (BInnerNode<NODE_SIZE> *)child_header;
+                    BInnerNode<PAGE_SIZE> *child = (BInnerNode<PAGE_SIZE> *)child_header;
                     if (child->is_full())
                     {
                         logger->debug("Child is inner and full");
@@ -154,7 +154,7 @@ private:
                 }
                 else
                 {
-                    BOuterNode<NODE_SIZE> *child = (BOuterNode<NODE_SIZE> *)child_header;
+                    BOuterNode<PAGE_SIZE> *child = (BOuterNode<PAGE_SIZE> *)child_header;
 
                     if (child->is_full())
                     {
@@ -201,7 +201,7 @@ private:
         if (!header->inner)
         {
             // outer node
-            BOuterNode<NODE_SIZE> *node = (BOuterNode<NODE_SIZE> *)header;
+            BOuterNode<PAGE_SIZE> *node = (BOuterNode<PAGE_SIZE> *)header;
             logger->flush();
             node->delete_value(key);
             if(cache)
@@ -211,7 +211,7 @@ private:
         else
         {
             // Inner node
-            BInnerNode<NODE_SIZE> *node = (BInnerNode<NODE_SIZE> *)header;
+            BInnerNode<PAGE_SIZE> *node = (BInnerNode<PAGE_SIZE> *)header;
 
             if (header->page_id == root_id && node->current_index == 0)
             {
@@ -230,7 +230,7 @@ private:
 
                 if (child_header->inner)
                 {
-                    BInnerNode<NODE_SIZE> *child = (BInnerNode<NODE_SIZE> *)child_header;
+                    BInnerNode<PAGE_SIZE> *child = (BInnerNode<PAGE_SIZE> *)child_header;
 
                     if (!child->can_delete())
                     {
@@ -273,7 +273,7 @@ private:
                 }
                 else
                 {
-                    BOuterNode<NODE_SIZE> *child = (BOuterNode<NODE_SIZE> *)child_header;
+                    BOuterNode<PAGE_SIZE> *child = (BOuterNode<PAGE_SIZE> *)child_header;
 
                     if (!child->can_delete())
                     {
@@ -326,7 +326,7 @@ private:
     {
         if (!header->inner)
         {
-            BOuterNode<NODE_SIZE> *node = (BOuterNode<NODE_SIZE> *)header;
+            BOuterNode<PAGE_SIZE> *node = (BOuterNode<PAGE_SIZE> *)header;
             int64_t value = node->get_value(key);
             if (cache)
             {
@@ -337,7 +337,7 @@ private:
         }
         else
         {
-            BInnerNode<NODE_SIZE> *node = (BInnerNode<NODE_SIZE> *)header;
+            BInnerNode<PAGE_SIZE> *node = (BInnerNode<PAGE_SIZE> *)header;
             BHeader *child_header = buffer_manager->request_page(node->next_page(key));
             buffer_manager->unfix_page(header->page_id, false);
             return recursive_get_value(child_header, key);
@@ -354,12 +354,12 @@ private:
     {
         assert(!header->inner && "Splitting node which is not an outer node");
 
-        BOuterNode<NODE_SIZE> *node = (BOuterNode<NODE_SIZE> *)header;
+        BOuterNode<PAGE_SIZE> *node = (BOuterNode<PAGE_SIZE> *)header;
         assert(index_to_split < node->max_size && "Splitting at an index which is bigger than the size");
 
         // Create new outer node
         BHeader *new_header = buffer_manager->create_new_page();
-        BOuterNode<NODE_SIZE> *new_outer_node = new (new_header) BOuterNode<NODE_SIZE>();
+        BOuterNode<PAGE_SIZE> *new_outer_node = new (new_header) BOuterNode<PAGE_SIZE>();
 
         // It is important that index_to_split is already increases by 2
         if (cache)
@@ -401,12 +401,12 @@ private:
     {
         assert(header->inner && "Splitting node which is not an inner node");
 
-        BInnerNode<NODE_SIZE> *node = (BInnerNode<NODE_SIZE> *)header;
+        BInnerNode<PAGE_SIZE> *node = (BInnerNode<PAGE_SIZE> *)header;
         assert(index_to_split < node->max_size && "Splitting at an index which is bigger than the size");
 
         // Create new inner node
         BHeader *new_header = buffer_manager->create_new_page();
-        BInnerNode<NODE_SIZE> *new_inner_node = new (new_header) BInnerNode<NODE_SIZE>();
+        BInnerNode<PAGE_SIZE> *new_inner_node = new (new_header) BInnerNode<PAGE_SIZE>();
 
         new_inner_node->child_ids[0] = node->child_ids[index_to_split];
         for (int i = index_to_split; i < node->max_size; i++)
@@ -443,12 +443,12 @@ private:
      */
     bool substitute(BHeader *header, BHeader *child_header)
     {
-        BInnerNode<NODE_SIZE> *node = (BInnerNode<NODE_SIZE> *)header;
+        BInnerNode<PAGE_SIZE> *node = (BInnerNode<PAGE_SIZE> *)header;
 
         if (child_header->inner)
         {
-            BInnerNode<NODE_SIZE> *child = (BInnerNode<NODE_SIZE> *)child_header;
-            BInnerNode<NODE_SIZE> *substitute;
+            BInnerNode<PAGE_SIZE> *child = (BInnerNode<PAGE_SIZE> *)child_header;
+            BInnerNode<PAGE_SIZE> *substitute;
             int index = 0;
 
             while (index <= node->current_index)
@@ -457,7 +457,7 @@ private:
                 {
                     if (index > 0)
                     {
-                        substitute = (BInnerNode<NODE_SIZE> *)buffer_manager->request_page(node->child_ids[index - 1]);
+                        substitute = (BInnerNode<PAGE_SIZE> *)buffer_manager->request_page(node->child_ids[index - 1]);
                         if (substitute->can_delete())
                         {
                             child->insert_first(node->keys[index - 1], substitute->child_ids[substitute->current_index]);
@@ -475,7 +475,7 @@ private:
 
                     if (index < node->current_index)
                     {
-                        substitute = (BInnerNode<NODE_SIZE> *)buffer_manager->request_page(node->child_ids[index + 1]);
+                        substitute = (BInnerNode<PAGE_SIZE> *)buffer_manager->request_page(node->child_ids[index + 1]);
                         if (substitute->can_delete())
                         {
                             child->insert(node->keys[index], substitute->child_ids[0]);
@@ -497,8 +497,8 @@ private:
         }
         else
         {
-            BOuterNode<NODE_SIZE> *child = (BOuterNode<NODE_SIZE> *)child_header;
-            BOuterNode<NODE_SIZE> *substitute;
+            BOuterNode<PAGE_SIZE> *child = (BOuterNode<PAGE_SIZE> *)child_header;
+            BOuterNode<PAGE_SIZE> *substitute;
             int index = 0;
 
             while (index <= node->current_index)
@@ -507,7 +507,7 @@ private:
                 {
                     if (index > 0)
                     {
-                        substitute = (BOuterNode<NODE_SIZE> *)buffer_manager->request_page(node->child_ids[index - 1]);
+                        substitute = (BOuterNode<PAGE_SIZE> *)buffer_manager->request_page(node->child_ids[index - 1]);
                         if (substitute->can_delete())
                         {
                             // save biggest key and value from left in right node
@@ -530,7 +530,7 @@ private:
                     }
                     if (index < node->current_index)
                     {
-                        substitute = (BOuterNode<NODE_SIZE> *)buffer_manager->request_page(node->child_ids[index + 1]);
+                        substitute = (BOuterNode<PAGE_SIZE> *)buffer_manager->request_page(node->child_ids[index + 1]);
                         if (substitute->can_delete())
                         {
                             // save biggest key and value from right to left
@@ -566,12 +566,12 @@ private:
      */
     void merge(BHeader *header, BHeader *child_header)
     {
-        BInnerNode<NODE_SIZE> *node = (BInnerNode<NODE_SIZE> *)header;
+        BInnerNode<PAGE_SIZE> *node = (BInnerNode<PAGE_SIZE> *)header;
 
         if (child_header->inner)
         {
-            BInnerNode<NODE_SIZE> *child = (BInnerNode<NODE_SIZE> *)child_header;
-            BInnerNode<NODE_SIZE> *merge;
+            BInnerNode<PAGE_SIZE> *child = (BInnerNode<PAGE_SIZE> *)child_header;
+            BInnerNode<PAGE_SIZE> *merge;
             int index = 0;
 
             while (index <= node->current_index)
@@ -580,7 +580,7 @@ private:
                 {
                     if (index > 0)
                     {
-                        merge = (BInnerNode<NODE_SIZE> *)buffer_manager->request_page(node->child_ids[index - 1]);
+                        merge = (BInnerNode<PAGE_SIZE> *)buffer_manager->request_page(node->child_ids[index - 1]);
                         if (!merge->can_delete())
                         {
                             // add all from right node to left node
@@ -606,7 +606,7 @@ private:
                     }
                     if (index < node->current_index)
                     {
-                        merge = (BInnerNode<NODE_SIZE> *)buffer_manager->request_page(node->child_ids[index + 1]);
+                        merge = (BInnerNode<PAGE_SIZE> *)buffer_manager->request_page(node->child_ids[index + 1]);
                         if (!merge->can_delete())
                         {
                             child->insert(node->keys[index], merge->child_ids[0]);
@@ -636,8 +636,8 @@ private:
         }
         else
         {
-            BOuterNode<NODE_SIZE> *child = (BOuterNode<NODE_SIZE> *)child_header;
-            BOuterNode<NODE_SIZE> *merge;
+            BOuterNode<PAGE_SIZE> *child = (BOuterNode<PAGE_SIZE> *)child_header;
+            BOuterNode<PAGE_SIZE> *merge;
             BHeader* merge_header; 
             int index = 0;
 
@@ -648,7 +648,7 @@ private:
                     if (index > 0)
                     {
                         merge_header = buffer_manager->request_page(node->child_ids[index - 1]);
-                        merge = (BOuterNode<NODE_SIZE> *)merge_header; 
+                        merge = (BOuterNode<PAGE_SIZE> *)merge_header; 
                         if (!merge->can_delete())
                         {
                             // add all from right node to left node
@@ -686,7 +686,7 @@ private:
                     if (index < node->current_index)
                     {
                         merge_header = buffer_manager->request_page(node->child_ids[index + 1]);
-                        merge = (BOuterNode<NODE_SIZE> *)merge_header; 
+                        merge = (BOuterNode<PAGE_SIZE> *)merge_header; 
                         if (!merge->can_delete())
                         {
                             // add all from right node to left node
@@ -736,7 +736,7 @@ private:
     {
         if (!header->inner)
         {
-            BOuterNode<NODE_SIZE> *node = (BOuterNode<NODE_SIZE> *)header;
+            BOuterNode<PAGE_SIZE> *node = (BOuterNode<PAGE_SIZE> *)header;
             // last one is still the key that will be deleted
             int64_t key = node->keys[node->current_index - 2];
             buffer_manager->unfix_page(header->page_id, false);
@@ -744,7 +744,7 @@ private:
         }
         else
         {
-            BInnerNode<NODE_SIZE> *node = (BInnerNode<NODE_SIZE> *)header;
+            BInnerNode<PAGE_SIZE> *node = (BInnerNode<PAGE_SIZE> *)header;
             BHeader *child_header = buffer_manager->request_page(node->child_ids[node->current_index]);
             buffer_manager->unfix_page(header->page_id, false);
             return find_biggest(child_header);
@@ -761,12 +761,12 @@ public:
      * @param buffer_manager_arg The buffer manager
      * @param cache_arg The chache
      */
-    BPlusTree(BufferManager *buffer_manager_arg, RadixTree *cache_arg = nullptr) : buffer_manager(buffer_manager_arg), cache(cache_arg)
+    BPlusTree(BufferManager *buffer_manager_arg, RadixTree<PAGE_SIZE> *cache_arg = nullptr) : buffer_manager(buffer_manager_arg), cache(cache_arg)
     {
         logger = spdlog::get("logger");
         BHeader *root = buffer_manager->create_new_page();
         buffer_manager->unfix_page(root->page_id, true);
-        new (root) BOuterNode<NODE_SIZE>();
+        new (root) BOuterNode<PAGE_SIZE>();
         root_id = root->page_id;
     };
 

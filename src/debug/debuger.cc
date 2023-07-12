@@ -174,7 +174,7 @@ bool Debuger::contains_key(BPlusTree<Configuration::page_size> *tree, uint64_t k
     return false;
 }
 
-void Debuger::traverse_radix_tree(RadixTree *radix_tree)
+void Debuger::traverse_radix_tree(RadixTree<Configuration::page_size> *radix_tree)
 {
     if (!radix_tree->root)
     {

@@ -24,15 +24,12 @@ private:
 
     std::shared_ptr<spdlog::logger> logger;
 
-    /// gives information if cache is enabled or not
-    bool cache = false;
-
 public:
     StorageManager *storage_manager;
     BufferManager *buffer_manager;
 
     BPlusTree<Configuration::page_size> *bplus_tree;
-    RadixTree *radix_tree = nullptr;
+    RadixTree<Configuration::page_size> *radix_tree = nullptr;
 
     /**
      * @brief Constructor for the DataManager

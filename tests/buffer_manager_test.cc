@@ -2,17 +2,18 @@
 #include "../src/data/buffer_manager.h"
 #include "../src/configuration.h"
 
+int page_size = 32;
+
 class BufferManagerTest : public ::testing::Test
 {
     friend class BufferManager;
 
 protected:
+    int buffer_size = 2;
     BufferManager *buffer_manager;
     std::filesystem::path base_path = "../tests/temp/";
     std::filesystem::path bitmap = "bitmap.bin";
     std::filesystem::path data = "data.bin";
-    int page_size = 32;
-    int buffer_size = 2;
     std::shared_ptr<spdlog::logger> logger = spdlog::get("logger");
 
     void SetUp() override

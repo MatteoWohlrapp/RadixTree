@@ -36,7 +36,7 @@ public:
      * @brief traverses the radix_treee with BFS
      * @param tree The tree that should be traverses, root node must be accesible
      */
-    void traverse_radix_tree(RadixTree *tree);
+    void traverse_radix_tree(RadixTree<Configuration::page_size> *tree);
 
     /**
      * @brief Traverses the tree and checks if all saved page_ids are unique
