@@ -15,12 +15,16 @@
 
 /// friend class
 class RadixTreeTest;
+class Debuger; 
 
 template <int PAGE_SIZE>
 class RadixTree
 {
 private:
     std::shared_ptr<spdlog::logger> logger;
+
+    // Root Node
+    RHeader *root = nullptr;
 
     /**
      * @brief Insert an element into the radix_tree recursively
@@ -799,8 +803,7 @@ private:
 
 public:
     friend class RadixTreeTest;
-    // Root Node
-    RHeader *root = nullptr;
+    friend class Debuger; 
 
     RadixTree()
     {

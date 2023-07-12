@@ -37,6 +37,11 @@ protected:
     {
     }
 
+    RHeader *get_root()
+    {
+        return radix_tree->root;
+    }
+
     uint8_t get_key_test(int64_t key, int depth)
     {
         return radix_tree->get_key(key, depth);
@@ -45,11 +50,6 @@ protected:
     int longest_common_prefix_test(int64_t key_a, int64_t key_b)
     {
         return radix_tree->longest_common_prefix(key_a, key_b);
-    }
-
-    RHeader *get_root()
-    {
-        return radix_tree->root;
     }
 
     bool is_compressed(RHeader *header)
@@ -1121,7 +1121,7 @@ TEST_F(RadixTreeTest, InsertAndDeleteWithSeed42)
         ASSERT_TRUE(key_matches(get_root()));
     }
 
-    ASSERT_FALSE(radix_tree->root);
+    ASSERT_FALSE(get_root());
 }
 
 TEST_F(RadixTreeTest, InsertAndDeleteRandom)
@@ -1206,5 +1206,5 @@ TEST_F(RadixTreeTest, InsertAndDeleteRandom)
         ASSERT_TRUE(key_matches(get_root()));
     }
 
-    ASSERT_FALSE(radix_tree->root);
+    ASSERT_FALSE(get_root());
 }

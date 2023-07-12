@@ -11,7 +11,7 @@ void RunConfigTwo::execute(bool benchmark)
 {
     auto run = [this]
     {
-        auto debuger = Debuger(data_manager.buffer_manager);
+        auto debuger = Debuger(&data_manager);
 
         /*
                 1
@@ -31,25 +31,25 @@ void RunConfigTwo::execute(bool benchmark)
         data_manager.insert(3, 3);
         data_manager.insert(4, 4);
 
-        debuger.traverse_bplus_tree(data_manager.bplus_tree);
-        debuger.traverse_radix_tree(data_manager.radix_tree);
+        debuger.traverse_bplus_tree();
+        debuger.traverse_radix_tree();
 
         data_manager.delete_value(2);
         data_manager.delete_value(0);
         data_manager.delete_value(1);
 
-        debuger.traverse_bplus_tree(data_manager.bplus_tree);
-        debuger.traverse_radix_tree(data_manager.radix_tree);
+        debuger.traverse_bplus_tree();
+        debuger.traverse_radix_tree();
 
         data_manager.delete_value(3);
 
-        debuger.traverse_bplus_tree(data_manager.bplus_tree);
-        debuger.traverse_radix_tree(data_manager.radix_tree);
+        debuger.traverse_bplus_tree();
+        debuger.traverse_radix_tree();
 
         data_manager.delete_value(4);
 
-        debuger.traverse_bplus_tree(data_manager.bplus_tree);
-        debuger.traverse_radix_tree(data_manager.radix_tree);
+        debuger.traverse_bplus_tree();
+        debuger.traverse_radix_tree();
     };
     this->benchmark.measure(run, benchmark);
 }

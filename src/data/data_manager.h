@@ -13,6 +13,8 @@
 #include "../configuration.h"
 #include "../bplus_tree/bplus_tree.h"
 
+class Debuger;
+
 /**
  * @brief Makes sure that the DB is initialized correctly and hold all variables necessary to run the system
  */
@@ -24,12 +26,14 @@ private:
 
     std::shared_ptr<spdlog::logger> logger;
 
-public:
     StorageManager *storage_manager;
     BufferManager *buffer_manager;
 
     BPlusTree<Configuration::page_size> *bplus_tree;
     RadixTree<Configuration::page_size> *radix_tree = nullptr;
+
+public:
+    friend class Debuger;
 
     /**
      * @brief Constructor for the DataManager

@@ -8,6 +8,9 @@
 #pragma once
 
 #include "../bplus_tree/bplus_tree.h"
+#include "../radix_tree/radix_tree.h"
+#include "../data/data_manager.h"
+#include "../configuration.h"
 #include "spdlog/spdlog.h"
 
 /**
@@ -17,37 +20,39 @@ class Debuger
 {
 private:
     std::shared_ptr<spdlog::logger> logger;
-    BufferManager *buffer_manager;
+    DataManager *data_manager;
+    BPlusTree<Configuration::page_size> *bplus_tree; 
+    RadixTree<Configuration::page_size> *radix_tree; 
+    BufferManager *buffer_manager; 
 
 public:
+    friend class DataManager; 
+    friend class BPlusTree<Configuration::page_size>; 
+    friend class RadixTree<Configuration::page_size>; 
     /**
      * @brief Constructor for the Debuger
-     * @param buffer_manager_arg Reference to the buffer manager that implements the tree
+     * @param data_manager_arg Reference to the data manager that contains all the information about data
      */
-    Debuger(BufferManager *buffer_manager_arg);
+    Debuger(DataManager *data_manager_arg = nullptr);
 
     /**
      * @brief traverses the bplus tree with BFS
-     * @param tree The tree that should be traverses, root node must be accesible
      */
-    void traverse_bplus_tree(BPlusTree<Configuration::page_size> *tree);
+    void traverse_bplus_tree();
 
     /**
      * @brief traverses the radix_treee with BFS
-     * @param tree The tree that should be traverses, root node must be accesible
      */
-    void traverse_radix_tree(RadixTree<Configuration::page_size> *tree);
+    void traverse_radix_tree();
 
     /**
      * @brief Traverses the tree and checks if all saved page_ids are unique
-     * @param tree The tree that should be traverses, root node must be accesible
      */
-    bool are_all_child_ids_unique(BPlusTree<Configuration::page_size> *tree);
+    bool are_all_child_ids_unique();
 
     /**
      * @brief Traverses the tree and checks if a key is contained
-     * @param tree The tree that should be traverses, root node must be accesible
      * @param key The key that is searched for
      */
-    bool contains_key(BPlusTree<Configuration::page_size> *tree, uint64_t key);
+    bool contains_key(int64_t keys);
 };

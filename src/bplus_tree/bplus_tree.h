@@ -17,7 +17,8 @@
 #include "spdlog/spdlog.h"
 
 /// forward declaration
-class BPlusTest;
+class BPlusTreeTest;
+class Debuger; 
 
 /**
  * @brief Implements the B+ Tree of the Database
@@ -31,6 +32,9 @@ private:
     BufferManager *buffer_manager;
 
     RadixTree<PAGE_SIZE> *cache;
+
+    /// root of tree
+    uint64_t root_id = 0;
 
     /**
      * @brief Inserts recursively into the tree
@@ -204,8 +208,8 @@ private:
             BOuterNode<PAGE_SIZE> *node = (BOuterNode<PAGE_SIZE> *)header;
             logger->flush();
             node->delete_value(key);
-            if(cache)
-                cache->delete_reference(key); 
+            if (cache)
+                cache->delete_reference(key);
             buffer_manager->unfix_page(header->page_id, true);
         }
         else
@@ -439,7 +443,7 @@ private:
      * @brief Substitutes one element from the left or right side of the node on the same level
      * @param header The parent node of which an element will be deleted
      * @param child_header The node which needs substitution to be able to delete
-     * @return wether substitution was possible or not 
+     * @return wether substitution was possible or not
      */
     bool substitute(BHeader *header, BHeader *child_header)
     {
@@ -638,7 +642,7 @@ private:
         {
             BOuterNode<PAGE_SIZE> *child = (BOuterNode<PAGE_SIZE> *)child_header;
             BOuterNode<PAGE_SIZE> *merge;
-            BHeader* merge_header; 
+            BHeader *merge_header;
             int index = 0;
 
             while (index <= node->current_index)
@@ -648,7 +652,7 @@ private:
                     if (index > 0)
                     {
                         merge_header = buffer_manager->request_page(node->child_ids[index - 1]);
-                        merge = (BOuterNode<PAGE_SIZE> *)merge_header; 
+                        merge = (BOuterNode<PAGE_SIZE> *)merge_header;
                         if (!merge->can_delete())
                         {
                             // add all from right node to left node
@@ -686,7 +690,7 @@ private:
                     if (index < node->current_index)
                     {
                         merge_header = buffer_manager->request_page(node->child_ids[index + 1]);
-                        merge = (BOuterNode<PAGE_SIZE> *)merge_header; 
+                        merge = (BOuterNode<PAGE_SIZE> *)merge_header;
                         if (!merge->can_delete())
                         {
                             // add all from right node to left node
@@ -705,7 +709,7 @@ private:
                                     child->insert(merge->keys[i], merge->values[i]);
                                 }
                             }
-       
+
                             child->next_lef_id = merge->next_lef_id;
                             node->delete_value(node->keys[index]);
                             buffer_manager->unfix_page(merge->header.page_id, false);
@@ -752,9 +756,8 @@ private:
     }
 
 public:
-    friend class BPlusTest;
-    /// root of tree
-    uint64_t root_id;
+    friend class BPlusTreeTest;
+    friend class Debuger; 
 
     /**
      * @brief Constructor for the B+ tree

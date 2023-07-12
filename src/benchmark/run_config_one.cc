@@ -2,6 +2,7 @@
 #include "run_config_one.h"
 #include "../data/data_manager.h"
 #include "./bplus_tree/bplus_tree.h"
+#include "./radix_tree/radix_tree.h"
 #include "./debug/debuger.h"
 
 #include <iostream>
@@ -17,7 +18,7 @@ void RunConfigOne::execute(bool benchmark)
         std::unordered_set<int64_t> unique_values;
         int64_t values[100];
 
-        auto debuger = Debuger(data_manager.buffer_manager);
+        auto debuger = Debuger(&data_manager);
 
         for (int i = 0; i < 40; i++)
         {
@@ -38,10 +39,9 @@ void RunConfigOne::execute(bool benchmark)
         for (int i = 0; i < 40; i++)
         {
             logger->debug("Deleting {} at index {}", values[i], i);
-            logger->flush();
             data_manager.delete_value(values[i]);
-            debuger.traverse_bplus_tree(data_manager.bplus_tree);
-            debuger.traverse_radix_tree(data_manager.radix_tree);
+            debuger.traverse_bplus_tree();
+            debuger.traverse_radix_tree();
         }
     };
     this->benchmark.measure(run, benchmark);

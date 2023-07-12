@@ -7,25 +7,28 @@
 #include <sstream>
 #include <set>
 
-Debuger::Debuger(BufferManager *buffer_manager_arg) : buffer_manager(buffer_manager_arg)
+Debuger::Debuger(DataManager *data_manager_arg) : data_manager(data_manager_arg)
 {
     logger = spdlog::get("logger");
+    bplus_tree = data_manager->bplus_tree; 
+    radix_tree = data_manager->radix_tree; 
+    buffer_manager = data_manager->buffer_manager; 
 }
 
 // BFS
-void Debuger::traverse_bplus_tree(BPlusTree<Configuration::page_size> *tree)
+void Debuger::traverse_bplus_tree()
 {
-    if (!tree)
+    if (bplus_tree->root_id == 0)
     {
         logger->debug("Empty tree");
         return;
     }
 
     std::queue<uint64_t> nodes_queue;
-    nodes_queue.push(tree->root_id);
+    nodes_queue.push(bplus_tree->root_id);
     int level = 0;
 
-    logger->debug("Starting traversing on root node: {}", tree->root_id);
+    logger->debug("Starting traversing on root node: {}", bplus_tree->root_id);
     while (!nodes_queue.empty())
     {
         int level_size = nodes_queue.size();
@@ -76,9 +79,9 @@ void Debuger::traverse_bplus_tree(BPlusTree<Configuration::page_size> *tree)
     logger->debug("Finished traversing");
 }
 
-bool Debuger::are_all_child_ids_unique(BPlusTree<Configuration::page_size> *tree)
+bool Debuger::are_all_child_ids_unique()
 {
-    if (!tree)
+    if (bplus_tree->root_id == 0)
     {
         logger->debug("Empty tree");
         return true;
@@ -86,7 +89,7 @@ bool Debuger::are_all_child_ids_unique(BPlusTree<Configuration::page_size> *tree
 
     std::set<uint64_t> unique_child_ids;
     std::queue<uint64_t> nodes_queue;
-    nodes_queue.push(tree->root_id);
+    nodes_queue.push(bplus_tree->root_id);
 
     while (!nodes_queue.empty())
     {
@@ -118,16 +121,16 @@ bool Debuger::are_all_child_ids_unique(BPlusTree<Configuration::page_size> *tree
     return true;
 }
 
-bool Debuger::contains_key(BPlusTree<Configuration::page_size> *tree, uint64_t key)
+bool Debuger::contains_key(int64_t key)
 {
-    if (!tree)
+    if (bplus_tree->root_id == 0)
     {
         logger->debug("Empty tree");
         return false;
     }
 
     std::queue<uint64_t> nodes_queue;
-    nodes_queue.push(tree->root_id);
+    nodes_queue.push(bplus_tree->root_id);
 
     while (!nodes_queue.empty())
     {
@@ -174,7 +177,7 @@ bool Debuger::contains_key(BPlusTree<Configuration::page_size> *tree, uint64_t k
     return false;
 }
 
-void Debuger::traverse_radix_tree(RadixTree<Configuration::page_size> *radix_tree)
+void Debuger::traverse_radix_tree()
 {
     if (!radix_tree->root)
     {
