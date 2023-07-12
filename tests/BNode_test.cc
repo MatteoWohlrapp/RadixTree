@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "../src/btree/BPlus.h"
+#include "../src/bplustree/BPlusTree.h"
 #include "../src/data/BufferManager.h"
 #include "../src/Configuration.h"
 

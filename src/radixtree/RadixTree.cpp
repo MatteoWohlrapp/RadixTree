@@ -1,7 +1,7 @@
 
 #include "RadixTree.h"
 #include "RNodes.h"
-#include "../btree/BNodes.h"
+#include "../bplustree/BNodes.h"
 #include "./Configuration.h"
 
 RadixTree::RadixTree()

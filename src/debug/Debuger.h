@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "../btree/BPlus.h"
+#include "../bplustree/BPlusTree.h"
 #include "../radixtree/RadixTree.h"
 #include "spdlog/spdlog.h"
 
@@ -28,27 +28,27 @@ public:
     Debuger(BufferManager *buffer_manager_arg);
 
     /**
-     * @brief traverses the btree with BFS
+     * @brief traverses the bplustree with BFS
      * @param tree The tree that should be traverses, root node must be accesible
      */
-    void traverse_btree(BPlus<Configuration::page_size> *tree);
+    void traverse_bplustree(BPlusTree<Configuration::page_size> *tree);
 
     /**
-     * @brief traverses the rtree with BFS
+     * @brief traverses the radixtree with BFS
      * @param tree The tree that should be traverses, root node must be accesible
      */
-    void traverse_rtree(RadixTree *tree);
+    void traverse_radixtree(RadixTree *tree);
 
     /**
      * @brief Traverses the tree and checks if all saved page_ids are unique
      * @param tree The tree that should be traverses, root node must be accesible
      */
-    bool are_all_child_ids_unique(BPlus<Configuration::page_size> *tree);
+    bool are_all_child_ids_unique(BPlusTree<Configuration::page_size> *tree);
 
     /**
      * @brief Traverses the tree and checks if a key is contained
      * @param tree The tree that should be traverses, root node must be accesible
      * @param key The key that is searched for
      */
-    bool contains_key(BPlus<Configuration::page_size> *tree, uint64_t key);
+    bool contains_key(BPlusTree<Configuration::page_size> *tree, uint64_t key);
 };

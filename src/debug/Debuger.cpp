@@ -13,7 +13,7 @@ Debuger::Debuger(BufferManager *buffer_manager_arg) : buffer_manager(buffer_mana
 }
 
 // BFS
-void Debuger::traverse_btree(BPlus<Configuration::page_size> *tree)
+void Debuger::traverse_bplustree(BPlusTree<Configuration::page_size> *tree)
 {
     if (!tree)
     {
@@ -76,7 +76,7 @@ void Debuger::traverse_btree(BPlus<Configuration::page_size> *tree)
     logger->debug("Finished traversing");
 }
 
-bool Debuger::are_all_child_ids_unique(BPlus<Configuration::page_size> *tree)
+bool Debuger::are_all_child_ids_unique(BPlusTree<Configuration::page_size> *tree)
 {
     if (!tree)
     {
@@ -118,7 +118,7 @@ bool Debuger::are_all_child_ids_unique(BPlus<Configuration::page_size> *tree)
     return true;
 }
 
-bool Debuger::contains_key(BPlus<Configuration::page_size> *tree, uint64_t key)
+bool Debuger::contains_key(BPlusTree<Configuration::page_size> *tree, uint64_t key)
 {
     if (!tree)
     {
@@ -174,11 +174,11 @@ bool Debuger::contains_key(BPlus<Configuration::page_size> *tree, uint64_t key)
     return false;
 }
 
-void Debuger::traverse_rtree(RadixTree *radixtree)
+void Debuger::traverse_radixtree(RadixTree *radixtree)
 {
     if (!radixtree->root)
     {
-        logger->debug("RTree null"); 
+        logger->debug("Radixtree null"); 
         return; 
     }
     std::queue<RHeader *> nodes_queue;

@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "../src/btree/BPlus.h"
+#include "../src/bplustree/BPlusTree.h"
 #include "../src/data/BufferManager.h"
 #include "../src/Configuration.h"
 #include <random>
@@ -8,13 +8,13 @@
 
 constexpr int node_test_size = 96;
 
-class BPlusTest : public ::testing::Test
+class BPlusTreeTest : public ::testing::Test
 {
-    friend class BPlus<node_test_size>;
+    friend class BPlusTree<node_test_size>;
     friend class BufferManager;
 
 protected:
-    BPlus<node_test_size> *bplus;
+    BPlusTree<node_test_size> *bplustree;
     BufferManager *buffer_manager;
     std::filesystem::path base_path = "../tests/temp/";
     std::filesystem::path bitmap = "bitmap.bin";
@@ -27,7 +27,7 @@ protected:
         std::filesystem::remove(base_path / bitmap);
         std::filesystem::remove(base_path / data);
         buffer_manager = new BufferManager(new StorageManager(base_path, node_test_size), buffer_size, node_test_size); 
-        bplus = new BPlus<node_test_size>(buffer_manager);
+        bplustree = new BPlusTree<node_test_size>(buffer_manager);
     }
 
     void TearDown() override
@@ -36,7 +36,7 @@ protected:
 
     uint64_t get_root_id()
     {
-        return bplus->root_id;
+        return bplustree->root_id;
     }
 
     bool all_pages_unfixed()
@@ -292,10 +292,10 @@ protected:
     bool all(std::function<bool(BHeader *)> predicate)
     {
         std::queue<uint64_t> nodes_queue;
-        nodes_queue.push(bplus->root_id);
+        nodes_queue.push(bplustree->root_id);
         int level = 0;
 
-        logger->debug("Starting traversing on root node: {}", bplus->root_id);
+        logger->debug("Starting traversing on root node: {}", bplustree->root_id);
         while (!nodes_queue.empty())
         {
             int level_size = nodes_queue.size();
@@ -366,14 +366,14 @@ protected:
             if (header->inner)
             {
                 BInnerNode<node_test_size> *inner = (BInnerNode<node_test_size> *)header;
-                if (bplus->root_id == header->page_id)
+                if (bplustree->root_id == header->page_id)
                     return inner->current_index > 0;
                 return !inner->is_too_empty();
             }
             else
             {
                 BOuterNode<node_test_size> *outer = (BOuterNode<node_test_size> *)header;
-                if (bplus->root_id == header->page_id)
+                if (bplustree->root_id == header->page_id)
                     return true;
                 return !outer->is_too_empty();
             }
@@ -401,7 +401,7 @@ protected:
 };
 
 // Test the controll functions for insert
-TEST_F(BPlusTest, BalanceCorrect)
+TEST_F(BPlusTreeTest, BalanceCorrect)
 {
     BHeader *header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(2, true);
@@ -432,7 +432,7 @@ TEST_F(BPlusTest, BalanceCorrect)
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, BalanceIncorrect)
+TEST_F(BPlusTreeTest, BalanceIncorrect)
 {
     BHeader *header = buffer_manager->create_new_page();
     buffer_manager->unfix_page(2, true);
@@ -460,7 +460,7 @@ TEST_F(BPlusTest, BalanceIncorrect)
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, OrderCorrect)
+TEST_F(BPlusTreeTest, OrderCorrect)
 {
     // root
     BHeader *header = buffer_manager->create_new_page();
@@ -527,7 +527,7 @@ TEST_F(BPlusTest, OrderCorrect)
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, OrderIncorrectAtLeaf)
+TEST_F(BPlusTreeTest, OrderIncorrectAtLeaf)
 {
     // root
     BHeader *header = buffer_manager->create_new_page();
@@ -593,7 +593,7 @@ TEST_F(BPlusTest, OrderIncorrectAtLeaf)
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, OrderIncorrectInner)
+TEST_F(BPlusTreeTest, OrderIncorrectInner)
 {
     // root
     BHeader *header = buffer_manager->create_new_page();
@@ -656,92 +656,92 @@ TEST_F(BPlusTest, OrderIncorrectInner)
 }
 
 // Test insert
-TEST_F(BPlusTest, CorrectRootNodeType)
+TEST_F(BPlusTreeTest, CorrectRootNodeType)
 {
     ASSERT_FALSE(buffer_manager->request_page(get_root_id())->inner);
     buffer_manager->unfix_page(get_root_id(), false);
 
     for (int i = 0; i < 6; i++)
     {
-        bplus->insert(i, i);
+        bplustree->insert(i, i);
     }
 
     ASSERT_TRUE(buffer_manager->request_page(get_root_id())->inner);
 }
 
-TEST_F(BPlusTest, EmptyAtBeginning)
+TEST_F(BPlusTreeTest, EmptyAtBeginning)
 {
     BOuterNode<node_test_size> *node = (BOuterNode<node_test_size> *)buffer_manager->request_page(get_root_id());
 
     ASSERT_EQ(node->current_index, 0);
 }
 
-TEST_F(BPlusTest, InsertBoundaries)
+TEST_F(BPlusTreeTest, InsertBoundaries)
 {
     for (int i = -20; i <= 20; i++)
     {
-        bplus->insert(i, i);
+        bplustree->insert(i, i);
     }
-    bplus->insert(INT64_MIN + 1, INT64_MIN + 1);
-    bplus->insert(INT64_MAX, INT64_MAX);
+    bplustree->insert(INT64_MIN + 1, INT64_MIN + 1);
+    bplustree->insert(INT64_MAX, INT64_MAX);
 
-    ASSERT_EQ(bplus->get_value(INT64_MIN + 1), INT64_MIN + 1);
-    ASSERT_EQ(bplus->get_value(INT64_MAX), INT64_MAX);
-    ASSERT_TRUE(is_concatenated(bplus->root_id, 43));
-    ASSERT_TRUE(is_ordered(bplus->root_id));
-    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_EQ(bplustree->get_value(INT64_MIN + 1), INT64_MIN + 1);
+    ASSERT_EQ(bplustree->get_value(INT64_MAX), INT64_MAX);
+    ASSERT_TRUE(is_concatenated(bplustree->root_id, 43));
+    ASSERT_TRUE(is_ordered(bplustree->root_id));
+    ASSERT_TRUE(is_balanced(bplustree->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, InsertRepeated)
+TEST_F(BPlusTreeTest, InsertRepeated)
 {
     for (int i = 0; i < 20; i++)
     {
-        bplus->insert(1, 1);
+        bplustree->insert(1, 1);
     }
-    ASSERT_EQ(bplus->get_value(1), 1);
+    ASSERT_EQ(bplustree->get_value(1), 1);
 
-    ASSERT_TRUE(is_concatenated(bplus->root_id, 20));
-    ASSERT_TRUE(is_ordered(bplus->root_id));
-    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(is_concatenated(bplustree->root_id, 20));
+    ASSERT_TRUE(is_ordered(bplustree->root_id));
+    ASSERT_TRUE(is_balanced(bplustree->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, InsertAscending)
+TEST_F(BPlusTreeTest, InsertAscending)
 {
     for (int i = -20; i <= 20; i++)
     {
         logger->debug("Inserting {}", i);
         logger->flush();
-        bplus->insert(i, i);
+        bplustree->insert(i, i);
     }
     for (int i = -20; i >= 20; i++)
     {
-        ASSERT_EQ(bplus->get_value(i), i);
+        ASSERT_EQ(bplustree->get_value(i), i);
     }
-    ASSERT_TRUE(is_concatenated(bplus->root_id, 41));
-    ASSERT_TRUE(is_ordered(bplus->root_id));
-    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(is_concatenated(bplustree->root_id, 41));
+    ASSERT_TRUE(is_ordered(bplustree->root_id));
+    ASSERT_TRUE(is_balanced(bplustree->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, InsertDescending)
+TEST_F(BPlusTreeTest, InsertDescending)
 {
     for (int i = 20; i >= -20; i--)
     {
-        bplus->insert(i, i);
+        bplustree->insert(i, i);
     }
     for (int i = 20; i >= -20; i--)
     {
-        ASSERT_EQ(bplus->get_value(i), i);
+        ASSERT_EQ(bplustree->get_value(i), i);
     }
-    ASSERT_TRUE(is_concatenated(bplus->root_id, 41));
-    ASSERT_TRUE(is_ordered(bplus->root_id));
-    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(is_concatenated(bplustree->root_id, 41));
+    ASSERT_TRUE(is_ordered(bplustree->root_id));
+    ASSERT_TRUE(is_balanced(bplustree->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, InsertRandom)
+TEST_F(BPlusTreeTest, InsertRandom)
 {
     std::random_device rd;
     std::uniform_int_distribution<int64_t> dist = std::uniform_int_distribution<int64_t>(INT64_MIN + 1, INT64_MAX);
@@ -752,21 +752,21 @@ TEST_F(BPlusTest, InsertRandom)
     {
         int64_t value = dist(rd);
         values[i] = value;
-        bplus->insert(value, value);
+        bplustree->insert(value, value);
     }
 
     for (int i = 0; i < 100; i++)
     {
-        ASSERT_EQ(bplus->get_value(values[i]), values[i]);
+        ASSERT_EQ(bplustree->get_value(values[i]), values[i]);
     }
-    ASSERT_TRUE(is_concatenated(bplus->root_id, 100));
-    ASSERT_TRUE(is_ordered(bplus->root_id));
-    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(is_concatenated(bplustree->root_id, 100));
+    ASSERT_TRUE(is_ordered(bplustree->root_id));
+    ASSERT_TRUE(is_balanced(bplustree->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 }
 
 // Test the additional control functions for delete
-TEST_F(BPlusTest, NotContains)
+TEST_F(BPlusTreeTest, NotContains)
 {
     std::random_device rd;
     std::uniform_int_distribution<int64_t> dist = std::uniform_int_distribution<int64_t>(INT64_MIN + 1, INT64_MAX);
@@ -776,7 +776,7 @@ TEST_F(BPlusTest, NotContains)
         int64_t value = dist(rd);
         while (value == 42)
             value = dist(rd);
-        bplus->insert(value, value);
+        bplustree->insert(value, value);
     }
 
     ASSERT_TRUE(not_contains(42));
@@ -784,7 +784,7 @@ TEST_F(BPlusTest, NotContains)
 }
 
 // Test the additional control functions for delete
-TEST_F(BPlusTest, Contains)
+TEST_F(BPlusTreeTest, Contains)
 {
     std::random_device rd;
     std::uniform_int_distribution<int64_t> dist = std::uniform_int_distribution<int64_t>(INT64_MIN + 1, INT64_MAX);
@@ -792,15 +792,15 @@ TEST_F(BPlusTest, Contains)
     for (int i = 0; i < 99; i++)
     {
         int64_t value = dist(rd);
-        bplus->insert(value, value);
+        bplustree->insert(value, value);
     }
-    bplus->insert(42, 42);
+    bplustree->insert(42, 42);
 
     ASSERT_FALSE(not_contains(42));
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, MinimumSize)
+TEST_F(BPlusTreeTest, MinimumSize)
 {
     ASSERT_TRUE(minimum_size());
 
@@ -810,14 +810,14 @@ TEST_F(BPlusTest, MinimumSize)
     for (int i = 0; i < 100; i++)
     {
         int64_t value = dist(rd);
-        bplus->insert(value, value);
+        bplustree->insert(value, value);
     }
 
     ASSERT_TRUE(minimum_size());
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, NotMinimumSizeInnerRoot)
+TEST_F(BPlusTreeTest, NotMinimumSizeInnerRoot)
 {
     std::random_device rd;
     std::uniform_int_distribution<int64_t> dist = std::uniform_int_distribution<int64_t>(INT64_MIN + 1, INT64_MAX);
@@ -825,12 +825,12 @@ TEST_F(BPlusTest, NotMinimumSizeInnerRoot)
     for (int i = 0; i < 5; i++)
     {
         int64_t value = dist(rd);
-        bplus->insert(value, value);
+        bplustree->insert(value, value);
     }
 
     ASSERT_TRUE(minimum_size());
 
-    BInnerNode<node_test_size> *node = (BInnerNode<node_test_size> *)buffer_manager->request_page(bplus->root_id);
+    BInnerNode<node_test_size> *node = (BInnerNode<node_test_size> *)buffer_manager->request_page(bplustree->root_id);
     node->current_index = 0;
     buffer_manager->unfix_page(node->header.page_id, true);
 
@@ -838,17 +838,17 @@ TEST_F(BPlusTest, NotMinimumSizeInnerRoot)
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, NotMinimumSizeInnerChild)
+TEST_F(BPlusTreeTest, NotMinimumSizeInnerChild)
 {
 
     for (int i = 0; i < 20; i++)
     {
-        bplus->insert(i, i);
+        bplustree->insert(i, i);
     }
 
     ASSERT_TRUE(minimum_size());
 
-    BInnerNode<node_test_size> *node = (BInnerNode<node_test_size> *)buffer_manager->request_page(bplus->root_id);
+    BInnerNode<node_test_size> *node = (BInnerNode<node_test_size> *)buffer_manager->request_page(bplustree->root_id);
     buffer_manager->unfix_page(node->header.page_id, false);
     node = (BInnerNode<node_test_size> *)buffer_manager->request_page(node->child_ids[0]);
     node->current_index = 0;
@@ -858,16 +858,16 @@ TEST_F(BPlusTest, NotMinimumSizeInnerChild)
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, NotMinimumSizeLeaf)
+TEST_F(BPlusTreeTest, NotMinimumSizeLeaf)
 {
     for (int i = 0; i < 20; i++)
     {
-        bplus->insert(i, i);
+        bplustree->insert(i, i);
     }
 
     ASSERT_TRUE(minimum_size());
 
-    auto leftmost = find_leftmost(bplus->root_id);
+    auto leftmost = find_leftmost(bplustree->root_id);
     BOuterNode<node_test_size> *node = (BOuterNode<node_test_size> *)buffer_manager->request_page(leftmost);
     node->current_index = 0;
     buffer_manager->unfix_page(node->header.page_id, true);
@@ -876,298 +876,298 @@ TEST_F(BPlusTest, NotMinimumSizeLeaf)
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, DeleteFromOuterRoot)
+TEST_F(BPlusTreeTest, DeleteFromOuterRoot)
 {
-    bplus->insert(1, 1);
-    bplus->insert(4, 4);
-    bplus->insert(2, 2);
-    bplus->insert(3, 3);
+    bplustree->insert(1, 1);
+    bplustree->insert(4, 4);
+    bplustree->insert(2, 2);
+    bplustree->insert(3, 3);
 
-    bplus->delete_pair(3);
+    bplustree->delete_pair(3);
     ASSERT_TRUE(not_contains(3));
 
-    bplus->delete_pair(1);
+    bplustree->delete_pair(1);
     ASSERT_TRUE(not_contains(1));
 
-    bplus->delete_pair(4);
+    bplustree->delete_pair(4);
     ASSERT_TRUE(not_contains(4));
 
-    bplus->delete_pair(2);
+    bplustree->delete_pair(2);
     ASSERT_TRUE(not_contains(2));
 
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, DeleteInnerOneLevelExchange)
+TEST_F(BPlusTreeTest, DeleteInnerOneLevelExchange)
 {
     for (int i = 1; i < 7; i++)
     {
-        bplus->insert(i * 2, i * 2);
+        bplustree->insert(i * 2, i * 2);
     }
-    bplus->insert(3, 3);
-    bplus->insert(7, 7);
+    bplustree->insert(3, 3);
+    bplustree->insert(7, 7);
 
-    bplus->delete_pair(4);
+    bplustree->delete_pair(4);
     ASSERT_TRUE(not_contains(4));
     ASSERT_TRUE(minimum_size());
-    ASSERT_TRUE(is_concatenated(bplus->root_id, 7));
-    ASSERT_TRUE(is_ordered(bplus->root_id));
-    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(is_concatenated(bplustree->root_id, 7));
+    ASSERT_TRUE(is_ordered(bplustree->root_id));
+    ASSERT_TRUE(is_balanced(bplustree->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 
-    bplus->delete_pair(8);
+    bplustree->delete_pair(8);
     ASSERT_TRUE(not_contains(8));
     ASSERT_TRUE(minimum_size());
-    ASSERT_TRUE(is_concatenated(bplus->root_id, 6));
-    ASSERT_TRUE(is_ordered(bplus->root_id));
-    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(is_concatenated(bplustree->root_id, 6));
+    ASSERT_TRUE(is_ordered(bplustree->root_id));
+    ASSERT_TRUE(is_balanced(bplustree->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, DeleteInnerOneLevelSubstituteLeftMiddle)
+TEST_F(BPlusTreeTest, DeleteInnerOneLevelSubstituteLeftMiddle)
 {
     for (int i = 1; i < 8; i++)
     {
-        bplus->insert(i * 2, i * 2);
+        bplustree->insert(i * 2, i * 2);
     }
-    bplus->insert(3, 3);
+    bplustree->insert(3, 3);
 
-    bplus->delete_pair(8);
+    bplustree->delete_pair(8);
     ASSERT_TRUE(not_contains(8));
     ASSERT_TRUE(minimum_size());
-    ASSERT_TRUE(is_concatenated(bplus->root_id, 7));
-    ASSERT_TRUE(is_ordered(bplus->root_id));
-    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(is_concatenated(bplustree->root_id, 7));
+    ASSERT_TRUE(is_ordered(bplustree->root_id));
+    ASSERT_TRUE(is_balanced(bplustree->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, DeleteInnerOneLevelSubstituteLeftRightBoundary)
+TEST_F(BPlusTreeTest, DeleteInnerOneLevelSubstituteLeftRightBoundary)
 {
     for (int i = 1; i < 8; i++)
     {
-        bplus->insert(i * 2, i * 2);
+        bplustree->insert(i * 2, i * 2);
     }
-    bplus->insert(7, 7);
+    bplustree->insert(7, 7);
 
-    bplus->delete_pair(14);
-    bplus->delete_pair(12);
+    bplustree->delete_pair(14);
+    bplustree->delete_pair(12);
 
     ASSERT_TRUE(not_contains(12));
     ASSERT_TRUE(minimum_size());
-    ASSERT_TRUE(is_concatenated(bplus->root_id, 6));
-    ASSERT_TRUE(is_ordered(bplus->root_id));
-    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(is_concatenated(bplustree->root_id, 6));
+    ASSERT_TRUE(is_ordered(bplustree->root_id));
+    ASSERT_TRUE(is_balanced(bplustree->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, DeleteInnerOneLevelSubstituteRightMiddle)
+TEST_F(BPlusTreeTest, DeleteInnerOneLevelSubstituteRightMiddle)
 {
     for (int i = 1; i < 8; i++)
     {
-        bplus->insert(i * 2, i * 2);
+        bplustree->insert(i * 2, i * 2);
     }
 
-    bplus->delete_pair(8);
+    bplustree->delete_pair(8);
     ASSERT_TRUE(not_contains(8));
     ASSERT_TRUE(minimum_size());
-    ASSERT_TRUE(is_concatenated(bplus->root_id, 6));
-    ASSERT_TRUE(is_ordered(bplus->root_id));
-    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(is_concatenated(bplustree->root_id, 6));
+    ASSERT_TRUE(is_ordered(bplustree->root_id));
+    ASSERT_TRUE(is_balanced(bplustree->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, DeleteInnerOneLevelSubstituteRightLeftBoundary)
+TEST_F(BPlusTreeTest, DeleteInnerOneLevelSubstituteRightLeftBoundary)
 {
     for (int i = 1; i < 8; i++)
     {
-        bplus->insert(i * 2, i * 2);
+        bplustree->insert(i * 2, i * 2);
     }
 
-    bplus->insert(7, 7);
+    bplustree->insert(7, 7);
 
-    bplus->delete_pair(2);
+    bplustree->delete_pair(2);
     ASSERT_TRUE(not_contains(2));
     ASSERT_TRUE(minimum_size());
-    ASSERT_TRUE(is_concatenated(bplus->root_id, 7));
-    ASSERT_TRUE(is_ordered(bplus->root_id));
-    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(is_concatenated(bplustree->root_id, 7));
+    ASSERT_TRUE(is_ordered(bplustree->root_id));
+    ASSERT_TRUE(is_balanced(bplustree->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, DeleteInnerOneLevelMergeLeftMiddle)
+TEST_F(BPlusTreeTest, DeleteInnerOneLevelMergeLeftMiddle)
 {
     for (int i = 1; i < 8; i++)
     {
-        bplus->insert(i * 2, i * 2);
+        bplustree->insert(i * 2, i * 2);
     }
-    bplus->delete_pair(14);
-    bplus->delete_pair(8);
+    bplustree->delete_pair(14);
+    bplustree->delete_pair(8);
     ASSERT_TRUE(not_contains(8));
     ASSERT_TRUE(minimum_size());
-    ASSERT_TRUE(is_concatenated(bplus->root_id, 5));
-    ASSERT_TRUE(is_ordered(bplus->root_id));
-    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(is_concatenated(bplustree->root_id, 5));
+    ASSERT_TRUE(is_ordered(bplustree->root_id));
+    ASSERT_TRUE(is_balanced(bplustree->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, DeleteInnerOneLevelMergeLeftRightBoundary)
+TEST_F(BPlusTreeTest, DeleteInnerOneLevelMergeLeftRightBoundary)
 {
     for (int i = 1; i < 8; i++)
     {
-        bplus->insert(i * 2, i * 2);
+        bplustree->insert(i * 2, i * 2);
     }
 
-    bplus->delete_pair(14);
-    bplus->delete_pair(12);
+    bplustree->delete_pair(14);
+    bplustree->delete_pair(12);
 
     ASSERT_TRUE(not_contains(12));
     ASSERT_TRUE(minimum_size());
-    ASSERT_TRUE(is_concatenated(bplus->root_id, 5));
-    ASSERT_TRUE(is_ordered(bplus->root_id));
-    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(is_concatenated(bplustree->root_id, 5));
+    ASSERT_TRUE(is_ordered(bplustree->root_id));
+    ASSERT_TRUE(is_balanced(bplustree->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, DeleteInnerOneLevelMergeRightLeftBoundary)
+TEST_F(BPlusTreeTest, DeleteInnerOneLevelMergeRightLeftBoundary)
 {
     for (int i = 1; i < 8; i++)
     {
-        bplus->insert(i * 2, i * 2);
+        bplustree->insert(i * 2, i * 2);
     }
 
-    bplus->delete_pair(2);
+    bplustree->delete_pair(2);
     ASSERT_TRUE(not_contains(2));
     ASSERT_TRUE(minimum_size());
-    ASSERT_TRUE(is_concatenated(bplus->root_id, 6));
-    ASSERT_TRUE(is_ordered(bplus->root_id));
-    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(is_concatenated(bplustree->root_id, 6));
+    ASSERT_TRUE(is_ordered(bplustree->root_id));
+    ASSERT_TRUE(is_balanced(bplustree->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, OneLevelDecreaseDepth)
+TEST_F(BPlusTreeTest, OneLevelDecreaseDepth)
 {
     for (int i = 1; i < 6; i++)
     {
-        bplus->insert(i * 2, i * 2);
+        bplustree->insert(i * 2, i * 2);
     }
-    bplus->delete_pair(4);
-    bplus->delete_pair(6);
+    bplustree->delete_pair(4);
+    bplustree->delete_pair(6);
 
     ASSERT_TRUE(not_contains(4));
     ASSERT_TRUE(not_contains(6));
     ASSERT_TRUE(minimum_size());
-    ASSERT_TRUE(is_concatenated(bplus->root_id, 3));
-    ASSERT_TRUE(is_ordered(bplus->root_id));
-    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(is_concatenated(bplustree->root_id, 3));
+    ASSERT_TRUE(is_ordered(bplustree->root_id));
+    ASSERT_TRUE(is_balanced(bplustree->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, SubstituteRight)
+TEST_F(BPlusTreeTest, SubstituteRight)
 {
-    bplus->insert(20, 20);
-    bplus->insert(15, 15);
-    bplus->insert(10, 10);
-    bplus->insert(5, 5);
-    bplus->insert(4, 4);
-    bplus->insert(3, 3);
-    bplus->insert(2, 2);
-    bplus->insert(11, 11);
-    bplus->insert(12, 12);
-    bplus->insert(13, 13);
-    bplus->insert(21, 21);
-    bplus->insert(22, 22);
-    bplus->delete_pair(4);
+    bplustree->insert(20, 20);
+    bplustree->insert(15, 15);
+    bplustree->insert(10, 10);
+    bplustree->insert(5, 5);
+    bplustree->insert(4, 4);
+    bplustree->insert(3, 3);
+    bplustree->insert(2, 2);
+    bplustree->insert(11, 11);
+    bplustree->insert(12, 12);
+    bplustree->insert(13, 13);
+    bplustree->insert(21, 21);
+    bplustree->insert(22, 22);
+    bplustree->delete_pair(4);
 
     ASSERT_TRUE(not_contains(4));
     ASSERT_TRUE(minimum_size());
-    ASSERT_TRUE(is_concatenated(bplus->root_id, 11));
-    ASSERT_TRUE(is_ordered(bplus->root_id));
-    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(is_concatenated(bplustree->root_id, 11));
+    ASSERT_TRUE(is_ordered(bplustree->root_id));
+    ASSERT_TRUE(is_balanced(bplustree->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, SubstituteLeft)
+TEST_F(BPlusTreeTest, SubstituteLeft)
 {
-    bplus->insert(20, 20);
-    bplus->insert(15, 15);
-    bplus->insert(10, 10);
-    bplus->insert(5, 5);
-    bplus->insert(4, 4);
-    bplus->insert(3, 3);
-    bplus->insert(2, 2);
-    bplus->insert(11, 11);
-    bplus->insert(12, 12);
-    bplus->insert(6, 6);
-    bplus->insert(7, 7);
-    bplus->insert(8, 8);
-    bplus->insert(9, 9);
-    bplus->insert(1, 1);
-    bplus->insert(0, 0);
-    bplus->delete_pair(10);
+    bplustree->insert(20, 20);
+    bplustree->insert(15, 15);
+    bplustree->insert(10, 10);
+    bplustree->insert(5, 5);
+    bplustree->insert(4, 4);
+    bplustree->insert(3, 3);
+    bplustree->insert(2, 2);
+    bplustree->insert(11, 11);
+    bplustree->insert(12, 12);
+    bplustree->insert(6, 6);
+    bplustree->insert(7, 7);
+    bplustree->insert(8, 8);
+    bplustree->insert(9, 9);
+    bplustree->insert(1, 1);
+    bplustree->insert(0, 0);
+    bplustree->delete_pair(10);
 
     ASSERT_TRUE(not_contains(10));
     ASSERT_TRUE(minimum_size());
-    ASSERT_TRUE(is_concatenated(bplus->root_id, 14));
-    ASSERT_TRUE(is_ordered(bplus->root_id));
-    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(is_concatenated(bplustree->root_id, 14));
+    ASSERT_TRUE(is_ordered(bplustree->root_id));
+    ASSERT_TRUE(is_balanced(bplustree->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, MergeRightInnerNode)
+TEST_F(BPlusTreeTest, MergeRightInnerNode)
 {
-    bplus->insert(20, 20);
-    bplus->insert(15, 15);
-    bplus->insert(10, 10);
-    bplus->insert(5, 5);
-    bplus->insert(4, 4);
-    bplus->insert(3, 3);
-    bplus->insert(2, 2);
-    bplus->insert(11, 11);
-    bplus->insert(12, 12);
-    bplus->insert(6, 6);
-    bplus->insert(7, 7);
-    bplus->insert(8, 8);
-    bplus->insert(9, 9);
-    bplus->delete_pair(4);
+    bplustree->insert(20, 20);
+    bplustree->insert(15, 15);
+    bplustree->insert(10, 10);
+    bplustree->insert(5, 5);
+    bplustree->insert(4, 4);
+    bplustree->insert(3, 3);
+    bplustree->insert(2, 2);
+    bplustree->insert(11, 11);
+    bplustree->insert(12, 12);
+    bplustree->insert(6, 6);
+    bplustree->insert(7, 7);
+    bplustree->insert(8, 8);
+    bplustree->insert(9, 9);
+    bplustree->delete_pair(4);
 
     ASSERT_TRUE(not_contains(4));
     ASSERT_TRUE(minimum_size());
-    ASSERT_TRUE(is_concatenated(bplus->root_id, 12));
-    ASSERT_TRUE(is_ordered(bplus->root_id));
-    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(is_concatenated(bplustree->root_id, 12));
+    ASSERT_TRUE(is_ordered(bplustree->root_id));
+    ASSERT_TRUE(is_balanced(bplustree->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, MergeLeftInnerNode)
+TEST_F(BPlusTreeTest, MergeLeftInnerNode)
 {
-    bplus->insert(20, 20);
-    bplus->insert(15, 15);
-    bplus->insert(10, 10);
-    bplus->insert(5, 5);
-    bplus->insert(4, 4);
-    bplus->insert(3, 3);
-    bplus->insert(2, 2);
-    bplus->insert(11, 11);
-    bplus->insert(12, 12);
-    bplus->insert(6, 6);
-    bplus->insert(7, 7);
-    bplus->insert(8, 8);
-    bplus->insert(9, 9);
-    bplus->insert(21, 21);
-    bplus->insert(22, 21);
-    bplus->insert(23, 23);
-    bplus->insert(24, 24);
-    bplus->delete_pair(10);
+    bplustree->insert(20, 20);
+    bplustree->insert(15, 15);
+    bplustree->insert(10, 10);
+    bplustree->insert(5, 5);
+    bplustree->insert(4, 4);
+    bplustree->insert(3, 3);
+    bplustree->insert(2, 2);
+    bplustree->insert(11, 11);
+    bplustree->insert(12, 12);
+    bplustree->insert(6, 6);
+    bplustree->insert(7, 7);
+    bplustree->insert(8, 8);
+    bplustree->insert(9, 9);
+    bplustree->insert(21, 21);
+    bplustree->insert(22, 21);
+    bplustree->insert(23, 23);
+    bplustree->insert(24, 24);
+    bplustree->delete_pair(10);
 
     ASSERT_TRUE(not_contains(10));
     ASSERT_TRUE(minimum_size());
-    ASSERT_TRUE(is_concatenated(bplus->root_id, 16));
-    ASSERT_TRUE(is_ordered(bplus->root_id));
-    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(is_concatenated(bplustree->root_id, 16));
+    ASSERT_TRUE(is_ordered(bplustree->root_id));
+    ASSERT_TRUE(is_balanced(bplustree->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, InsertAndDeleteRandom)
+TEST_F(BPlusTreeTest, InsertAndDeleteRandom)
 {
     std::random_device rd;
     std::uniform_int_distribution<int64_t> dist(INT64_MIN + 1, INT64_MAX);
@@ -1185,30 +1185,30 @@ TEST_F(BPlusTest, InsertAndDeleteRandom)
         unique_values.insert(value);
         values[i] = value;
         logger->debug("Inserting {}", value);
-        bplus->insert(value, value);
+        bplustree->insert(value, value);
     }
 
     for (int i = 0; i < 100; i++)
     {
-        ASSERT_EQ(bplus->get_value(values[i]), values[i]);
+        ASSERT_EQ(bplustree->get_value(values[i]), values[i]);
     }
-    ASSERT_TRUE(is_concatenated(bplus->root_id, 100));
-    ASSERT_TRUE(is_ordered(bplus->root_id));
-    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(is_concatenated(bplustree->root_id, 100));
+    ASSERT_TRUE(is_ordered(bplustree->root_id));
+    ASSERT_TRUE(is_balanced(bplustree->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 
     for (int i = 0; i < 50; i++)
     {
         logger->debug("Deleting {} at index {}", values[i], i);
-        bplus->delete_pair(values[i]);
+        bplustree->delete_pair(values[i]);
     }
     for (int i = 0; i < 50; i++)
     {
-        ASSERT_EQ(bplus->get_value(values[i]), INT64_MIN);
+        ASSERT_EQ(bplustree->get_value(values[i]), INT64_MIN);
     }
-    ASSERT_TRUE(is_concatenated(bplus->root_id, 50));
-    ASSERT_TRUE(is_ordered(bplus->root_id));
-    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(is_concatenated(bplustree->root_id, 50));
+    ASSERT_TRUE(is_ordered(bplustree->root_id));
+    ASSERT_TRUE(is_balanced(bplustree->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 
     unique_values.clear();
@@ -1222,31 +1222,31 @@ TEST_F(BPlusTest, InsertAndDeleteRandom)
 
         unique_values.insert(value);
         values[i] = value;
-        bplus->insert(value, value);
+        bplustree->insert(value, value);
     }
     for (int i = 0; i < 50; i++)
     {
-        ASSERT_EQ(bplus->get_value(values[i]), values[i]);
+        ASSERT_EQ(bplustree->get_value(values[i]), values[i]);
     }
-    ASSERT_TRUE(is_concatenated(bplus->root_id, 100));
-    ASSERT_TRUE(is_ordered(bplus->root_id));
-    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(is_concatenated(bplustree->root_id, 100));
+    ASSERT_TRUE(is_ordered(bplustree->root_id));
+    ASSERT_TRUE(is_balanced(bplustree->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 
     for (int i = 0; i < 100; i++)
     {
-        bplus->delete_pair(values[i]);
+        bplustree->delete_pair(values[i]);
     }
     for (int i = 0; i < 100; i++)
     {
-        ASSERT_EQ(bplus->get_value(values[i]), INT64_MIN);
+        ASSERT_EQ(bplustree->get_value(values[i]), INT64_MIN);
     }
-    ASSERT_TRUE(is_ordered(bplus->root_id));
-    ASSERT_TRUE(is_balanced(bplus->root_id));
+    ASSERT_TRUE(is_ordered(bplustree->root_id));
+    ASSERT_TRUE(is_balanced(bplustree->root_id));
     ASSERT_TRUE(all_pages_unfixed());
 }
 
-TEST_F(BPlusTest, InsertDelteWithSeed42)
+TEST_F(BPlusTreeTest, InsertDelteWithSeed42)
 {
     std::mt19937 generator(42); // 42 is the seed value
     std::uniform_int_distribution<int64_t> dist(-1000, 1000);
@@ -1265,15 +1265,15 @@ TEST_F(BPlusTest, InsertDelteWithSeed42)
 
         unique_values.insert(value);
         values[i] = value;
-        bplus->insert(value, value);
+        bplustree->insert(value, value);
     }
 
     for (int i = 0; i < 100; i++)
     {
         logger->debug("Deleting {} at index {}", values[i], i);
-        bplus->delete_pair(values[i]);
-        ASSERT_TRUE(is_ordered(bplus->root_id));
-        ASSERT_TRUE(is_balanced(bplus->root_id));
+        bplustree->delete_pair(values[i]);
+        ASSERT_TRUE(is_ordered(bplustree->root_id));
+        ASSERT_TRUE(is_balanced(bplustree->root_id));
         ASSERT_TRUE(all_pages_unfixed());
     }
 }

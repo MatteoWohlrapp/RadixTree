@@ -1,5 +1,5 @@
 /**
- * @file    BPlus.h
+ * @file    BPlusTree.h
  *
  * @author  Matteo Wohlrapp
  * @date    16.05.2023
@@ -23,7 +23,7 @@ class BPlusTest;
  * @brief Implements the B+ Tree of the Database
  */
 template <int NODE_SIZE>
-class BPlus
+class BPlusTree
 {
 private:
     std::shared_ptr<spdlog::logger> logger;
@@ -761,7 +761,7 @@ public:
      * @param buffer_manager_arg The buffer manager
      * @param cache_arg The chache
      */
-    BPlus(BufferManager *buffer_manager_arg, RadixTree *cache_arg = nullptr) : buffer_manager(buffer_manager_arg), cache(cache_arg)
+    BPlusTree(BufferManager *buffer_manager_arg, RadixTree *cache_arg = nullptr) : buffer_manager(buffer_manager_arg), cache(cache_arg)
     {
         logger = spdlog::get("logger");
         BHeader *root = buffer_manager->create_new_page();

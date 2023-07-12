@@ -3,7 +3,7 @@
 #include "../src/radixtree/RNodes.h"
 #include "../src/data/BufferManager.h"
 #include "../src/data/StorageManager.h"
-#include "../src/btree/BPlus.h"
+#include "../src/bplustree/BPlusTree.h"
 #include <unordered_set>
 
 constexpr int node_test_size = 96;
@@ -17,7 +17,7 @@ protected:
     RadixTree *radixtree;
     StorageManager *storage_manager;
     BufferManager *buffer_manager;
-    BPlus<Configuration::page_size> *btree;
+    BPlusTree<Configuration::page_size> *bplustree;
     std::filesystem::path base_path = "../tests/temp/";
     std::filesystem::path bitmap = "bitmap.bin";
     std::filesystem::path data = "data.bin";
@@ -30,7 +30,7 @@ protected:
         radixtree = new RadixTree();
         storage_manager = new StorageManager(base_path, node_test_size);
         buffer_manager = new BufferManager(storage_manager, buffer_size, node_test_size);
-        btree = new BPlus<node_test_size>(buffer_manager, radixtree);
+        bplustree = new BPlusTree<node_test_size>(buffer_manager, radixtree);
     }
 
     void TearDown() override
@@ -508,17 +508,17 @@ TEST_F(RadixTreeTest, InsertResizeRoot)
 }
 
 // Testing get value with use cases identified above
-TEST_F(RadixTreeTest, InsertLazyLeafBTree)
+TEST_F(RadixTreeTest, InsertLazyLeafBPlusTree)
 {
-    btree->insert(1, 1);
-    btree->insert(256, 256);
-    btree->insert(65536, 65536);
-    btree->insert(16777216, 16777216);
-    btree->insert(4294967296, 4294967296);
-    btree->insert(1099511627776, 1099511627776);
-    btree->insert(281474976710656, 281474976710656);
-    btree->insert(72057594037927936, 72057594037927936);
-    btree->insert(72057594054705152, 72057594054705152);
+    bplustree->insert(1, 1);
+    bplustree->insert(256, 256);
+    bplustree->insert(65536, 65536);
+    bplustree->insert(16777216, 16777216);
+    bplustree->insert(4294967296, 4294967296);
+    bplustree->insert(1099511627776, 1099511627776);
+    bplustree->insert(281474976710656, 281474976710656);
+    bplustree->insert(72057594037927936, 72057594037927936);
+    bplustree->insert(72057594054705152, 72057594054705152);
 
     ASSERT_EQ(radixtree->get_value(0), INT64_MIN);
     ASSERT_EQ(radixtree->get_value(1), 1);
@@ -536,20 +536,20 @@ TEST_F(RadixTreeTest, InsertLazyLeafBTree)
     ASSERT_TRUE(key_matches(get_root()));
 }
 
-TEST_F(RadixTreeTest, InsertResizeNonLazyLeafBTree)
+TEST_F(RadixTreeTest, InsertResizeNonLazyLeafBPlusTree)
 {
-    btree->insert(1, 1);
-    btree->insert(256, 256);
-    btree->insert(65536, 65536);
-    btree->insert(16777216, 16777216);
-    btree->insert(4294967296, 4294967296);
-    btree->insert(1099511627776, 1099511627776);
-    btree->insert(281474976710656, 281474976710656);
-    btree->insert(72057594037927936, 72057594037927936);
-    btree->insert(2, 2);
-    btree->insert(3, 3);
-    btree->insert(4, 4);
-    btree->insert(5, 5);
+    bplustree->insert(1, 1);
+    bplustree->insert(256, 256);
+    bplustree->insert(65536, 65536);
+    bplustree->insert(16777216, 16777216);
+    bplustree->insert(4294967296, 4294967296);
+    bplustree->insert(1099511627776, 1099511627776);
+    bplustree->insert(281474976710656, 281474976710656);
+    bplustree->insert(72057594037927936, 72057594037927936);
+    bplustree->insert(2, 2);
+    bplustree->insert(3, 3);
+    bplustree->insert(4, 4);
+    bplustree->insert(5, 5);
 
     ASSERT_EQ(radixtree->get_value(0), INT64_MIN);
     ASSERT_EQ(radixtree->get_value(1), 1);
@@ -570,20 +570,20 @@ TEST_F(RadixTreeTest, InsertResizeNonLazyLeafBTree)
     ASSERT_TRUE(key_matches(get_root()));
 }
 
-TEST_F(RadixTreeTest, InsertResizeLazyLeafBTree)
+TEST_F(RadixTreeTest, InsertResizeLazyLeafBPlusTree)
 {
-    btree->insert(1, 1);
-    btree->insert(256, 256);
-    btree->insert(65536, 65536);
-    btree->insert(16777216, 16777216);
-    btree->insert(4294967296, 4294967296);
-    btree->insert(1099511627776, 1099511627776);
-    btree->insert(281474976710656, 281474976710656);
-    btree->insert(72057594037927936, 72057594037927936);
-    btree->insert(72057594037927937, 72057594037927937);
-    btree->insert(72057594037927938, 72057594037927938);
-    btree->insert(72057594037927939, 72057594037927939);
-    btree->insert(72057594037927940, 72057594037927940);
+    bplustree->insert(1, 1);
+    bplustree->insert(256, 256);
+    bplustree->insert(65536, 65536);
+    bplustree->insert(16777216, 16777216);
+    bplustree->insert(4294967296, 4294967296);
+    bplustree->insert(1099511627776, 1099511627776);
+    bplustree->insert(281474976710656, 281474976710656);
+    bplustree->insert(72057594037927936, 72057594037927936);
+    bplustree->insert(72057594037927937, 72057594037927937);
+    bplustree->insert(72057594037927938, 72057594037927938);
+    bplustree->insert(72057594037927939, 72057594037927939);
+    bplustree->insert(72057594037927940, 72057594037927940);
 
     ASSERT_EQ(radixtree->get_value(0), INT64_MIN);
     ASSERT_EQ(radixtree->get_value(1), 1);
@@ -604,19 +604,19 @@ TEST_F(RadixTreeTest, InsertResizeLazyLeafBTree)
     ASSERT_TRUE(key_matches(get_root()));
 }
 
-TEST_F(RadixTreeTest, InsertResizeInnerNodeBTree)
+TEST_F(RadixTreeTest, InsertResizeInnerNodeBPlusTree)
 {
-    btree->insert(1, 1);
-    btree->insert(256, 256);
-    btree->insert(65536, 65536);
-    btree->insert(16777216, 16777216);
-    btree->insert(4294967296, 4294967296);
-    btree->insert(1099511627776, 1099511627776);
-    btree->insert(281474976710656, 281474976710656);
-    btree->insert(72057594037927936, 72057594037927936);
-    btree->insert(8589934592, 8589934592);
-    btree->insert(12884901888, 12884901888);
-    btree->insert(17179869184, 17179869184);
+    bplustree->insert(1, 1);
+    bplustree->insert(256, 256);
+    bplustree->insert(65536, 65536);
+    bplustree->insert(16777216, 16777216);
+    bplustree->insert(4294967296, 4294967296);
+    bplustree->insert(1099511627776, 1099511627776);
+    bplustree->insert(281474976710656, 281474976710656);
+    bplustree->insert(72057594037927936, 72057594037927936);
+    bplustree->insert(8589934592, 8589934592);
+    bplustree->insert(12884901888, 12884901888);
+    bplustree->insert(17179869184, 17179869184);
 
     ASSERT_EQ(radixtree->get_value(0), INT64_MIN);
     ASSERT_EQ(radixtree->get_value(1), 1);
@@ -636,19 +636,19 @@ TEST_F(RadixTreeTest, InsertResizeInnerNodeBTree)
     ASSERT_TRUE(key_matches(get_root()));
 }
 
-TEST_F(RadixTreeTest, InsertResizeRootBTree)
+TEST_F(RadixTreeTest, InsertResizeRootBPlusTree)
 {
-    btree->insert(1, 1);
-    btree->insert(256, 256);
-    btree->insert(65536, 65536);
-    btree->insert(16777216, 16777216);
-    btree->insert(4294967296, 4294967296);
-    btree->insert(1099511627776, 1099511627776);
-    btree->insert(281474976710656, 281474976710656);
-    btree->insert(72057594037927936, 72057594037927936);
-    btree->insert(144115188075855872, 144115188075855872);
-    btree->insert(216172782113783808, 216172782113783808);
-    btree->insert(288230376151711744, 288230376151711744);
+    bplustree->insert(1, 1);
+    bplustree->insert(256, 256);
+    bplustree->insert(65536, 65536);
+    bplustree->insert(16777216, 16777216);
+    bplustree->insert(4294967296, 4294967296);
+    bplustree->insert(1099511627776, 1099511627776);
+    bplustree->insert(281474976710656, 281474976710656);
+    bplustree->insert(72057594037927936, 72057594037927936);
+    bplustree->insert(144115188075855872, 144115188075855872);
+    bplustree->insert(216172782113783808, 216172782113783808);
+    bplustree->insert(288230376151711744, 288230376151711744);
 
     ASSERT_EQ(radixtree->get_value(0), INT64_MIN);
     ASSERT_EQ(radixtree->get_value(1), 1);
@@ -689,7 +689,7 @@ TEST_F(RadixTreeTest, InsertWithSeed42)
         unique_values.insert(value);
         values[i] = value;
         logger->debug("Inserting {}", value);
-        btree->insert(value, value);
+        bplustree->insert(value, value);
     }
 
     for (int i = 0; i < 1000; i++)
@@ -737,7 +737,7 @@ TEST_F(RadixTreeTest, InsertRandom)
         unique_values.insert(value);
         values[i] = value;
         logger->debug("Inserting {}", value);
-        btree->insert(value, value);
+        bplustree->insert(value, value);
     }
 
     for (int i = 0; i < 1000; i++)
@@ -768,19 +768,19 @@ TEST_F(RadixTreeTest, InsertRandom)
 // Isolated testing of a few use cases that I identified as correct during manual testing
 TEST_F(RadixTreeTest, DeleteWithoutResizing)
 {
-    btree->insert(0, 0);
-    btree->insert(1, 1);
-    btree->insert(256, 256);
-    btree->insert(65536, 65536);
-    btree->insert(16777216, 16777216);
-    btree->insert(4294967296, 4294967296);
-    btree->insert(1099511627776, 1099511627776);
-    btree->insert(281474976710656, 281474976710656);
-    btree->insert(72057594037927936, 72057594037927936);
+    bplustree->insert(0, 0);
+    bplustree->insert(1, 1);
+    bplustree->insert(256, 256);
+    bplustree->insert(65536, 65536);
+    bplustree->insert(16777216, 16777216);
+    bplustree->insert(4294967296, 4294967296);
+    bplustree->insert(1099511627776, 1099511627776);
+    bplustree->insert(281474976710656, 281474976710656);
+    bplustree->insert(72057594037927936, 72057594037927936);
 
     ASSERT_EQ(radixtree->get_value(0), 0);
 
-    btree->delete_pair(0);
+    bplustree->delete_pair(0);
 
     ASSERT_EQ(radixtree->get_value(0), INT64_MIN);
     ASSERT_EQ(radixtree->get_value(1), 1);
@@ -799,26 +799,26 @@ TEST_F(RadixTreeTest, DeleteWithoutResizing)
 
 TEST_F(RadixTreeTest, DeleteWithResizing)
 {
-    btree->insert(0, 0);
-    btree->insert(1, 1);
-    btree->insert(2, 2);
-    btree->insert(3, 3);
-    btree->insert(4, 4);
-    btree->insert(256, 256);
-    btree->insert(65536, 65536);
-    btree->insert(16777216, 16777216);
-    btree->insert(4294967296, 4294967296);
-    btree->insert(1099511627776, 1099511627776);
-    btree->insert(281474976710656, 281474976710656);
-    btree->insert(72057594037927936, 72057594037927936);
+    bplustree->insert(0, 0);
+    bplustree->insert(1, 1);
+    bplustree->insert(2, 2);
+    bplustree->insert(3, 3);
+    bplustree->insert(4, 4);
+    bplustree->insert(256, 256);
+    bplustree->insert(65536, 65536);
+    bplustree->insert(16777216, 16777216);
+    bplustree->insert(4294967296, 4294967296);
+    bplustree->insert(1099511627776, 1099511627776);
+    bplustree->insert(281474976710656, 281474976710656);
+    bplustree->insert(72057594037927936, 72057594037927936);
 
     ASSERT_EQ(radixtree->get_value(2), 2);
     ASSERT_EQ(radixtree->get_value(3), 3);
     ASSERT_EQ(radixtree->get_value(4), 4);
 
-    btree->delete_pair(2);
-    btree->delete_pair(3);
-    btree->delete_pair(4);
+    bplustree->delete_pair(2);
+    bplustree->delete_pair(3);
+    bplustree->delete_pair(4);
 
     ASSERT_EQ(radixtree->get_value(0), 0);
     ASSERT_EQ(radixtree->get_value(1), 1);
@@ -840,18 +840,18 @@ TEST_F(RadixTreeTest, DeleteWithResizing)
 
 TEST_F(RadixTreeTest, DeleteWithRemovalOfNode)
 {
-    btree->insert(0, 0);
-    btree->insert(1, 1);
-    btree->insert(2, 2);
-    btree->insert(3, 3);
-    btree->insert(4, 4);
-    btree->insert(256, 256);
-    btree->insert(65536, 65536);
-    btree->insert(16777216, 16777216);
-    btree->insert(4294967296, 4294967296);
-    btree->insert(1099511627776, 1099511627776);
-    btree->insert(281474976710656, 281474976710656);
-    btree->insert(72057594037927936, 72057594037927936);
+    bplustree->insert(0, 0);
+    bplustree->insert(1, 1);
+    bplustree->insert(2, 2);
+    bplustree->insert(3, 3);
+    bplustree->insert(4, 4);
+    bplustree->insert(256, 256);
+    bplustree->insert(65536, 65536);
+    bplustree->insert(16777216, 16777216);
+    bplustree->insert(4294967296, 4294967296);
+    bplustree->insert(1099511627776, 1099511627776);
+    bplustree->insert(281474976710656, 281474976710656);
+    bplustree->insert(72057594037927936, 72057594037927936);
 
     ASSERT_EQ(radixtree->get_value(2), 2);
     ASSERT_EQ(radixtree->get_value(3), 3);
@@ -859,11 +859,11 @@ TEST_F(RadixTreeTest, DeleteWithRemovalOfNode)
     ASSERT_EQ(radixtree->get_value(0), 0);
     ASSERT_EQ(radixtree->get_value(1), 1);
 
-    btree->delete_pair(2);
-    btree->delete_pair(3);
-    btree->delete_pair(4);
-    btree->delete_pair(0);
-    btree->delete_pair(1);
+    bplustree->delete_pair(2);
+    bplustree->delete_pair(3);
+    bplustree->delete_pair(4);
+    bplustree->delete_pair(0);
+    bplustree->delete_pair(1);
 
     ASSERT_EQ(radixtree->get_value(0), INT64_MIN);
     ASSERT_EQ(radixtree->get_value(1), INT64_MIN);
@@ -885,18 +885,18 @@ TEST_F(RadixTreeTest, DeleteWithRemovalOfNode)
 
 TEST_F(RadixTreeTest, DeleteWithRemovalOfNodeFurtherUpTheTree)
 {
-    btree->insert(0, 0);
-    btree->insert(256, 256);
-    btree->insert(65536, 65536);
-    btree->insert(16777216, 16777216);
-    btree->insert(4294967296, 4294967296);
-    btree->insert(4294967297, 4294967297);
-    btree->insert(4294967298, 4294967298);
-    btree->insert(4294967299, 4294967299);
-    btree->insert(4294967300, 4294967300);
-    btree->insert(1099511627776, 1099511627776);
-    btree->insert(281474976710656, 281474976710656);
-    btree->insert(72057594037927936, 72057594037927936);
+    bplustree->insert(0, 0);
+    bplustree->insert(256, 256);
+    bplustree->insert(65536, 65536);
+    bplustree->insert(16777216, 16777216);
+    bplustree->insert(4294967296, 4294967296);
+    bplustree->insert(4294967297, 4294967297);
+    bplustree->insert(4294967298, 4294967298);
+    bplustree->insert(4294967299, 4294967299);
+    bplustree->insert(4294967300, 4294967300);
+    bplustree->insert(1099511627776, 1099511627776);
+    bplustree->insert(281474976710656, 281474976710656);
+    bplustree->insert(72057594037927936, 72057594037927936);
 
     ASSERT_EQ(radixtree->get_value(4294967296), 4294967296);
     ASSERT_EQ(radixtree->get_value(4294967297), 4294967297);
@@ -904,11 +904,11 @@ TEST_F(RadixTreeTest, DeleteWithRemovalOfNodeFurtherUpTheTree)
     ASSERT_EQ(radixtree->get_value(4294967299), 4294967299);
     ASSERT_EQ(radixtree->get_value(4294967300), 4294967300);
 
-    btree->delete_pair(4294967296);
-    btree->delete_pair(4294967297);
-    btree->delete_pair(4294967298);
-    btree->delete_pair(4294967299);
-    btree->delete_pair(4294967300);
+    bplustree->delete_pair(4294967296);
+    bplustree->delete_pair(4294967297);
+    bplustree->delete_pair(4294967298);
+    bplustree->delete_pair(4294967299);
+    bplustree->delete_pair(4294967300);
 
     ASSERT_EQ(radixtree->get_value(0), 0);
     ASSERT_EQ(radixtree->get_value(256), 256);
@@ -930,18 +930,18 @@ TEST_F(RadixTreeTest, DeleteWithRemovalOfNodeFurtherUpTheTree)
 
 TEST_F(RadixTreeTest, DeleteWithDecreaseAndDeleteOfInnerNode)
 {
-    btree->insert(0, 0);
-    btree->insert(256, 256);
-    btree->insert(65536, 65536);
-    btree->insert(16777216, 16777216);
-    btree->insert(4294967296, 4294967296);
-    btree->insert(8589934592, 8589934592);
-    btree->insert(12884901888, 12884901888);
-    btree->insert(17179869184, 17179869184);
-    btree->insert(21474836480, 21474836480);
-    btree->insert(1099511627776, 1099511627776);
-    btree->insert(281474976710656, 281474976710656);
-    btree->insert(72057594037927936, 72057594037927936);
+    bplustree->insert(0, 0);
+    bplustree->insert(256, 256);
+    bplustree->insert(65536, 65536);
+    bplustree->insert(16777216, 16777216);
+    bplustree->insert(4294967296, 4294967296);
+    bplustree->insert(8589934592, 8589934592);
+    bplustree->insert(12884901888, 12884901888);
+    bplustree->insert(17179869184, 17179869184);
+    bplustree->insert(21474836480, 21474836480);
+    bplustree->insert(1099511627776, 1099511627776);
+    bplustree->insert(281474976710656, 281474976710656);
+    bplustree->insert(72057594037927936, 72057594037927936);
 
     ASSERT_EQ(radixtree->get_value(4294967296), 4294967296);
     ASSERT_EQ(radixtree->get_value(8589934592), 8589934592);
@@ -949,11 +949,11 @@ TEST_F(RadixTreeTest, DeleteWithDecreaseAndDeleteOfInnerNode)
     ASSERT_EQ(radixtree->get_value(17179869184), 17179869184);
     ASSERT_EQ(radixtree->get_value(21474836480), 21474836480);
 
-    btree->delete_pair(4294967296);
-    btree->delete_pair(8589934592);
-    btree->delete_pair(12884901888);
-    btree->delete_pair(17179869184);
-    btree->delete_pair(21474836480);
+    bplustree->delete_pair(4294967296);
+    bplustree->delete_pair(8589934592);
+    bplustree->delete_pair(12884901888);
+    bplustree->delete_pair(17179869184);
+    bplustree->delete_pair(21474836480);
 
     ASSERT_EQ(radixtree->get_value(0), 0);
     ASSERT_EQ(radixtree->get_value(256), 256);
@@ -975,11 +975,11 @@ TEST_F(RadixTreeTest, DeleteWithDecreaseAndDeleteOfInnerNode)
 
 TEST_F(RadixTreeTest, DeleteFromLeafRoot)
 {
-    btree->insert(0, 0);
-    btree->insert(1, 1);
-    btree->insert(2, 2);
-    btree->insert(3, 3);
-    btree->insert(4, 4);
+    bplustree->insert(0, 0);
+    bplustree->insert(1, 1);
+    bplustree->insert(2, 2);
+    bplustree->insert(3, 3);
+    bplustree->insert(4, 4);
 
     ASSERT_EQ(radixtree->get_value(0), 0);
     ASSERT_EQ(radixtree->get_value(1), 1);
@@ -987,10 +987,10 @@ TEST_F(RadixTreeTest, DeleteFromLeafRoot)
     ASSERT_EQ(radixtree->get_value(3), 3);
     ASSERT_EQ(radixtree->get_value(4), 4);
 
-    btree->delete_pair(0);
-    btree->delete_pair(1);
-    btree->delete_pair(2);
-    btree->delete_pair(3);
+    bplustree->delete_pair(0);
+    bplustree->delete_pair(1);
+    bplustree->delete_pair(2);
+    bplustree->delete_pair(3);
 
     ASSERT_EQ(radixtree->get_value(0), INT64_MIN);
     ASSERT_EQ(radixtree->get_value(1), INT64_MIN);
@@ -1001,18 +1001,18 @@ TEST_F(RadixTreeTest, DeleteFromLeafRoot)
     ASSERT_TRUE(leaf_depth_correct(get_root()));
     ASSERT_TRUE(key_matches(get_root()));
 
-    btree->delete_pair(4);
+    bplustree->delete_pair(4);
     ASSERT_EQ(radixtree->get_value(4), INT64_MIN);
 }
 
 TEST_F(RadixTreeTest, DeleteWithDepthTwo)
 {
-    btree->insert(256, 256);
-    btree->insert(0, 0);
-    btree->insert(1, 1);
-    btree->insert(2, 2);
-    btree->insert(3, 3);
-    btree->insert(4, 4);
+    bplustree->insert(256, 256);
+    bplustree->insert(0, 0);
+    bplustree->insert(1, 1);
+    bplustree->insert(2, 2);
+    bplustree->insert(3, 3);
+    bplustree->insert(4, 4);
 
     ASSERT_EQ(radixtree->get_value(0), 0);
     ASSERT_EQ(radixtree->get_value(1), 1);
@@ -1020,10 +1020,10 @@ TEST_F(RadixTreeTest, DeleteWithDepthTwo)
     ASSERT_EQ(radixtree->get_value(3), 3);
     ASSERT_EQ(radixtree->get_value(4), 4);
 
-    btree->delete_pair(0);
-    btree->delete_pair(1);
-    btree->delete_pair(2);
-    btree->delete_pair(3);
+    bplustree->delete_pair(0);
+    bplustree->delete_pair(1);
+    bplustree->delete_pair(2);
+    bplustree->delete_pair(3);
 
     ASSERT_EQ(radixtree->get_value(0), INT64_MIN);
     ASSERT_EQ(radixtree->get_value(1), INT64_MIN);
@@ -1034,7 +1034,7 @@ TEST_F(RadixTreeTest, DeleteWithDepthTwo)
     ASSERT_TRUE(leaf_depth_correct(get_root()));
     ASSERT_TRUE(key_matches(get_root()));
 
-    btree->delete_pair(4);
+    bplustree->delete_pair(4);
     ASSERT_EQ(radixtree->get_value(4), INT64_MIN);
 }
 
@@ -1058,7 +1058,7 @@ TEST_F(RadixTreeTest, InsertAndDeleteWithSeed42)
 
         unique_values.insert(value);
         values[i] = value;
-        btree->insert(value, value);
+        bplustree->insert(value, value);
     }
 
     for (int i = 0; i < 1000; i++)
@@ -1074,7 +1074,7 @@ TEST_F(RadixTreeTest, InsertAndDeleteWithSeed42)
     {
         int64_t value = values[i];
         unique_values.erase(value);
-        btree->delete_pair(value);
+        bplustree->delete_pair(value);
     }
 
     for (int i = 0; i < 500; i++)
@@ -1098,7 +1098,7 @@ TEST_F(RadixTreeTest, InsertAndDeleteWithSeed42)
 
         unique_values.insert(value);
         values[i] = value;
-        btree->insert(value, value);
+        bplustree->insert(value, value);
     }
 
     for (int i = 0; i < 1000; i++)
@@ -1114,7 +1114,7 @@ TEST_F(RadixTreeTest, InsertAndDeleteWithSeed42)
     {
         int64_t value = values[i];
         unique_values.erase(value);
-        btree->delete_pair(value);
+        bplustree->delete_pair(value);
 
         ASSERT_TRUE(is_compressed(get_root()));
         ASSERT_TRUE(leaf_depth_correct(get_root()));
@@ -1143,7 +1143,7 @@ TEST_F(RadixTreeTest, InsertAndDeleteRandom)
 
         unique_values.insert(value);
         values[i] = value;
-        btree->insert(value, value);
+        bplustree->insert(value, value);
     }
 
     for (int i = 0; i < 1000; i++)
@@ -1159,7 +1159,7 @@ TEST_F(RadixTreeTest, InsertAndDeleteRandom)
     {
         int64_t value = values[i];
         unique_values.erase(value);
-        btree->delete_pair(value);
+        bplustree->delete_pair(value);
     }
 
     for (int i = 0; i < 500; i++)
@@ -1183,7 +1183,7 @@ TEST_F(RadixTreeTest, InsertAndDeleteRandom)
 
         unique_values.insert(value);
         values[i] = value;
-        btree->insert(value, value);
+        bplustree->insert(value, value);
     }
 
     for (int i = 0; i < 1000; i++)
@@ -1199,7 +1199,7 @@ TEST_F(RadixTreeTest, InsertAndDeleteRandom)
     {
         int64_t value = values[i];
         unique_values.erase(value);
-        btree->delete_pair(value);
+        bplustree->delete_pair(value);
 
         ASSERT_TRUE(is_compressed(get_root()));
         ASSERT_TRUE(leaf_depth_correct(get_root()));

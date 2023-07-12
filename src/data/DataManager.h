@@ -11,7 +11,7 @@
 #include "StorageManager.h"
 #include "../radixtree/RadixTree.h"
 #include "../Configuration.h"
-#include "../btree/BPlus.h"
+#include "../bplustree/BPlusTree.h"
 
 /**
  * @brief Makes sure that the DB is initialized correctly and hold all variables necessary to run the system
@@ -31,8 +31,8 @@ public:
     StorageManager *storage_manager;
     BufferManager *buffer_manager;
 
-    BPlus<Configuration::page_size> *btree;
-    RadixTree *rtree = nullptr;
+    BPlusTree<Configuration::page_size> *bplustree;
+    RadixTree *radixtree = nullptr;
 
     /**
      * @brief Constructor for the DataManager

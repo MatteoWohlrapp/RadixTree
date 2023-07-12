@@ -1,7 +1,7 @@
 #include "RunConfigTwo.h"
 
 #include "../data/DataManager.h"
-#include "./btree/BPlus.h"
+#include "./bplustree/BPlusTree.h"
 #include "./debug/Debuger.h"
 
 #include <iostream>
@@ -32,25 +32,25 @@ void RunConfigTwo::execute(bool benchmark)
         data_manager.insert(3, 3);
         data_manager.insert(4, 4);
 
-        debuger.traverse_btree(data_manager.btree);
-        debuger.traverse_rtree(data_manager.rtree);
+        debuger.traverse_bplustree(data_manager.bplustree);
+        debuger.traverse_radixtree(data_manager.radixtree);
 
         data_manager.delete_pair(2);
         data_manager.delete_pair(0);
         data_manager.delete_pair(1);
 
-        debuger.traverse_btree(data_manager.btree);
-        debuger.traverse_rtree(data_manager.rtree);
+        debuger.traverse_bplustree(data_manager.bplustree);
+        debuger.traverse_radixtree(data_manager.radixtree);
 
         data_manager.delete_pair(3);
 
-        debuger.traverse_btree(data_manager.btree);
-        debuger.traverse_rtree(data_manager.rtree);
+        debuger.traverse_bplustree(data_manager.bplustree);
+        debuger.traverse_radixtree(data_manager.radixtree);
 
         data_manager.delete_pair(4);
 
-        debuger.traverse_btree(data_manager.btree);
-        debuger.traverse_rtree(data_manager.rtree);
+        debuger.traverse_bplustree(data_manager.bplustree);
+        debuger.traverse_radixtree(data_manager.radixtree);
     };
     this->benchmark.measure(run, benchmark);
 }

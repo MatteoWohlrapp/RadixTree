@@ -70,7 +70,7 @@ struct RNode4
      * @brief insert a new element with key
      * @param key the key which identifies the value
      * @param page_id the page_id where the information can be found
-     * @param bheader the btree node where the value can be found
+     * @param bheader the bplustree node where the value can be found
      */
     void insert(uint8_t key, uint64_t page_id, BHeader *bheader)
     {
@@ -222,7 +222,7 @@ struct RNode16
      * @brief insert a new element with key
      * @param key the key which identifies the value
      * @param page_id the page_id where the information can be found
-     * @param bheader the btree node where the value can be found
+     * @param bheader the bplustree node where the value can be found
      */
     void insert(uint8_t key, uint64_t page_id, BHeader *bheader)
     {
@@ -374,7 +374,7 @@ struct RNode48
      * @brief insert a new element with key
      * @param key the key which identifies the value
      * @param page_id the page_id where the information can be found
-     * @param bheader the btree node where the value can be found
+     * @param bheader the bplustree node where the value can be found
      */
     void insert(uint8_t key, uint64_t page_id, BHeader *bheader)
     {
@@ -505,7 +505,7 @@ struct RNode256
      * @brief insert a new element with key
      * @param key the key which identifies the value
      * @param page_id the page_id where the information can be found
-     * @param bheader the btree node where the value can be found
+     * @param bheader the bplustree node where the value can be found
      */
     void insert(uint8_t key, uint64_t page_id, BHeader *bheader)
     {

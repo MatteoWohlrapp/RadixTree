@@ -17,7 +17,7 @@
 
 /// forward declaration 
 class BufferManagerTest;
-class BPlusTest; 
+class BPlusTreeTest; 
 
 /**
  * @brief Handles the pages currently stored in memory
@@ -59,7 +59,7 @@ private:
 
 public:
     friend class BufferManagerTest;
-    friend class BPlusTest; 
+    friend class BPlusTreeTest; 
 
     /**
      * @brief Constructor for the Buffer Manager

@@ -1,6 +1,6 @@
 
 #include "DataManager.h"
-#include "../btree/BPlus.h"
+#include "../bplustree/BPlusTree.h"
 
 DataManager::DataManager(bool cache_arg) : cache(cache_arg)
 {
@@ -10,44 +10,44 @@ DataManager::DataManager(bool cache_arg) : cache(cache_arg)
     if (cache_arg)
     {
         logger->debug("Cache enabled");
-        rtree = new RadixTree();
+        radixtree = new RadixTree();
     }
-    btree = new BPlus<Configuration::page_size>(buffer_manager, rtree);
+    bplustree = new BPlusTree<Configuration::page_size>(buffer_manager, radixtree);
 }
 
 void DataManager::destroy()
 {
     buffer_manager->destroy();
     storage_manager->destroy();
-    if (rtree)
+    if (radixtree)
     {
-        rtree->destroy();
-        delete rtree;
+        radixtree->destroy();
+        delete radixtree;
     }
     delete storage_manager; 
     delete buffer_manager; 
-    delete btree;
+    delete bplustree;
 }
 
 void DataManager::insert(int64_t key, int64_t value)
 {
-    // will be automatically added to cache if rtree object is passed
-    btree->insert(key, value);
+    // will be automatically added to cache if radixtree object is passed
+    bplustree->insert(key, value);
 }
 
 void DataManager::delete_pair(int64_t key)
 {
-    // automatically deleted in btree
-    btree->delete_pair(key);
+    // automatically deleted in bplustree
+    bplustree->delete_pair(key);
 }
 
 int64_t DataManager::get_value(int64_t key)
 {
     if (cache)
     {
-        int64_t value = rtree->get_value(key);
+        int64_t value = radixtree->get_value(key);
         if (value == INT64_MIN)
             return value;
     }
-    return btree->get_value(key);
+    return bplustree->get_value(key);
 }
