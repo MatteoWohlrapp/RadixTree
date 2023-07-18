@@ -56,8 +56,9 @@ static struct option long_options[] = {
     {"verbosity_level", required_argument, 0, 'v'},
     {"log_mode", required_argument, 0, 'l'},
     {"delete", no_argument, 0, 'd'},
-    {"workload", required_argument, 0, 'w'},
+    {"workload", optional_argument, 0, 'w'},
     {"help", no_argument, 0, 'h'},
+    {"coefficient", required_argument, 0, 0},
     {0, 0, 0, 0}};
 
 void print_help()
@@ -198,6 +199,8 @@ void handle_arguments(int argc, char *argsv[])
                 configuration.radix_tree_size = atoi(optarg);
             else if (std::string(long_options[option_index].name) == "measure_per_operation")
                 configuration.measure_per_operation = true;
+            else if (std::string(long_options[option_index].name) == "coefficient")
+                configuration.coefficient = atof(optarg);
             break;
         case 'c':
             configuration.cache = true;
@@ -265,36 +268,25 @@ void handle_arguments(int argc, char *argsv[])
                 switch (arg)
                 {
                 case 'a':
-                    std::cout << "In a" << std::endl;
-                    workload.reset(new WorkloadA(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.cache, configuration.radix_tree_size, configuration.measure_per_operation));
+                    workload.reset(new WorkloadA(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.coefficient, configuration.cache, configuration.radix_tree_size, configuration.measure_per_operation));
                     break;
                 case 'b':
-                    std::cout << "In b" << std::endl;
-
-                    workload.reset(new WorkloadB(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.cache, configuration.radix_tree_size, configuration.measure_per_operation));
+                    workload.reset(new WorkloadB(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.coefficient, configuration.cache, configuration.radix_tree_size, configuration.measure_per_operation));
                     break;
                 case 'c':
-                    std::cout << "In c" << std::endl;
-
-                    workload.reset(new WorkloadC(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.cache, configuration.radix_tree_size, configuration.measure_per_operation));
+                    workload.reset(new WorkloadC(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.coefficient, configuration.cache, configuration.radix_tree_size, configuration.measure_per_operation));
                     break;
                 case 'e':
-                    std::cout << "In e" << std::endl;
-
-                    workload.reset(new WorkloadE(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.cache, configuration.radix_tree_size, configuration.measure_per_operation));
+                    workload.reset(new WorkloadE(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.coefficient, configuration.cache, configuration.radix_tree_size, configuration.measure_per_operation));
                     break;
                 case 'x':
-                    std::cout << "In x" << std::endl;
-
-                    workload.reset(new WorkloadX(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.cache, configuration.radix_tree_size, configuration.measure_per_operation));
+                    workload.reset(new WorkloadX(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.coefficient, configuration.cache, configuration.radix_tree_size, configuration.measure_per_operation));
                     break;
                 }
             }
             else
             {
-                std::cout << "In general" << std::endl;
-
-                workload.reset(new Workload(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.insert_proportion, configuration.read_proportion, configuration.update_proportion, configuration.scan_proportion, configuration.delete_proportion, configuration.cache, configuration.radix_tree_size, configuration.measure_per_operation));
+                workload.reset(new Workload(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.coefficient, configuration.insert_proportion, configuration.read_proportion, configuration.update_proportion, configuration.scan_proportion, configuration.delete_proportion, configuration.cache, configuration.radix_tree_size, configuration.measure_per_operation));
                 break;
             }
         }

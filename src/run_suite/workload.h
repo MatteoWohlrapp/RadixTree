@@ -15,6 +15,7 @@ protected:
     int record_count;
     int operation_count;
     std::string distribution;
+    double coefficient; 
     double insert_proportion;
     double read_proportion;
     double update_proportion;
@@ -44,27 +45,32 @@ protected:
         NUM_OPERATIONS
     };
 
-    void perform_operation(Operation op, int key)
+    void perform_operation(Operation op, int64_t key)
     {
         switch (op)
         {
         case INSERT:
+            logger->debug("Inserting: {}", key);
             data_manager.insert(key, key);
             break;
         case READ:
+            logger->debug("Reading: {}", key);
             data_manager.get_value(key);
             break;
         case UPDATE:
+            logger->debug("Updating: {}", key);
             data_manager.update(key, key);
             break;
         case SCAN:
+            logger->debug("Scanning: {}", key);
             data_manager.scan(key, max_scan_range);
             break;
         case DELETE:
+            logger->debug("Deleting: {}", key);
             data_manager.delete_value(key);
             break;
-        case NUM_OPERATIONS: 
-            break; 
+        case NUM_OPERATIONS:
+            break;
         }
     }
 
@@ -77,7 +83,14 @@ protected:
         }
 
         // Convert set to vector
-        std::vector<int64_t> records(records_set.begin(), records_set.end());
+        std::copy(records_set.begin(), records_set.end(), std::back_inserter(records_vector));
+
+        // Inserting all elements
+        for (int i = 0; i < record_count; i++)
+        {
+            logger->debug("Inserting: {}", records_vector[i]);
+            data_manager.insert(records_vector[i], records_vector[i]);
+        }
 
         // Function for index distribution
         if (distribution == "uniform")
@@ -88,17 +101,17 @@ protected:
             index_distribution = [this, dist]() mutable -> int
             { return dist(rd); };
         }
-        else if (distribution == "zipfian")
+        else if (distribution == "geometric")
         {
-            std::vector<double> weights(record_count);
-            for (int i = 1; i <= record_count; ++i)
-            {
-                weights[i - 1] = 1.0 / i;
-            }
-            std::discrete_distribution<int> dist(weights.begin(), weights.end());
+            std::geometric_distribution<int> dist(coefficient);;
 
             index_distribution = [this, dist]() mutable -> int
-            { return dist(rd); };
+            {
+                int num = dist(rd);
+                if(num >= this->record_count)
+                    num = this->record_count - 1;  
+                return num;
+            };
         }
         else
         {
@@ -178,8 +191,8 @@ protected:
             double total_time = times[0][0];
             double throughput = operation_count / total_time;
 
-            logger->info("Total time for all operations: {}s", total_time);
-            logger->info("Throughput: {} operations/s", throughput);
+            std::cout << "Total time for all operations: " << std::fixed << std::setprecision(2) << total_time << "s\n";
+            std::cout << "Throughput: " << std::fixed << std::setprecision(2) << throughput << " operations/s\n";
         }
         else
         {
@@ -208,31 +221,32 @@ protected:
                 double percentile_95 = operation_times[int(0.95 * operation_times.size())];
                 double percentile_99 = operation_times[int(0.99 * operation_times.size())];
 
-                logger->info("Analysis for {} operations:", operation_names[i]);
-                logger->info("Total time: {}s", sum);
-                logger->info("Mean time: {}s", mean);
-                logger->info("Median time: {}s", median);
-                logger->info("90th percentile time: {}s", percentile_90);
-                logger->info("95th percentile time: {}s", percentile_95);
-                logger->info("99th percentile time: {}s", percentile_99);
+                std::cout << "Analysis for " << operation_names[i] << " operations:\n";
+                std::cout << "Total time: " << std::fixed << std::setprecision(6) << sum << "s\n";
+                std::cout << "Mean time: " << std::fixed << std::setprecision(6) << mean << "s\n";
+                std::cout << "Median time: " << std::fixed << std::setprecision(6) << median << "s\n";
+                std::cout << "90th percentile time: " << std::fixed << std::setprecision(6) << percentile_90 << "s\n";
+                std::cout << "95th percentile time: " << std::fixed << std::setprecision(6) << percentile_95 << "s\n";
+                std::cout << "99th percentile time: " << std::fixed << std::setprecision(6) << percentile_99 << "s\n";
             }
         }
     }
 
 public:
-    Workload(int buffer_size_arg, int record_count_arg, int operation_count_arg, std::string distribution_arg, double insert_proportion_arg, double read_proportion_arg, double update_proportion_arg, double scan_proportion_arg, double delete_proportion_arg, bool cache_arg, int radix_tree_size_arg, bool measure_per_operation_arg) : buffer_size(buffer_size_arg), record_count(record_count_arg), operation_count(operation_count_arg), distribution(distribution_arg), insert_proportion(insert_proportion_arg), read_proportion(read_proportion_arg), update_proportion(update_proportion_arg), scan_proportion(scan_proportion_arg), delete_proportion(delete_proportion_arg), cache(cache_arg), radix_tree_size(radix_tree_size_arg), measure_per_operation(measure_per_operation_arg), data_manager(buffer_size_arg, cache_arg, radix_tree_size_arg)
+    Workload(int buffer_size_arg, int record_count_arg, int operation_count_arg, std::string distribution_arg, double coefficient_arg, double insert_proportion_arg, double read_proportion_arg, double update_proportion_arg, double scan_proportion_arg, double delete_proportion_arg, bool cache_arg, int radix_tree_size_arg, bool measure_per_operation_arg) : buffer_size(buffer_size_arg), record_count(record_count_arg), operation_count(operation_count_arg), distribution(distribution_arg), coefficient(coefficient_arg), insert_proportion(insert_proportion_arg), read_proportion(read_proportion_arg), update_proportion(update_proportion_arg), scan_proportion(scan_proportion_arg), delete_proportion(delete_proportion_arg), cache(cache_arg), radix_tree_size(radix_tree_size_arg), measure_per_operation(measure_per_operation_arg), data_manager(buffer_size_arg, cache_arg, radix_tree_size_arg)
     {
         logger = spdlog::get("logger");
         times = std::vector<std::vector<double>>(NUM_OPERATIONS, std::vector<double>(0, 0.0));
         value_distribution = std::uniform_int_distribution<int64_t>(INT64_MIN + 1, INT64_MAX);
     }
 
-    ~Workload(){
-        data_manager.destroy(); 
+    ~Workload()
+    {
+        data_manager.destroy();
     }
 
     void execute()
-    {   
+    {
         // set up the data
         initialize();
 
@@ -246,46 +260,45 @@ public:
 
 class WorkloadA : public Workload
 {
-public: 
-    WorkloadA(int buffer_size_arg, int record_count_arg, int operation_count_arg, std::string distribution_arg, bool cache_arg, int radix_tree_size_arg, bool measure_per_operation_arg)
-        : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, 0, 0.5, 0.5, 0, 0, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
+public:
+    WorkloadA(int buffer_size_arg, int record_count_arg, int operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, int radix_tree_size_arg, bool measure_per_operation_arg)
+        : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0, 0.5, 0.5, 0, 0, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
     {
     }
 };
 
 class WorkloadB : public Workload
 {
-public: 
-    WorkloadB(int buffer_size_arg, int record_count_arg, int operation_count_arg, std::string distribution_arg, bool cache_arg, int radix_tree_size_arg, bool measure_per_operation_arg)
-        : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, 0, 0.95, 0.05, 0, 0, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
+public:
+    WorkloadB(int buffer_size_arg, int record_count_arg, int operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, int radix_tree_size_arg, bool measure_per_operation_arg)
+        : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0, 0.95, 0.05, 0, 0, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
     {
     }
 };
 
-
 class WorkloadC : public Workload
 {
 public:
-    WorkloadC(int buffer_size_arg, int record_count_arg, int operation_count_arg, std::string distribution_arg, bool cache_arg, int radix_tree_size_arg, bool measure_per_operation_arg)
-        : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, 0, 1, 0, 0, 0, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
+    WorkloadC(int buffer_size_arg, int record_count_arg, int operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, int radix_tree_size_arg, bool measure_per_operation_arg)
+        : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0, 1, 0, 0, 0, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
     {
     }
 };
 
 class WorkloadE : public Workload
 {
-public: 
-    WorkloadE(int buffer_size_arg, int record_count_arg, int operation_count_arg, std::string distribution_arg, bool cache_arg, int radix_tree_size_arg, bool measure_per_operation_arg)
-        : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, 0.05, 0, 0, 0.95, 0, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
+public:
+    WorkloadE(int buffer_size_arg, int record_count_arg, int operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, int radix_tree_size_arg, bool measure_per_operation_arg)
+        : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0.05, 0, 0, 0.95, 0, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
     {
     }
 };
 
 class WorkloadX : public Workload
 {
-public: 
-    WorkloadX(int buffer_size_arg, int record_count_arg, int operation_count_arg, std::string distribution_arg, bool cache_arg, int radix_tree_size_arg, bool measure_per_operation_arg)
-        : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, 0, 0.4, 0.4, 0, 0.2, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
+public:
+    WorkloadX(int buffer_size_arg, int record_count_arg, int operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, int radix_tree_size_arg, bool measure_per_operation_arg)
+        : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0, 0.90, 0, 0, 0.1, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
     {
     }
 };

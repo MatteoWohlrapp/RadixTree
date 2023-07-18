@@ -17,6 +17,7 @@ DataManager::DataManager(int buffer_size_arg, bool cache_arg, int radix_tree_siz
 
 void DataManager::destroy()
 {
+    logger->info("Destroying in Data Manger"); 
     buffer_manager->destroy();
     storage_manager->destroy();
     if (radix_tree)
@@ -43,15 +44,13 @@ void DataManager::delete_value(int64_t key)
 
 int64_t DataManager::get_value(int64_t key)
 {
-    return radix_tree->get_value(key); 
-    /*
     if (radix_tree)
     {
         int64_t value = radix_tree->get_value(key);
         if (value != INT64_MIN)
             return value;
     }
-    return bplus_tree->get_value(key);*/
+    return bplus_tree->get_value(key);
 }
 
 int64_t DataManager::scan(int64_t key, int range)

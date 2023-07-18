@@ -1303,7 +1303,6 @@ TEST_F(BPlusTreeTest, UpdateWithSeed42)
 
     for (int i = 0; i < 100; i++)
     {
-        logger->info("Updating");
         bplus_tree->update(values[i], values[i] + 1);
         ASSERT_TRUE(is_ordered(get_root_id()));
         ASSERT_TRUE(is_balanced(get_root_id()));
@@ -1312,7 +1311,6 @@ TEST_F(BPlusTreeTest, UpdateWithSeed42)
 
     for (int i = 0; i < 100; i++)
     {
-        logger->info("Checking");
         ASSERT_EQ(bplus_tree->get_value(values[i]), values[i] + 1);
     }
 }

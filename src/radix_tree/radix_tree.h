@@ -1092,7 +1092,7 @@ public:
      */
     void delete_reference(int64_t key)
     {
-        logger->debug("Deleting: {}", key);
+        logger->debug("Deleting in Radix Tree: {}", key);
         if (!root)
             return;
 

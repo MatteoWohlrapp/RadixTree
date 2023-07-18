@@ -792,6 +792,7 @@ private:
                     {
                         if (node->next_lef_id == 0)
                         {
+                            buffer_manager->unfix_page(node->header.page_id, false);
                             return sum;
                         }
                         BOuterNode<PAGE_SIZE> *temp = node;
@@ -800,8 +801,8 @@ private:
                         index = 0;
                     }
 
-                    sum += node->values[index];
-                    logger->info("Sum: {}", sum);
+                    sum ^= node->values[index];
+                    logger->debug("Sum: {}", sum);
                     scanned++;
                     index++;
                 }

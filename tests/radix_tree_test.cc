@@ -1068,7 +1068,6 @@ TEST_F(RadixTreeTest, InsertAndDeleteWithSeed42)
 
     for (int i = 0; i < 1000; i++)
     {
-        logger->info("Getting value for: {}", i);
         ASSERT_EQ(radix_tree->get_value(values[i]), values[i]);
     }
     ASSERT_TRUE(is_compressed(get_root()));
@@ -1085,7 +1084,6 @@ TEST_F(RadixTreeTest, InsertAndDeleteWithSeed42)
 
     for (int i = 0; i < 500; i++)
     {
-        logger->info("Getting value for: {}", i);
         ASSERT_EQ(radix_tree->get_value(values[i]), INT64_MIN);
     }
     ASSERT_TRUE(is_compressed(get_root()));
@@ -1110,7 +1108,6 @@ TEST_F(RadixTreeTest, InsertAndDeleteWithSeed42)
 
     for (int i = 0; i < 1000; i++)
     {
-        logger->info("Getting value for: {}", i);
         ASSERT_EQ(radix_tree->get_value(values[i]), values[i]);
     }
     ASSERT_TRUE(is_compressed(get_root()));
