@@ -38,6 +38,11 @@ struct BInnerNode
         assert(max_size > 2 && "Node size is too small");
     }
 
+    /**
+     * @brief Searches through the tree with binary search
+     * @param key the key to look for
+     * @return the index of the key
+     */
     int binary_search(int64_t key)
     {
         int left = 0, right = current_index;
@@ -75,7 +80,8 @@ struct BInnerNode
     {
         assert(!is_full() && "Inserting into inner node when its full.");
         // find index where to insert
-        int index = binary_search(key);;
+        int index = binary_search(key);
+        ;
 
         // shift all keys bigger one space to the left
         for (int i = current_index; i > index; i--)
@@ -116,14 +122,19 @@ struct BInnerNode
     void delete_value(int64_t key)
     {
         // we always delete key and the right child because the new elements will be in the left node from the key
-        int index = binary_search(key);;
+        int index = binary_search(key);
 
-        for (int i = index + 1; i < current_index; i++)
+        assert((keys[index] == key) && "Key to delete not found");
+
+        if (keys[index] == key)
         {
-            keys[i - 1] = keys[i];
-            child_ids[i] = child_ids[i + 1];
+            for (int i = index + 1; i < current_index; i++)
+            {
+                keys[i - 1] = keys[i];
+                child_ids[i] = child_ids[i + 1];
+            }
+            current_index--;
         }
-        current_index--;
     }
 
     /**
@@ -146,7 +157,8 @@ struct BInnerNode
      */
     bool contains(int64_t key)
     {
-        int index = binary_search(key);;
+        int index = binary_search(key);
+        ;
 
         return index != current_index && keys[index] == key;
     }
@@ -223,6 +235,11 @@ struct BOuterNode
         next_lef_id = 0;
     }
 
+    /**
+     * @brief Searches through the tree with binary search
+     * @param key the key to look for
+     * @return the index of the key
+     */
     int binary_search(int64_t key)
     {
         int left = 0, right = current_index;
@@ -249,7 +266,7 @@ struct BOuterNode
         assert(!is_full() && "Inserting into outer node when its full.");
         // find index where to insert
         int index = binary_search(key);
-        
+
         // shift all keys bigger one space to the left
         for (int i = current_index; i > index; i--)
         {
@@ -264,6 +281,23 @@ struct BOuterNode
     }
 
     /**
+     * @brief Update a key value pair, if no element is there, update will not take place
+     * @param key Key
+     * @param value Value corresponding to the key
+     */
+    void update(int64_t key, int64_t value)
+    {
+        int index = binary_search(key);
+
+        assert((keys[index] == key) && "Key to update not found");
+
+        if (keys[index] == key)
+        {
+            values[index] = value;
+        }
+    }
+
+    /**
      * @brief Deleting key and value pair
      * @param key Key that should be deleted
      */
@@ -271,12 +305,17 @@ struct BOuterNode
     {
         int index = binary_search(key);
 
-        for (int i = index + 1; i < current_index; i++)
+        assert((keys[index] == key) && "Key to delete not found");
+
+        if (keys[index] == key)
         {
-            keys[i - 1] = keys[i];
-            values[i - 1] = values[i];
+            for (int i = index + 1; i < current_index; i++)
+            {
+                keys[i - 1] = keys[i];
+                values[i - 1] = values[i];
+            }
+            current_index--;
         }
-        current_index--;
     }
 
     /**

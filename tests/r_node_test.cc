@@ -87,36 +87,6 @@ TEST_F(RNodeTest, Insert4)
     ASSERT_FALSE(node->can_insert());
 }
 
-TEST_F(RNodeTest, Insert4CreateFrame)
-{
-    RHeader *header = (RHeader *)malloc(size_4);
-    RNode4 *node = new (header) RNode4(true, 0, 0, 0);
-
-    node->insert(1, 1, (BHeader *)1);
-    ASSERT_EQ(header->current_size, 1);
-
-    node->insert(2, 2, (BHeader *)2);
-
-    ASSERT_EQ(header->current_size, 2);
-    ASSERT_EQ(node->keys[0], 1);
-    ASSERT_EQ(node->keys[1], 2);
-
-    ASSERT_EQ(((RFrame *)node->children[0])->page_id, 1);
-    ASSERT_EQ(((RFrame *)node->children[1])->page_id, 2);
-
-    node->insert(1, 2, (BHeader *)2);
-    ASSERT_EQ(header->current_size, 2);
-    ASSERT_EQ(((RFrame *)node->children[0])->page_id, 2);
-    ASSERT_EQ(((RFrame *)node->children[0])->header, (BHeader *)2);
-
-    ASSERT_TRUE(node->can_insert());
-
-    node->insert(3, 3, (BHeader *)1);
-    node->insert(4, 4, (BHeader *)1);
-
-    ASSERT_FALSE(node->can_insert());
-}
-
 TEST_F(RNodeTest, Insert16)
 {
     RHeader *header = (RHeader *)malloc(size_16);
@@ -151,45 +121,6 @@ TEST_F(RNodeTest, Insert16)
     {
         ASSERT_EQ(node->keys[i], i + 1);
         ASSERT_EQ(node->children[i], (void *)(i + 1));
-    }
-}
-
-TEST_F(RNodeTest, Insert16CreateFrame)
-{
-    RHeader *header = (RHeader *)malloc(size_16);
-    RNode16 *node = new (header) RNode16(true, 0, 0, 0);
-
-    node->insert(1, 1, (BHeader *)1);
-    ASSERT_EQ(header->current_size, 1);
-
-    node->insert(2, 2, (BHeader *)2);
-
-    ASSERT_EQ(header->current_size, 2);
-    ASSERT_EQ(node->keys[0], 1);
-    ASSERT_EQ(node->keys[1], 2);
-
-    ASSERT_EQ(((RFrame *)node->children[0])->page_id, 1);
-    ASSERT_EQ(((RFrame *)node->children[1])->page_id, 2);
-
-    node->insert(1, 2, (BHeader *)2);
-    ASSERT_EQ(header->current_size, 2);
-    ASSERT_EQ(((RFrame *)node->children[0])->page_id, 2);
-    ASSERT_EQ(((RFrame *)node->children[0])->header, (BHeader *)2);
-
-    ASSERT_TRUE(node->can_insert());
-
-    for (int64_t i = 3; i <= 16; i++)
-    {
-        ASSERT_TRUE(node->can_insert());
-        node->insert(i, i, (BHeader *)i);
-    }
-    ASSERT_FALSE(node->can_insert());
-
-    for (int64_t i = 2; i < 16; i++)
-    {
-        ASSERT_EQ(((RFrame *)node->children[i])->page_id, i + 1);
-        ASSERT_EQ(((RFrame *)node->children[i])->header, (BHeader *)(i + 1));
-        ASSERT_EQ(node->keys[i], i + 1);
     }
 }
 
@@ -230,45 +161,6 @@ TEST_F(RNodeTest, Insert48)
     }
 }
 
-TEST_F(RNodeTest, Insert48CreateFrame)
-{
-    RHeader *header = (RHeader *)malloc(size_48);
-    RNode48 *node = new (header) RNode48(true, 0, 0, 0);
-
-    node->insert(1, 1, (BHeader *)1);
-    ASSERT_EQ(header->current_size, 1);
-
-    node->insert(2, 2, (BHeader *)2);
-
-    ASSERT_EQ(header->current_size, 2);
-    ASSERT_EQ(node->keys[1], 0);
-    ASSERT_EQ(node->keys[2], 1);
-
-    ASSERT_EQ(((RFrame *)node->children[0])->page_id, 1);
-    ASSERT_EQ(((RFrame *)node->children[1])->page_id, 2);
-
-    node->insert(1, 2, (BHeader *)2);
-    ASSERT_EQ(header->current_size, 2);
-    ASSERT_EQ(((RFrame *)node->children[0])->page_id, 2);
-    ASSERT_EQ(((RFrame *)node->children[0])->header, (BHeader *)2);
-
-    ASSERT_TRUE(node->can_insert());
-
-    for (int64_t i = 1; i <= 48; i++)
-    {
-        ASSERT_TRUE(node->can_insert());
-        node->insert(i, i, (BHeader *)i);
-    }
-    ASSERT_FALSE(node->can_insert());
-
-    for (int64_t i = 1; i <= 48; i++)
-    {
-        ASSERT_EQ(((RFrame *)node->children[i - 1])->page_id, i);
-        ASSERT_EQ(((RFrame *)node->children[i - 1])->header, (BHeader *)i);
-        ASSERT_EQ(node->keys[i], i - 1);
-    }
-}
-
 TEST_F(RNodeTest, Insert256)
 {
     RHeader *header = (RHeader *)malloc(size_256);
@@ -300,40 +192,5 @@ TEST_F(RNodeTest, Insert256)
     for (int64_t i = 0; i < 256; i++)
     {
         ASSERT_EQ(node->children[i], (void *)i);
-    }
-}
-
-TEST_F(RNodeTest, Insert256CreateFrame)
-{
-    RHeader *header = (RHeader *)malloc(size_256);
-    RNode256 *node = new (header) RNode256(true, 0, 0, 0);
-
-    node->insert(1, 1, (BHeader *)1);
-    ASSERT_EQ(header->current_size, 1);
-
-    node->insert(2, 2, (BHeader *)2);
-    ASSERT_EQ(header->current_size, 2);
-
-    ASSERT_EQ(((RFrame *)node->children[1])->page_id, 1);
-    ASSERT_EQ(((RFrame *)node->children[2])->page_id, 2);
-
-    node->insert(1, 2, (BHeader *)2);
-    ASSERT_EQ(header->current_size, 2);
-    ASSERT_EQ(((RFrame *)node->children[1])->page_id, 2);
-    ASSERT_EQ(((RFrame *)node->children[2])->header, (BHeader *)2);
-
-    ASSERT_TRUE(node->can_insert());
-
-    for (int64_t i = 0; i < 256; i++)
-    {
-        ASSERT_TRUE(node->can_insert());
-        node->insert(i, i, (BHeader *)i);
-    }
-    ASSERT_FALSE(node->can_insert());
-
-    for (int64_t i = 0; i < 256; i++)
-    {
-        ASSERT_EQ(((RFrame *)node->children[i])->page_id, i);
-        ASSERT_EQ(((RFrame *)node->children[i])->header, (BHeader *)i);
     }
 }

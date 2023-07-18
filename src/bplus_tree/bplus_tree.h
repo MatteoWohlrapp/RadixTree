@@ -18,7 +18,7 @@
 
 /// forward declaration
 class BPlusTreeTest;
-class Debuger; 
+class Debuger;
 
 /**
  * @brief Implements the B+ Tree of the Database
@@ -368,21 +368,13 @@ private:
         // It is important that index_to_split is already increases by 2
         if (cache)
         {
-            for (int i = index_to_split; i < node->max_size; i++)
-            {
-                logger->debug("Splitting outer node and updating key {} with page id {}", node->keys[i], new_header->page_id);
-                cache->insert(node->keys[i], new_header->page_id, new_header);
-                new_outer_node->insert(node->keys[i], node->values[i]);
-                node->current_index--;
-            }
+            cache->update_range(node->keys[index_to_split], node->keys[node->current_index - 1], new_header->page_id, new_header);
         }
-        else
+
+        for (int i = index_to_split; i < node->max_size; i++)
         {
-            for (int i = index_to_split; i < node->max_size; i++)
-            {
-                new_outer_node->insert(node->keys[i], node->values[i]);
-                node->current_index--;
-            }
+            new_outer_node->insert(node->keys[i], node->values[i]);
+            node->current_index--;
         }
 
         // set correct chaining
@@ -658,18 +650,12 @@ private:
                             // add all from right node to left node
                             if (cache)
                             {
-                                for (int i = 0; i < child->current_index; i++)
-                                {
-                                    merge->insert(child->keys[i], child->values[i]);
-                                    cache->insert(child->keys[i], merge_header->page_id, merge_header);
-                                }
+                                cache->update_range(child->keys[0], child->keys[child->current_index - 1], merge_header->page_id, merge_header);
                             }
-                            else
+
+                            for (int i = 0; i < child->current_index; i++)
                             {
-                                for (int i = 0; i < child->current_index; i++)
-                                {
-                                    merge->insert(child->keys[i], child->values[i]);
-                                }
+                                merge->insert(child->keys[i], child->values[i]);
                             }
 
                             merge->next_lef_id = child->next_lef_id;
@@ -696,18 +682,12 @@ private:
                             // add all from right node to left node
                             if (cache)
                             {
-                                for (int i = 0; i < merge->current_index; i++)
-                                {
-                                    child->insert(merge->keys[i], merge->values[i]);
-                                    cache->insert(merge->keys[i], child_header->page_id, child_header);
-                                }
+                                cache->update_range(merge->keys[0], merge->keys[merge->current_index - 1], child_header->page_id, child_header);
                             }
-                            else
+
+                            for (int i = 0; i < merge->current_index; i++)
                             {
-                                for (int i = 0; i < merge->current_index; i++)
-                                {
-                                    child->insert(merge->keys[i], merge->values[i]);
-                                }
+                                child->insert(merge->keys[i], merge->values[i]);
                             }
 
                             child->next_lef_id = merge->next_lef_id;
@@ -755,9 +735,92 @@ private:
         }
     }
 
+    /**
+     * @brief Update the value for a key recursively
+     * @param header The pointer to the current node
+     * @param key The key corresponding to a value
+     * @param value The value corresponding to the key
+     */
+    void update_recursive(BHeader *header, int64_t key, int64_t value)
+    {
+        if (!header->inner)
+        {
+            BOuterNode<PAGE_SIZE> *node = (BOuterNode<PAGE_SIZE> *)header;
+            node->update(key, value);
+            if (cache)
+            {
+                cache->insert(key, header->page_id, header);
+            }
+            buffer_manager->unfix_page(node->header.page_id, true);
+        }
+        else
+        {
+            BInnerNode<PAGE_SIZE> *node = (BInnerNode<PAGE_SIZE> *)header;
+            BHeader *child_header = buffer_manager->request_page(node->next_page(key));
+            buffer_manager->unfix_page(header->page_id, false);
+            update_recursive(child_header, key, value);
+        }
+    }
+
+    /**
+     * @brief Start at element key and get range consecutive elements
+     * @param header The pointer to the current node
+     * @param key The key corresponding to a value
+     * @param range The number of elements that are scanned
+     * @return The sum of the elements
+     */
+    int64_t scan_recursive(BHeader *header, int64_t key, int range)
+    {
+        if (!header->inner)
+        {
+            BOuterNode<PAGE_SIZE> *node = (BOuterNode<PAGE_SIZE> *)header;
+
+            int index = node->binary_search(key);
+            int scanned = 0;
+            int64_t sum = 0;
+
+            assert((node->keys[index] == key) && "Scan on key that does not exist.");
+            if (node->keys[index] == key)
+            {
+                if (cache)
+                {
+                    cache->insert(key, header->page_id, header);
+                }
+                while (scanned < range)
+                {
+                    if (index == node->current_index)
+                    {
+                        if (node->next_lef_id == 0)
+                        {
+                            return sum;
+                        }
+                        BOuterNode<PAGE_SIZE> *temp = node;
+                        node = (BOuterNode<PAGE_SIZE> *)buffer_manager->request_page(node->next_lef_id);
+                        buffer_manager->unfix_page(temp->header.page_id, false);
+                        index = 0;
+                    }
+
+                    sum += node->values[index];
+                    logger->info("Sum: {}", sum);
+                    scanned++;
+                    index++;
+                }
+                buffer_manager->unfix_page(node->header.page_id, false);
+            }
+            return sum;
+        }
+        else
+        {
+            BInnerNode<PAGE_SIZE> *node = (BInnerNode<PAGE_SIZE> *)header;
+            BHeader *child_header = buffer_manager->request_page(node->next_page(key));
+            buffer_manager->unfix_page(header->page_id, false);
+            return scan_recursive(child_header, key, range);
+        }
+    }
+
 public:
     friend class BPlusTreeTest;
-    friend class Debuger; 
+    friend class Debuger;
 
     /**
      * @brief Constructor for the B+ tree
@@ -800,5 +863,26 @@ public:
     int64_t get_value(int64_t key)
     {
         return recursive_get_value(buffer_manager->request_page(root_id), key);
+    }
+
+    /**
+     * @brief Start at element key and get range consecutive elements
+     * @param key The key corresponding to a value
+     * @param range The number of elements that are scanned
+     * @return The sum of the elements
+     */
+    int64_t scan(int64_t key, int range)
+    {
+        return scan_recursive(buffer_manager->request_page(root_id), key, range);
+    }
+
+    /**
+     * @brief Update the value for a key
+     * @param key The key corresponding to a value
+     * @param value The value corresponding to the key
+     */
+    void update(int64_t key, int64_t value)
+    {
+        return update_recursive(buffer_manager->request_page(root_id), key, value);
     }
 };

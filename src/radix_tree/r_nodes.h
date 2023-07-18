@@ -67,37 +67,6 @@ struct RNode4
     }
 
     /**
-     * @brief insert a new element with key
-     * @param key the key which identifies the value
-     * @param page_id the page_id where the information can be found
-     * @param bheader the bplus tree node where the value can be found
-     */
-    void insert(uint8_t key, uint64_t page_id, BHeader *bheader)
-    {
-
-        assert(header.leaf && "Inserting a new frame in a non leaf node");
-
-        for (int i = 0; i < header.current_size; i++)
-        {
-            if (keys[i] == key)
-            {
-                ((RFrame *)children[i])->page_id = page_id;
-                ((RFrame *)children[i])->header = bheader;
-                return;
-            }
-        }
-
-        assert(header.current_size < 4 && "Trying to insert into full node");
-
-        RFrame *frame = (RFrame *)malloc(16);
-        frame->page_id = page_id;
-        frame->header = bheader;
-        keys[header.current_size] = key;
-        children[header.current_size] = frame;
-        header.current_size++;
-    }
-
-    /**
      * @brief finds and returns the next node in the tree
      * @param key the key where the next node is located
      * @return the pointer to the next node
@@ -215,36 +184,6 @@ struct RNode16
         keys[header.current_size] = key;
         children[header.current_size] = child;
 
-        header.current_size++;
-    }
-
-    /**
-     * @brief insert a new element with key
-     * @param key the key which identifies the value
-     * @param page_id the page_id where the information can be found
-     * @param bheader the bplus tree node where the value can be found
-     */
-    void insert(uint8_t key, uint64_t page_id, BHeader *bheader)
-    {
-
-        assert(header.leaf && "Inserting a new frame in a non leaf node");
-
-        for (int i = 0; i < header.current_size; i++)
-        {
-            if (keys[i] == key)
-            {
-                ((RFrame *)children[i])->page_id = page_id;
-                ((RFrame *)children[i])->header = bheader;
-                return;
-            }
-        }
-        assert(header.current_size < 16 && "Trying to insert into full node");
-
-        RFrame *frame = (RFrame *)malloc(16);
-        frame->page_id = page_id;
-        frame->header = bheader;
-        keys[header.current_size] = key;
-        children[header.current_size] = frame;
         header.current_size++;
     }
 
@@ -372,33 +311,6 @@ struct RNode48
     }
 
     /**
-     * @brief insert a new element with key
-     * @param key the key which identifies the value
-     * @param page_id the page_id where the information can be found
-     * @param bheader the bplus tree node where the value can be found
-     */
-    void insert(uint8_t key, uint64_t page_id, BHeader *bheader)
-    {
-        assert(header.leaf && "Inserting a new frame in a non leaf node");
-
-        if (keys[key] == 255)
-        {
-            assert(header.current_size < 48 && "Trying to insert into full node");
-            RFrame *frame = (RFrame *)malloc(16);
-            frame->page_id = page_id;
-            frame->header = bheader;
-            children[header.current_size] = frame;
-            keys[key] = header.current_size;
-            header.current_size++;
-        }
-        else
-        {
-            ((RFrame *)children[keys[key]])->page_id = page_id;
-            ((RFrame *)children[keys[key]])->header = bheader;
-        }
-    }
-
-    /**
      * @brief finds and returns the next node in the tree
      * @param key the key where the next node is located
      * @return the pointer to the next node
@@ -500,31 +412,6 @@ struct RNode256
             header.current_size++;
 
         children[key] = child;
-    }
-
-    /**
-     * @brief insert a new element with key
-     * @param key the key which identifies the value
-     * @param page_id the page_id where the information can be found
-     * @param bheader the bplus tree node where the value can be found
-     */
-    void insert(uint8_t key, uint64_t page_id, BHeader *bheader)
-    {
-        assert(header.leaf && "Inserting a new frame in a non leaf node");
-
-        if (children[key] == nullptr)
-        {
-            header.current_size++;
-            RFrame *frame = (RFrame *)malloc(16);
-            frame->page_id = page_id;
-            frame->header = bheader;
-            children[key] = frame;
-        }
-        else
-        {
-            ((RFrame *)children[key])->page_id = page_id;
-            ((RFrame *)children[key])->header = bheader;
-        }
     }
 
     /**

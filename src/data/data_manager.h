@@ -38,7 +38,7 @@ public:
     /**
      * @brief Constructor for the DataManager
      */
-    DataManager(bool cache_arg = false);
+    DataManager(int buffer_size_arg, bool cache_arg, int radix_tree_size_arg);
 
     /**
      * @brief Function that needs to be called before exiting the program, saved all pages to the disc, important to be called before the storage manager is destroyed
@@ -64,4 +64,19 @@ public:
      * @return The value
      */
     int64_t get_value(int64_t key);
+
+    /**
+     * @brief Start at element key and get range consecutive elements
+     * @param key The key corresponding to a value
+     * @param range The number of elements that are scanned
+     * @return The sum of the elements
+     */
+    int64_t scan(int64_t key, int range); 
+
+    /**
+     * @brief Update the value for a key
+     * @param key The key corresponding to a value
+     * @param value The value corresponding to the key
+     */
+    void update(int64_t key, int64_t value); 
 };

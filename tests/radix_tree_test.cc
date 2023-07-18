@@ -27,7 +27,7 @@ protected:
     {
         std::filesystem::remove(base_path / bitmap);
         std::filesystem::remove(base_path / data);
-        radix_tree = new RadixTree<PAGE_SIZE>();
+        radix_tree = new RadixTree<PAGE_SIZE>(1000000);
         storage_manager = new StorageManager(base_path, PAGE_SIZE);
         buffer_manager = new BufferManager(storage_manager, buffer_size, PAGE_SIZE);
         bplus_tree = new BPlusTree<PAGE_SIZE>(buffer_manager, radix_tree);
@@ -1063,6 +1063,7 @@ TEST_F(RadixTreeTest, InsertAndDeleteWithSeed42)
 
     for (int i = 0; i < 1000; i++)
     {
+        logger->info("Getting value for: {}", i);
         ASSERT_EQ(radix_tree->get_value(values[i]), values[i]);
     }
     ASSERT_TRUE(is_compressed(get_root()));
@@ -1079,6 +1080,7 @@ TEST_F(RadixTreeTest, InsertAndDeleteWithSeed42)
 
     for (int i = 0; i < 500; i++)
     {
+        logger->info("Getting value for: {}", i);
         ASSERT_EQ(radix_tree->get_value(values[i]), INT64_MIN);
     }
     ASSERT_TRUE(is_compressed(get_root()));
@@ -1103,6 +1105,7 @@ TEST_F(RadixTreeTest, InsertAndDeleteWithSeed42)
 
     for (int i = 0; i < 1000; i++)
     {
+        logger->info("Getting value for: {}", i);
         ASSERT_EQ(radix_tree->get_value(values[i]), values[i]);
     }
     ASSERT_TRUE(is_compressed(get_root()));
@@ -1207,4 +1210,73 @@ TEST_F(RadixTreeTest, InsertAndDeleteRandom)
     }
 
     ASSERT_FALSE(get_root());
+}
+
+TEST_F(RadixTreeTest, GetPage)
+{
+    BHeader *header = (BHeader *)malloc(96);
+    header->page_id = 0; 
+    radix_tree->insert(1, 0, header);
+    radix_tree->insert(256, 0, header);
+    radix_tree->insert(65536, 0, header);
+    radix_tree->insert(16777216, 0, header);
+    radix_tree->insert(4294967296, 0, header);
+    radix_tree->insert(1099511627776, 0, header);
+    radix_tree->insert(281474976710656, 0, header);
+    radix_tree->insert(72057594037927936, 0, header);
+
+    ASSERT_EQ(radix_tree->get_page(1), header);
+    ASSERT_EQ(radix_tree->get_page(256), header);
+    ASSERT_EQ(radix_tree->get_page(65536), header);
+    ASSERT_EQ(radix_tree->get_page(16777216), header);
+    ASSERT_EQ(radix_tree->get_page(4294967296), header);
+    ASSERT_EQ(radix_tree->get_page(1099511627776), header);
+    ASSERT_EQ(radix_tree->get_page(281474976710656), header);
+    ASSERT_EQ(radix_tree->get_page(72057594037927936), header);
+
+    ASSERT_TRUE(is_compressed(get_root()));
+    ASSERT_TRUE(leaf_depth_correct(get_root()));
+    ASSERT_TRUE(key_matches(get_root()));
+}
+
+TEST_F(RadixTreeTest, UpdateRangeWithSeed42)
+{
+    std::mt19937 generator(42); // 42 is the seed value
+    std::uniform_int_distribution<int64_t> dist(INT64_MIN + 1, INT64_MAX);
+    std::unordered_set<int64_t> unique_values;
+    int64_t values[100];
+    BHeader *header = (BHeader *)malloc(96);
+    header->page_id = 0; 
+
+    for (int i = 0; i < 100; i++)
+    {
+        int64_t value = dist(generator); // generate a random number
+
+        // Ensure we have a unique value, if not, generate another one
+        while (unique_values.count(value))
+        {
+            value = dist(generator);
+        }
+
+        unique_values.insert(value);
+        values[i] = value;
+        radix_tree->insert(value, 0, header);
+    }
+
+    std::sort(values, values + 100);
+    BHeader *new_header = (BHeader *)malloc(96);
+    new_header->page_id = 1; 
+
+    radix_tree->update_range(values[20], values[80], 1, new_header);
+
+    for (int i = 0; i < 100; i++)
+    {
+        if (i >= 20 && i <= 80)
+            ASSERT_EQ(radix_tree->get_page(values[i]), new_header);
+        else
+            ASSERT_EQ(radix_tree->get_page(values[i]), header);
+    }
+    ASSERT_TRUE(is_compressed(get_root()));
+    ASSERT_TRUE(leaf_depth_correct(get_root()));
+    ASSERT_TRUE(key_matches(get_root()));
 }

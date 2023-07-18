@@ -23,33 +23,21 @@ void RunConfigTwo::execute(bool benchmark)
                 281474976710656
                 72057594037927936
         */
-        data_manager.insert(65536, 65536);
-        data_manager.insert(256, 256);
-        data_manager.insert(0, 0);
-        data_manager.insert(1, 1);
-        data_manager.insert(2, 2);
-        data_manager.insert(3, 3);
+        data_manager.insert(-1, -1);
+        data_manager.insert(-2, -2);
+        debuger.traverse_bplus_tree();
+        debuger.traverse_radix_tree();
+        data_manager.insert(-3, -3);
+        debuger.traverse_bplus_tree();
+        debuger.traverse_radix_tree();
         data_manager.insert(4, 4);
-
+        debuger.traverse_bplus_tree();
+        debuger.traverse_radix_tree();
+        data_manager.insert(5, 5);
         debuger.traverse_bplus_tree();
         debuger.traverse_radix_tree();
 
-        data_manager.delete_value(2);
-        data_manager.delete_value(0);
-        data_manager.delete_value(1);
-
-        debuger.traverse_bplus_tree();
-        debuger.traverse_radix_tree();
-
-        data_manager.delete_value(3);
-
-        debuger.traverse_bplus_tree();
-        debuger.traverse_radix_tree();
-
-        data_manager.delete_value(4);
-
-        debuger.traverse_bplus_tree();
-        debuger.traverse_radix_tree();
+        logger->info("value : {}", data_manager.get_value(-1));
     };
     this->benchmark.measure(run, benchmark);
 }

@@ -1275,5 +1275,80 @@ TEST_F(BPlusTreeTest, InsertDelteWithSeed42)
         ASSERT_TRUE(is_ordered(get_root_id()));
         ASSERT_TRUE(is_balanced(get_root_id()));
         ASSERT_TRUE(all_pages_unfixed());
+        ASSERT_EQ(bplus_tree->get_value(values[i]), INT64_MIN);
     }
+}
+
+TEST_F(BPlusTreeTest, UpdateWithSeed42)
+{
+    std::mt19937 generator(42); // 42 is the seed value
+    std::uniform_int_distribution<int64_t> dist(-1000, 1000);
+    std::unordered_set<int64_t> unique_values;
+    int64_t values[100];
+
+    for (int i = 0; i < 100; i++)
+    {
+        int64_t value = dist(generator); // generate a random number
+
+        // Ensure we have a unique value, if not, generate another one
+        while (unique_values.count(value))
+        {
+            value = dist(generator);
+        }
+
+        unique_values.insert(value);
+        values[i] = value;
+        bplus_tree->insert(value, value);
+    }
+
+    for (int i = 0; i < 100; i++)
+    {
+        logger->info("Updating");
+        bplus_tree->update(values[i], values[i] + 1);
+        ASSERT_TRUE(is_ordered(get_root_id()));
+        ASSERT_TRUE(is_balanced(get_root_id()));
+        ASSERT_TRUE(all_pages_unfixed());
+    }
+
+    for (int i = 0; i < 100; i++)
+    {
+        logger->info("Checking");
+        ASSERT_EQ(bplus_tree->get_value(values[i]), values[i] + 1);
+    }
+}
+
+TEST_F(BPlusTreeTest, ScanWithSeed42)
+{
+    std::mt19937 generator(42); // 42 is the seed value
+    std::uniform_int_distribution<int64_t> dist(-1000, 1000);
+    std::unordered_set<int64_t> unique_values;
+    int64_t values[100];
+
+    for (int i = 0; i < 100; i++)
+    {
+        int64_t value = dist(generator); // generate a random number
+
+        // Ensure we have a unique value, if not, generate another one
+        while (unique_values.count(value))
+        {
+            value = dist(generator);
+        }
+
+        unique_values.insert(value);
+        values[i] = value;
+        bplus_tree->insert(value, value);
+    }
+
+    std::sort(values, values + 100);
+
+    int sum = 0;
+    for (int i = 0; i < 70; i++)
+    {
+        sum += values[i];
+    }
+
+    ASSERT_EQ(bplus_tree->scan(values[0], 70), sum);
+    ASSERT_TRUE(is_ordered(get_root_id()));
+    ASSERT_TRUE(is_balanced(get_root_id()));
+    ASSERT_TRUE(all_pages_unfixed());
 }

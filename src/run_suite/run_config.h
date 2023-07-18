@@ -21,11 +21,15 @@ protected:
     DataManager data_manager;
     std::shared_ptr<spdlog::logger> logger;
 
+    int buffer_size; 
+    int radix_tree_size; 
+    bool cache; 
+
 public:
     /**
      * @brief Constructor
      */
-    RunConfig(bool cache) : benchmark(), data_manager(cache)
+    RunConfig(int buffer_size_arg, bool cache_arg, int radix_tree_size_arg) : benchmark(), data_manager(buffer_size_arg, cache_arg, radix_tree_size_arg), buffer_size(buffer_size_arg), radix_tree_size(radix_tree_size_arg), cache(cache_arg)
     {
         logger = spdlog::get("logger");
     }
