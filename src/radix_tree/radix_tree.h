@@ -46,16 +46,9 @@ private:
             // insert first element
             RHeader *new_root_header = (RHeader *)malloc(size_4);
             RNode4 *new_root = new (new_root_header) RNode4(true, 8, key, 0);
-            logger->debug("Partial key; {}", get_key(key, 8));
 
-            RFrame *frame = (RFrame *)malloc(16);
-            frame->header = bheader;
-            frame->page_id = page_id;
-
-            new_root->insert(get_key(key, 8), frame);
-
-            current_size += 16;
             current_size += size_4;
+            current_size += new_root->insert(get_key(key, 8), page_id, bheader);
 
             root = new_root_header;
         }
@@ -87,6 +80,8 @@ private:
                         new (new_root_header) RNode4(false, prefix_length + 1, key, 0);
 
                         node_insert(new_root_header, get_key(root->key, prefix_length + 1), rheader);
+                        current_size += size_4; 
+                        // here, current size will be updated implicitly via return from node
                         node_insert(new_root_header, get_key(key, prefix_length + 1), key, page_id, bheader);
                         rheader->unfix_node();
                         // set new root
@@ -101,21 +96,7 @@ private:
 
             if (rheader->leaf)
             {
-                logger->debug("Header is leaf");
-                // we reached a leaf node
-                RFrame *leaf = (RFrame *)get_next_page(rheader, partial_key);
-                // check if there is already an entry
-                if (leaf)
-                {
-                    logger->debug("Leaf true, current size of node is: {}", rheader->type);
-                    leaf->header = bheader;
-                    leaf->page_id = page_id;
-                }
-                else
-                {
-                    logger->debug("Leaf true");
-                    node_insert(rheader, partial_key, key, page_id, bheader);
-                }
+                node_insert(rheader, partial_key, key, page_id, bheader);
                 rheader->unfix_node();
             }
             else
@@ -148,9 +129,12 @@ private:
                         RHeader *new_node_header = (RHeader *)malloc(size_4);
                         new (new_node_header) RNode4(false, prefix_length + 1, key, 0);
 
+                        // size will be updated implicitly
                         node_insert(new_node_header, get_key(key, prefix_length + 1), key, page_id, bheader);
+                        // size not update as just header is passed
                         node_insert(new_node_header, get_key(child_header->key, prefix_length + 1), child_header);
                         node_insert(rheader, partial_key, new_node_header);
+                        current_size += size_4;
                         rheader->unfix_node();
                     }
                     else
@@ -596,22 +580,32 @@ private:
         void *new_header;
         if (parent->leaf)
         {
-            RFrame *frame;
-            void *next_page = get_next_page(parent, partial_key);
-            if (next_page)
+            switch (parent->type)
             {
-                frame = (RFrame *)next_page;
-                frame->header = bheader;
-                frame->page_id = page_id;
-                return;
+            case 4:
+            {
+                RNode4 *node = (RNode4 *)parent;
+                current_size += node->insert(partial_key, page_id, bheader);
             }
-            else
+            break;
+            case 16:
             {
-                new_header = malloc(16);
-                frame = (RFrame *)new_header;
-                frame->header = bheader;
-                frame->page_id = page_id;
-                current_size += 16;
+                RNode16 *node = (RNode16 *)parent;
+                current_size += node->insert(partial_key, page_id, bheader);
+            }
+            break;
+            case 48:
+            {
+                RNode48 *node = (RNode48 *)parent;
+                current_size += node->insert(partial_key, page_id, bheader);
+            }
+            break;
+            case 256:
+            {
+                RNode256 *node = (RNode256 *)parent;
+                current_size += node->insert(partial_key, page_id, bheader);
+            }
+            break;
             }
         }
         else
@@ -620,41 +614,35 @@ private:
             new_header = malloc(size_4);
             RNode4 *new_node = new (new_header) RNode4(true, 8, key, 0);
             current_size += size_4;
+            current_size += new_node->insert(get_key(key, 8), page_id, bheader);
 
-            RFrame *frame = (RFrame *)malloc(16);
-            frame->header = bheader;
-            frame->page_id = page_id;
-            current_size += 16;
-
-            new_node->insert(get_key(key, 8), frame);
-        }
-
-        switch (parent->type)
-        {
-        case 4:
-        {
-            RNode4 *node = (RNode4 *)parent;
-            node->insert(partial_key, new_header);
-        }
-        break;
-        case 16:
-        {
-            RNode16 *node = (RNode16 *)parent;
-            node->insert(partial_key, new_header);
-        }
-        break;
-        case 48:
-        {
-            RNode48 *node = (RNode48 *)parent;
-            node->insert(partial_key, new_header);
-        }
-        break;
-        case 256:
-        {
-            RNode256 *node = (RNode256 *)parent;
-            node->insert(partial_key, new_header);
-        }
-        break;
+            switch (parent->type)
+            {
+            case 4:
+            {
+                RNode4 *node = (RNode4 *)parent;
+                node->insert(partial_key, new_header);
+            }
+            break;
+            case 16:
+            {
+                RNode16 *node = (RNode16 *)parent;
+                node->insert(partial_key, new_header);
+            }
+            break;
+            case 48:
+            {
+                RNode48 *node = (RNode48 *)parent;
+                node->insert(partial_key, new_header);
+            }
+            break;
+            case 256:
+            {
+                RNode256 *node = (RNode256 *)parent;
+                node->insert(partial_key, new_header);
+            }
+            break;
+            }
         }
     }
 
@@ -819,7 +807,7 @@ private:
                     if (child->current_size == 1)
                     {
                         node_insert(parent, get_key(key, parent->depth), get_single_child(child));
-                        free(child);
+                        free_node(child);
                     }
                     else if (!can_delete(child))
                     {
@@ -851,31 +839,30 @@ private:
      */
     void node_delete(RHeader *header, uint8_t key)
     {
-        // TODO make delete reference return number of deallocated space
         switch (header->type)
         {
         case 4:
         {
             RNode4 *node = (RNode4 *)header;
-            node->delete_reference(key);
+            current_size -= node->delete_reference(key);
         }
         break;
         case 16:
         {
             RNode16 *node = (RNode16 *)header;
-            node->delete_reference(key);
+            current_size -= node->delete_reference(key);
         }
         break;
         case 48:
         {
             RNode48 *node = (RNode48 *)header;
-            node->delete_reference(key);
+            current_size -= node->delete_reference(key);
         }
         break;
         case 256:
         {
             RNode256 *node = (RNode256 *)header;
-            node->delete_reference(key);
+            current_size -= node->delete_reference(key);
         }
         break;
         }
@@ -1042,10 +1029,31 @@ private:
         header->unfix_node();
     }
 
-    int size_4 = 64;     /// size for node 4 in bytes
-    int size_16 = 168;   /// size for node 16 in bytes
-    int size_48 = 920;   /// size for node 48 in bytes
-    int size_256 = 2072; /// size for node 256 in bytes
+    /**
+     * @brief Frees a node and updates the byte count
+     * @param header The node that should be deleted 
+    */
+    void free_node(RHeader *header)
+    {
+        switch (header->type)
+        {
+        case 4:
+            current_size -= size_4;
+            break;
+        case 16:
+            current_size -= size_16;
+            break;
+        case 48:
+            current_size -= size_48;
+            break;
+        case 256:
+            current_size -= size_256;
+            break;
+        default:
+            break;
+        }
+        free(header);
+    }
 
 public:
     friend class RadixTreeTest;
@@ -1064,12 +1072,18 @@ public:
      */
     void insert(int64_t key, uint64_t page_id, BHeader *bheader)
     {
-        // TODO check for size constraint when inserting
-        if (root)
+        if (current_size < radix_tree_size)
         {
-            root->fix_node();
+            if (root)
+            {
+                root->fix_node();
+            }
+            insert_recursive(root, key, page_id, bheader);
         }
-        insert_recursive(root, key, page_id, bheader);
+        else
+        {
+            logger->debug("Radix Tree is full, can't insert more elements.");
+        }
     }
 
     /**
@@ -1092,7 +1106,7 @@ public:
             {
                 RHeader *temp = root;
                 root = nullptr;
-                free(temp);
+                free_node(temp);
             }
             else if (!can_delete(root))
             {
@@ -1124,7 +1138,7 @@ public:
                         {
                             RHeader *temp = root;
                             root = (RHeader *)get_single_child(root);
-                            free(temp);
+                            free_node(temp);
                             return;
                         }
                         else if (!can_delete(root))

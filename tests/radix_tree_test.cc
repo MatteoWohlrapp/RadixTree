@@ -42,6 +42,11 @@ protected:
         return radix_tree->root;
     }
 
+    int get_current_size()
+    {
+        return radix_tree->current_size;
+    }
+
     uint8_t get_key_test(int64_t key, int depth)
     {
         return radix_tree->get_key(key, depth);
@@ -1215,7 +1220,7 @@ TEST_F(RadixTreeTest, InsertAndDeleteRandom)
 TEST_F(RadixTreeTest, GetPage)
 {
     BHeader *header = (BHeader *)malloc(96);
-    header->page_id = 0; 
+    header->page_id = 0;
     radix_tree->insert(1, 0, header);
     radix_tree->insert(256, 0, header);
     radix_tree->insert(65536, 0, header);
@@ -1246,7 +1251,7 @@ TEST_F(RadixTreeTest, UpdateRangeWithSeed42)
     std::unordered_set<int64_t> unique_values;
     int64_t values[100];
     BHeader *header = (BHeader *)malloc(96);
-    header->page_id = 0; 
+    header->page_id = 0;
 
     for (int i = 0; i < 100; i++)
     {
@@ -1265,7 +1270,7 @@ TEST_F(RadixTreeTest, UpdateRangeWithSeed42)
 
     std::sort(values, values + 100);
     BHeader *new_header = (BHeader *)malloc(96);
-    new_header->page_id = 1; 
+    new_header->page_id = 1;
 
     radix_tree->update_range(values[20], values[80], 1, new_header);
 
@@ -1279,4 +1284,46 @@ TEST_F(RadixTreeTest, UpdateRangeWithSeed42)
     ASSERT_TRUE(is_compressed(get_root()));
     ASSERT_TRUE(leaf_depth_correct(get_root()));
     ASSERT_TRUE(key_matches(get_root()));
+}
+
+TEST_F(RadixTreeTest, Size)
+{
+    BHeader *header = (BHeader *)malloc(96);
+    radix_tree->insert(1, 0, header);
+    radix_tree->insert(256, 0, header);
+    radix_tree->insert(65536, 0, header);
+    radix_tree->insert(16777216, 0, header);
+    radix_tree->insert(4294967296, 0, header);
+    radix_tree->insert(1099511627776, 0, header);
+    radix_tree->insert(281474976710656, 0, header);
+    radix_tree->insert(72057594037927936, 0, header);
+    ASSERT_EQ(get_current_size(), 1088);
+
+    radix_tree->insert(0, 0, header);
+    ASSERT_EQ(get_current_size(), 1104);
+
+    radix_tree->delete_reference(65536);
+    ASSERT_EQ(get_current_size(), 960);
+
+    radix_tree->delete_reference(72057594037927936);
+    ASSERT_EQ(get_current_size(), 816);
+
+    radix_tree->insert(8589934592, 0, header);
+    radix_tree->insert(12884901888, 0, header);
+    radix_tree->insert(17179869184, 0, header);
+    ASSERT_EQ(get_current_size(), 1160);
+
+    radix_tree->delete_reference(8589934592);
+    ASSERT_EQ(get_current_size(), 976);
+
+    radix_tree->delete_reference(1);
+    radix_tree->delete_reference(0);
+    radix_tree->delete_reference(256);
+    radix_tree->delete_reference(16777216);
+    radix_tree->delete_reference(4294967296);
+    radix_tree->delete_reference(12884901888);
+    radix_tree->delete_reference(17179869184);
+    radix_tree->delete_reference(1099511627776);
+    radix_tree->delete_reference(72057594037927936);
+    ASSERT_EQ(get_current_size(), 0);
 }
