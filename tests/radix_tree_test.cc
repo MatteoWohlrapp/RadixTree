@@ -515,6 +515,7 @@ TEST_F(RadixTreeTest, InsertResizeRoot)
 // Testing get value with use cases identified above
 TEST_F(RadixTreeTest, InsertLazyLeafBPlusTree)
 {
+    logger->info("InsertLazyLeafBPlusTree starts");
     bplus_tree->insert(1, 1);
     bplus_tree->insert(256, 256);
     bplus_tree->insert(65536, 65536);
@@ -539,6 +540,7 @@ TEST_F(RadixTreeTest, InsertLazyLeafBPlusTree)
     ASSERT_TRUE(is_compressed(get_root()));
     ASSERT_TRUE(leaf_depth_correct(get_root()));
     ASSERT_TRUE(key_matches(get_root()));
+    logger->info("InsertLazyLeafBPlusTree ends");
 }
 
 TEST_F(RadixTreeTest, InsertResizeNonLazyLeafBPlusTree)

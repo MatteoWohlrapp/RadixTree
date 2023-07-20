@@ -13,7 +13,7 @@
 namespace Configuration
 {
     /// sets the overall page_size for the pages written to memory. Subject to constraints: [((PAGE_SIZE - 32) / 2) / 8] > 2, also dividable by 16 for header alginment
-    constexpr int page_size = 96;
+    constexpr int page_size = 4096;
 
     struct Configuration
     {

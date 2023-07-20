@@ -17,11 +17,12 @@ DataManager::DataManager(int buffer_size_arg, bool cache_arg, int radix_tree_siz
 
 void DataManager::destroy()
 {
-    logger->info("Destroying in Data Manger"); 
     buffer_manager->destroy();
     storage_manager->destroy();
     if (radix_tree)
     {
+        logger->info("Destroying radix tree");
+        logger->flush();
         radix_tree->destroy();
         delete radix_tree;
     }

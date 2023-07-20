@@ -179,13 +179,13 @@ TEST_F(RNodeTest, Insert256)
     for (int64_t i = 0; i < 256; i++)
     {
         ASSERT_TRUE(node->can_insert());
-        node->insert(i, (void *)i);
+        node->insert(i, (void *)(i + 1));
     }
     ASSERT_FALSE(node->can_insert());
 
     for (int64_t i = 0; i < 256; i++)
     {
-        ASSERT_EQ(node->children[i], (void *)i);
+        ASSERT_EQ(node->children[i], (void *)(i + 1));
     }
 }
 
@@ -407,12 +407,12 @@ TEST_F(RNodeTest, GetNextChild4)
 
     for (int64_t i = 0; i < 4; i++)
     {
-        node->insert(i, (void *)i);
+        node->insert(i, (void *)(i + 1));
     }
 
     for (int64_t i = 0; i < 4; i++)
     {
-        ASSERT_EQ(node->get_next_page(i), (void *)i);
+        ASSERT_EQ(node->get_next_page(i), (void *)(i + 1));
     }
 }
 
@@ -423,12 +423,12 @@ TEST_F(RNodeTest, GetNextChild16)
 
     for (int64_t i = 0; i < 16; i++)
     {
-        node->insert(i, (void *)i);
+        node->insert(i, (void *)(i + 1));
     }
 
     for (int64_t i = 0; i < 16; i++)
     {
-        ASSERT_EQ(node->get_next_page(i), (void *)i);
+        ASSERT_EQ(node->get_next_page(i), (void *)(i + 1));
     }
 }
 
@@ -437,12 +437,13 @@ TEST_F(RNodeTest, GetNextChild48)
     RHeader *header = (RHeader *)malloc(size_48);
     RNode48 *node = new (header) RNode48(true, 0, 0, 0);
 
-    for (int64_t i = 0; i < 48; i++)
+    for (int64_t i = 1; i <= 48; i++)
     {
+        logger->info("Inserting into Node48: {}", i);
         node->insert(i, (void *)i);
     }
 
-    for (int64_t i = 0; i < 48; i++)
+    for (int64_t i = 1; i <= 48; i++)
     {
         ASSERT_EQ(node->get_next_page(i), (void *)i);
     }
@@ -455,11 +456,11 @@ TEST_F(RNodeTest, GetNextChild256)
 
     for (int64_t i = 0; i < 256; i++)
     {
-        node->insert(i, (void *)i);
+        node->insert(i, (void *)(i + 1));
     }
 
     for (int64_t i = 0; i < 256; i++)
     {
-        ASSERT_EQ(node->get_next_page(i), (void *)i);
+        ASSERT_EQ(node->get_next_page(i), (void *)(i + 1));
     }
 }

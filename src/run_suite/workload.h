@@ -7,6 +7,8 @@
 #include <random>
 #include <set>
 #include "../data/data_manager.h"
+#include <sys/resource.h>
+#include <iostream>
 
 class Workload
 {
@@ -15,7 +17,7 @@ protected:
     int record_count;
     int operation_count;
     std::string distribution;
-    double coefficient; 
+    double coefficient;
     double insert_proportion;
     double read_proportion;
     double update_proportion;
@@ -34,6 +36,7 @@ protected:
     std::random_device rd;
     std::function<int()> index_distribution;
     std::uniform_int_distribution<int64_t> value_distribution;
+    std::mt19937 generator;
 
     enum Operation
     {
@@ -50,13 +53,20 @@ protected:
         switch (op)
         {
         case INSERT:
-            logger->debug("Inserting: {}", key);
+            logger->debug("Inserting in workload: {}", key);
             data_manager.insert(key, key);
             break;
         case READ:
+        {
             logger->debug("Reading: {}", key);
-            data_manager.get_value(key);
-            break;
+            int64_t test = data_manager.get_value(key);
+            if (test == INT64_MIN)
+            {
+                std::cout << "Cant find element" << std::endl;
+                exit(1);
+            }
+        }
+        break;
         case UPDATE:
             logger->debug("Updating: {}", key);
             data_manager.update(key, key);
@@ -79,7 +89,7 @@ protected:
         while (records_set.size() < record_count)
         {
             // Generate uniform random number and insert into set
-            records_set.insert(value_distribution(rd));
+            records_set.insert(value_distribution(generator));
         }
 
         // Convert set to vector
@@ -88,7 +98,7 @@ protected:
         // Inserting all elements
         for (int i = 0; i < record_count; i++)
         {
-            logger->debug("Inserting: {}", records_vector[i]);
+            logger->debug("Inserting in workload initialization: {}", records_vector[i]);
             data_manager.insert(records_vector[i], records_vector[i]);
         }
 
@@ -103,13 +113,14 @@ protected:
         }
         else if (distribution == "geometric")
         {
-            std::geometric_distribution<int> dist(coefficient);;
+            std::geometric_distribution<int> dist(coefficient);
+            ;
 
             index_distribution = [this, dist]() mutable -> int
             {
-                int num = dist(rd);
-                if(num >= this->record_count)
-                    num = this->record_count - 1;  
+                int num = dist(generator);
+                if (num >= this->record_count)
+                    num = this->record_count - 1;
                 return num;
             };
         }
@@ -238,10 +249,14 @@ public:
         logger = spdlog::get("logger");
         times = std::vector<std::vector<double>>(NUM_OPERATIONS, std::vector<double>(0, 0.0));
         value_distribution = std::uniform_int_distribution<int64_t>(INT64_MIN + 1, INT64_MAX);
+        generator = std::mt19937(42);
     }
 
     ~Workload()
     {
+        struct rusage usage;
+        getrusage(RUSAGE_SELF, &usage);
+        std::cout << "Memory usage: " << usage.ru_maxrss << " KB\n";
         data_manager.destroy();
     }
 
