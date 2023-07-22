@@ -1,5 +1,5 @@
 /**
- * @file    cofiguration.h
+ * @file    configuration.h
  *
  * @author  Matteo Wohlrapp
  * @date    16.05.2023
@@ -12,7 +12,7 @@
  */
 namespace Configuration
 {
-    /// sets the overall page_size for the pages written to memory. Subject to constraints: [((PAGE_SIZE - 32) / 2) / 8] > 2, also dividable by 16 for header alginment
+    /// sets the overall page_size for the pages written to memory. Subject to cocmake -D BUILD_DOC=ON ..nstraints: [((PAGE_SIZE - 32) / 2) / 8] > 2, also dividable by 16 for header alginment
     constexpr int page_size = 4096;
 
     struct Configuration

@@ -31,31 +31,27 @@ private:
     int radix_tree_size;
     int current_size = 0;
 
-    uint64_t my_htonll(uint64_t value)
-    {
-        const uint32_t high_part = htonl((uint32_t)(value >> 32));
-        const uint32_t low_part = htonl((uint32_t)(value & 0xFFFFFFFFLL));
-        return (((uint64_t)(low_part)) << 32) | high_part;
-    }
-
-    uint64_t my_ntonll(uint64_t value)
-    {
-        const uint32_t high_part = ntohl((uint32_t)(value >> 32));
-        const uint32_t low_part = ntohl((uint32_t)(value & 0xFFFFFFFFLL));
-        return (((uint64_t)(low_part)) << 32) | high_part;
-    }
-
+    /**
+     * @brief transforms a signed key to an unsigned key
+     * @param key The signed key 
+     * @return The unsigned key
+    */
     uint64_t transform(int64_t key)
     {
         uint64_t transformed_key = ((uint64_t)key) + INT64_MAX + 1;
-        logger->info("Transformed key is: {} from key: {}", transformed_key, key);
+        logger->debug("Transformed key is: {} from key: {}", transformed_key, key);
         return transformed_key;
     }
 
+    /**
+     * @brief transforms an unsigned key to a signed key
+     * @param key The unsigned key 
+     * @return The signed key
+    */
     int64_t inverse_transform(uint64_t key)
     {
         uint64_t transformed_key = ((uint64_t)key) - INT64_MAX - 1;
-        logger->info("Inverse Transformed key is: {} from key: {}", transformed_key, key);
+        logger->debug("Inverse Transformed key is: {} from key: {}", transformed_key, key);
         return transformed_key;
     }
 
@@ -925,7 +921,7 @@ private:
     /**
      * @brief Updates a range of values recurisvely, specified by values from and to
      * @param header of the current radix tree node
-     * @param fom key from which updates are applied
+     * @param from key from which updates are applied
      * @param to key until which updates are applied
      * @param page_id page_id of the page that is updated
      * @param bheader the header to the page where the value can be found
@@ -1109,7 +1105,7 @@ public:
 
     /**
      * @brief Delete the reference from the tree
-     * @param key The key that will be deleted
+     * @param s_key The key that will be deleted
      */
     void delete_reference(int64_t s_key)
     {
@@ -1217,7 +1213,7 @@ public:
 
     /**
      * @brief Updates a range of values, specified by values from and to
-     * @param fom key from which updates are applied
+     * @param from key from which updates are applied
      * @param to key until which updates are applied
      * @param page_id page_id of the page that is updated
      * @param bheader the header to the page where the value can be found

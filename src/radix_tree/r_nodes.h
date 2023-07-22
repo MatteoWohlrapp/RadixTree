@@ -449,7 +449,7 @@ struct RNode48
      * @param key the key which identifies the value
      * @param page_id the page_id where the information can be found
      * @param bheader the bplus tree node where the value can be found
-     * @param return the number of bytes allocated
+     * @return the number of bytes allocated
      */
     int insert(uint8_t key, uint64_t page_id, BHeader *bheader)
     {
