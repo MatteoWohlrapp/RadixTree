@@ -10,9 +10,12 @@
 #include <sys/resource.h>
 #include <iostream>
 
+/**
+ * @brief General abstraction for the YCSB workload
+*/
 class Workload
 {
-protected:
+private:
     int buffer_size;
     int record_count;
     int operation_count;
@@ -32,14 +35,17 @@ protected:
     DataManager data_manager;
     std::vector<std::vector<double>> times;
     std::set<uint64_t> records_set;
-    std::vector<uint64_t> records_vector;
-    std::vector<int> indice_vector;
+    std::vector<uint64_t> records_vector; /// entries inserted into the DB
+    std::vector<int> indice_vector;       /// indices in the records vector that are addressed
     std::random_device rd;
     std::function<int()> index_distribution;
     std::uniform_int_distribution<int64_t> value_distribution;
     std::mt19937 generator;
-    int insert_index = 0;
+    int insert_index = 0; /// offset at the end of records that specifies where current insert operations draw elements from
 
+    /**
+     * @brief enumeration for the different kinds of operation possible
+    */
     enum Operation
     {
         INSERT,
@@ -49,8 +55,15 @@ protected:
         DELETE,
         NUM_OPERATIONS
     };
-    std::vector<Operation> operations_vector;
+    std::vector<Operation> operations_vector; /// vector with operations that are executed
+    std::set<int> delete_operations;          /// indices in the record vector that are deleted
+    std::set<int> update_operations;          /// indices in the record vector that are deleted
 
+    /**
+     * @brief Abstraction to perform an operation on the database
+     * @param op The operation
+     * @param index The index of the key in the indices array
+     */
     void perform_operation(Operation op, int index)
     {
         switch (op)
@@ -63,17 +76,12 @@ protected:
         case READ:
         {
             logger->debug("Reading: {}", records_vector[indice_vector[index]]);
-            int64_t test = data_manager.get_value(records_vector[indice_vector[index]]);
-            if (test == INT64_MIN)
-            {
-                std::cout << "Cant find element" << std::endl;
-                exit(1);
-            }
+            data_manager.get_value(records_vector[indice_vector[index]]);
         }
         break;
         case UPDATE:
             logger->debug("Updating: {}", records_vector[indice_vector[index]]);
-            data_manager.update(records_vector[indice_vector[index]], records_vector[indice_vector[index]]);
+            data_manager.update(records_vector[indice_vector[index]], records_vector[indice_vector[index]] + 1);
             break;
         case SCAN:
             logger->debug("Scanning: {}", records_vector[indice_vector[index]]);
@@ -88,6 +96,9 @@ protected:
         }
     }
 
+    /**
+     * @brief Initializes the vectors for records, operations and indices
+     */
     void initialize()
     {
         while (records_set.size() < record_count)
@@ -137,6 +148,14 @@ protected:
 
             int index = index_distribution();
             indice_vector[i] = index;
+            if (op == DELETE)
+            {
+                delete_operations.insert(index);
+            }
+            else if (op == UPDATE)
+            {
+                update_operations.insert(index);
+            }
 
             if (op == INSERT)
             {
@@ -161,6 +180,9 @@ protected:
         }
     }
 
+    /**
+     * @brief Runs the workload
+     */
     void run()
     {
         if (insert_proportion + read_proportion + update_proportion + scan_proportion + delete_proportion != 1)
@@ -170,7 +192,7 @@ protected:
         }
 
         const int thread_count = 1;
-        int num_op_per_thread = operation_count / thread_count; 
+        int num_op_per_thread = operation_count / thread_count;
 
         for (int t = 0; t < thread_count; t++)
         {
@@ -178,7 +200,6 @@ protected:
             {
                 std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
                 Operation op;
-                std::cout << "Running" << std::endl;
                 for (int i = thread_count * t; i < thread_count * t + num_op_per_thread; i++)
                 {
                     op = operations_vector[i];
@@ -205,15 +226,48 @@ protected:
         }
     }
 
+    /**
+     * @brief Validates the final state of the tree
+     */
+    void validate()
+    {
+        std::cout << "Starting validation ..." << std::endl;
+
+        int faulty_records = 0;
+
+        for (int i = 0; i < records_vector.size(); i++)
+        {
+            if (delete_operations.count(i) > 0)
+            {
+                if (data_manager.get_value(records_vector[i]) != INT64_MIN)
+                    faulty_records++;
+            }
+            else if (update_operations.count(i) > 0)
+            {
+                if (data_manager.get_value(records_vector[i]) != records_vector[i] + 1)
+                    faulty_records++;
+            }
+            else
+            {
+                if (data_manager.get_value(records_vector[i]) != records_vector[i])
+                    faulty_records++;
+            }
+        }
+
+        std::cout << "Checking for content: " << faulty_records << " out of " << records_vector.size() << " are faulty" << std::endl;
+
+        data_manager.validate();
+        std::cout << "\n";
+    }
+
+    /**
+     * @brief Analyzes the results of the workload
+     */
     void analyze()
     {
         struct rusage usage;
         getrusage(RUSAGE_SELF, &usage);
         std::cout << "Memory usage: " << usage.ru_maxrss << " KB" << std::endl;
-        std::cout << "\n";
-
-        std::cout << "Starting validation ..." << std::endl;
-        data_manager.validate();
         std::cout << "\n";
 
         if (!measure_per_operation)
@@ -265,11 +319,27 @@ protected:
     }
 
 public:
+    /**
+     * @brief Constructor for the Workload
+     * @param buffer_size_arg The amounts of pages in the buffer manager
+     * @param record_count_arg The number of records in the trees
+     * @param operation_count_arg The number of performed operations
+     * @param distribution_arg The distribution
+     * @param coefficient_arg The coefficient for the distribution
+     * @param insert_proportion The proportion of inserts
+     * @param read_proportion The proportion of reads
+     * @param update_proportion The proportion of updates
+     * @param scan_proportion The proportion of scancs
+     * @param delete_proportion The proportion of deletes
+     * @param cache_arg If the cache is activated or not 
+     * @param radix_tree_size_arg The size of the cache
+     * @param measure_per_operation Decides about the type of measurements
+     */
     Workload(int buffer_size_arg, int record_count_arg, int operation_count_arg, std::string distribution_arg, double coefficient_arg, double insert_proportion_arg, double read_proportion_arg, double update_proportion_arg, double scan_proportion_arg, double delete_proportion_arg, bool cache_arg, int radix_tree_size_arg, bool measure_per_operation_arg) : buffer_size(buffer_size_arg), record_count(record_count_arg), operation_count(operation_count_arg), distribution(distribution_arg), coefficient(coefficient_arg), insert_proportion(insert_proportion_arg), read_proportion(read_proportion_arg), update_proportion(update_proportion_arg), scan_proportion(scan_proportion_arg), delete_proportion(delete_proportion_arg), cache(cache_arg), radix_tree_size(radix_tree_size_arg), measure_per_operation(measure_per_operation_arg), data_manager(buffer_size_arg, cache_arg, radix_tree_size_arg)
     {
         logger = spdlog::get("logger");
         times = std::vector<std::vector<double>>(NUM_OPERATIONS, std::vector<double>(0, 0.0));
-        value_distribution = std::uniform_int_distribution<int64_t>(INT64_MIN + 1, INT64_MAX);
+        value_distribution = std::uniform_int_distribution<int64_t>(INT64_MIN + 1, INT64_MAX - 1);
         generator = std::mt19937(42);
         operations_vector.resize(operation_count_arg);
         indice_vector.resize(operation_count_arg);
@@ -281,6 +351,9 @@ public:
         data_manager.destroy();
     }
 
+    /**
+     * @brief Combines all methods important for a workload
+    */
     void execute()
     {
         // set up the data
@@ -289,50 +362,123 @@ public:
         // run the workload
         run();
 
+        // validate results
+        validate();
+
         // analyze the run
         analyze();
     }
 };
 
+/**
+ * @brief Abstraction for the YCSB workload A
+*/
 class WorkloadA : public Workload
 {
 public:
+    /**
+     * @brief Constructor for the Workload A
+     * @param buffer_size_arg The amounts of pages in the buffer manager
+     * @param record_count_arg The number of records in the trees
+     * @param operation_count_arg The number of performed operations
+     * @param distribution_arg The distribution
+     * @param coefficient_arg The coefficient for the distribution
+     * @param cache_arg If the cache is activated or not 
+     * @param radix_tree_size_arg The size of the cache
+     * @param measure_per_operation Decides about the type of measurements
+     */
     WorkloadA(int buffer_size_arg, int record_count_arg, int operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, int radix_tree_size_arg, bool measure_per_operation_arg)
         : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0, 0.5, 0.5, 0, 0, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
     {
     }
 };
 
+/**
+ * @brief Abstraction for the YCSB workload B
+*/
 class WorkloadB : public Workload
 {
 public:
+    /**
+     * @brief Constructor for the Workload B
+     * @param buffer_size_arg The amounts of pages in the buffer manager
+     * @param record_count_arg The number of records in the trees
+     * @param operation_count_arg The number of performed operations
+     * @param distribution_arg The distribution
+     * @param coefficient_arg The coefficient for the distribution
+     * @param cache_arg If the cache is activated or not 
+     * @param radix_tree_size_arg The size of the cache
+     * @param measure_per_operation Decides about the type of measurements
+     */
     WorkloadB(int buffer_size_arg, int record_count_arg, int operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, int radix_tree_size_arg, bool measure_per_operation_arg)
         : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0, 0.95, 0.05, 0, 0, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
     {
     }
 };
 
+/**
+ * @brief Abstraction for the YCSB workload C
+*/
 class WorkloadC : public Workload
 {
 public:
+    /**
+     * @brief Constructor for the Workload C
+     * @param buffer_size_arg The amounts of pages in the buffer manager
+     * @param record_count_arg The number of records in the trees
+     * @param operation_count_arg The number of performed operations
+     * @param distribution_arg The distribution
+     * @param coefficient_arg The coefficient for the distribution
+     * @param cache_arg If the cache is activated or not 
+     * @param radix_tree_size_arg The size of the cache
+     * @param measure_per_operation Decides about the type of measurements
+     */
     WorkloadC(int buffer_size_arg, int record_count_arg, int operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, int radix_tree_size_arg, bool measure_per_operation_arg)
         : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0, 1, 0, 0, 0, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
     {
     }
 };
 
+/**
+ * @brief Abstraction for the YCSB workload E
+*/
 class WorkloadE : public Workload
 {
 public:
+    /**
+     * @brief Constructor for the Workload E
+     * @param buffer_size_arg The amounts of pages in the buffer manager
+     * @param record_count_arg The number of records in the trees
+     * @param operation_count_arg The number of performed operations
+     * @param distribution_arg The distribution
+     * @param coefficient_arg The coefficient for the distribution
+     * @param cache_arg If the cache is activated or not 
+     * @param radix_tree_size_arg The size of the cache
+     * @param measure_per_operation Decides about the type of measurements
+     */
     WorkloadE(int buffer_size_arg, int record_count_arg, int operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, int radix_tree_size_arg, bool measure_per_operation_arg)
         : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0.05, 0, 0, 0.95, 0, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
     {
     }
 };
 
+/**
+ * @brief Abstraction for the YCSB workload X
+*/
 class WorkloadX : public Workload
 {
 public:
+    /**
+     * @brief Constructor for the Workload X
+     * @param buffer_size_arg The amounts of pages in the buffer manager
+     * @param record_count_arg The number of records in the trees
+     * @param operation_count_arg The number of performed operations
+     * @param distribution_arg The distribution
+     * @param coefficient_arg The coefficient for the distribution
+     * @param cache_arg If the cache is activated or not 
+     * @param radix_tree_size_arg The size of the cache
+     * @param measure_per_operation Decides about the type of measurements
+     */
     WorkloadX(int buffer_size_arg, int record_count_arg, int operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, int radix_tree_size_arg, bool measure_per_operation_arg)
         : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0, 0.90, 0, 0, 0.1, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
     {
