@@ -33,10 +33,12 @@ protected:
     std::vector<std::vector<double>> times;
     std::set<uint64_t> records_set;
     std::vector<uint64_t> records_vector;
+    std::vector<int> indice_vector;
     std::random_device rd;
     std::function<int()> index_distribution;
     std::uniform_int_distribution<int64_t> value_distribution;
     std::mt19937 generator;
+    int insert_index = 0;
 
     enum Operation
     {
@@ -47,19 +49,21 @@ protected:
         DELETE,
         NUM_OPERATIONS
     };
+    std::vector<Operation> operations_vector;
 
-    void perform_operation(Operation op, int64_t key)
+    void perform_operation(Operation op, int index)
     {
         switch (op)
         {
         case INSERT:
-            logger->debug("Inserting in workload: {}", key);
-            data_manager.insert(key, key);
+            logger->debug("Inserting in workload: {}", records_vector[insert_index]);
+            data_manager.insert(records_vector[insert_index], records_vector[insert_index]);
+            insert_index++;
             break;
         case READ:
         {
-            logger->debug("Reading: {}", key);
-            int64_t test = data_manager.get_value(key);
+            logger->debug("Reading: {}", records_vector[indice_vector[index]]);
+            int64_t test = data_manager.get_value(records_vector[indice_vector[index]]);
             if (test == INT64_MIN)
             {
                 std::cout << "Cant find element" << std::endl;
@@ -68,16 +72,16 @@ protected:
         }
         break;
         case UPDATE:
-            logger->debug("Updating: {}", key);
-            data_manager.update(key, key);
+            logger->debug("Updating: {}", records_vector[indice_vector[index]]);
+            data_manager.update(records_vector[indice_vector[index]], records_vector[indice_vector[index]]);
             break;
         case SCAN:
-            logger->debug("Scanning: {}", key);
-            data_manager.scan(key, max_scan_range);
+            logger->debug("Scanning: {}", records_vector[indice_vector[index]]);
+            data_manager.scan(records_vector[indice_vector[index]], max_scan_range);
             break;
         case DELETE:
-            logger->debug("Deleting: {}", key);
-            data_manager.delete_value(key);
+            logger->debug("Deleting: {}", records_vector[indice_vector[index]]);
+            data_manager.delete_value(records_vector[indice_vector[index]]);
             break;
         case NUM_OPERATIONS:
             break;
@@ -90,16 +94,6 @@ protected:
         {
             // Generate uniform random number and insert into set
             records_set.insert(value_distribution(generator));
-        }
-
-        // Convert set to vector
-        std::copy(records_set.begin(), records_set.end(), std::back_inserter(records_vector));
-
-        // Inserting all elements
-        for (int i = 0; i < record_count; i++)
-        {
-            logger->debug("Inserting in workload initialization: {}", records_vector[i]);
-            data_manager.insert(records_vector[i], records_vector[i]);
         }
 
         // Function for index distribution
@@ -129,6 +123,42 @@ protected:
             logger->error("Invalid distribution name");
             exit(1);
         }
+
+        // Weights for distribution, corresponding to the operations
+        std::vector<double> weights = {insert_proportion, read_proportion, update_proportion, scan_proportion, delete_proportion};
+
+        // Use for discrete distribution
+        std::discrete_distribution<> op_dist(weights.begin(), weights.end());
+
+        for (int i = 0; i < operation_count; i++)
+        {
+            Operation op = static_cast<Operation>(op_dist(rd));
+            operations_vector[i] = op;
+
+            int index = index_distribution();
+            indice_vector[i] = index;
+
+            if (op == INSERT)
+            {
+                while (records_set.size() < record_count)
+                {
+                    // Generate uniform random number and insert into set
+                    records_set.insert(value_distribution(generator));
+                }
+            }
+        }
+
+        // Convert set to vector
+        std::copy(records_set.begin(), records_set.end(), std::back_inserter(records_vector));
+
+        records_set.clear();
+
+        // Inserting all elements
+        for (int i = 0; i < record_count; i++)
+        {
+            logger->debug("Inserting in workload initialization: {}", records_vector[i]);
+            data_manager.insert(records_vector[i], records_vector[i]);
+        }
     }
 
     void run()
@@ -139,64 +169,53 @@ protected:
             exit(1);
         }
 
-        // Weights for distribution, corresponding to the operations
-        std::vector<double> weights = {insert_proportion, read_proportion, update_proportion, scan_proportion, delete_proportion};
+        const int thread_count = 1;
+        int num_op_per_thread = operation_count / thread_count; 
 
-        // Use for discrete distribution
-        std::discrete_distribution<> dist(weights.begin(), weights.end());
-
-        int index = -1;
-        int64_t key = INT64_MIN;
-
-        std::chrono::time_point<std::chrono::high_resolution_clock> total_start, total_end;
-
-        if (!measure_per_operation)
+        for (int t = 0; t < thread_count; t++)
         {
-            total_start = std::chrono::high_resolution_clock::now();
-        }
-
-        for (int i = 0; i < operation_count; i++)
-        {
-            Operation op = static_cast<Operation>(dist(rd));
-            if (op == INSERT)
-            {
-                // Generate new unique key for insert
-                do
-                {
-                    key = value_distribution(rd);
-                } while (records_set.count(key) > 0);
-            }
-            else
-            {
-                index = index_distribution();
-                key = records_vector[index];
-            }
-
             if (measure_per_operation)
             {
                 std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
-                start = std::chrono::high_resolution_clock::now();
-                perform_operation(op, key);
-                end = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double> elapsed = end - start;
-                times[op].push_back(elapsed.count());
+                Operation op;
+                std::cout << "Running" << std::endl;
+                for (int i = thread_count * t; i < thread_count * t + num_op_per_thread; i++)
+                {
+                    op = operations_vector[i];
+                    start = std::chrono::high_resolution_clock::now();
+                    perform_operation(op, i);
+                    end = std::chrono::high_resolution_clock::now();
+                    std::chrono::duration<double> elapsed = end - start;
+                    times[op].push_back(elapsed.count());
+                }
             }
             else
             {
-                perform_operation(op, key);
-            }
-        }
+                std::chrono::time_point<std::chrono::high_resolution_clock> total_start, total_end;
 
-        if (!measure_per_operation)
-        {
-            total_end = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double> total_elapsed = total_end - total_start;
-            times[0].push_back(total_elapsed.count());
+                total_start = std::chrono::high_resolution_clock::now();
+                for (int i = thread_count * t; i < thread_count * t + num_op_per_thread; i++)
+                {
+                    perform_operation(operations_vector[i], i);
+                }
+                total_end = std::chrono::high_resolution_clock::now();
+                std::chrono::duration<double> total_elapsed = total_end - total_start;
+                times[0].push_back(total_elapsed.count());
+            }
         }
     }
 
     void analyze()
     {
+        struct rusage usage;
+        getrusage(RUSAGE_SELF, &usage);
+        std::cout << "Memory usage: " << usage.ru_maxrss << " KB" << std::endl;
+        std::cout << "\n";
+
+        std::cout << "Starting validation ..." << std::endl;
+        data_manager.validate();
+        std::cout << "\n";
+
         if (!measure_per_operation)
         {
             double total_time = times[0][0];
@@ -233,12 +252,14 @@ protected:
                 double percentile_99 = operation_times[int(0.99 * operation_times.size())];
 
                 std::cout << "Analysis for " << operation_names[i] << " operations:\n";
+                std::cout << "Total number of operations: " << operation_times.size() << "\n";
                 std::cout << "Total time: " << std::fixed << std::setprecision(6) << sum << "s\n";
                 std::cout << "Mean time: " << std::fixed << std::setprecision(6) << mean << "s\n";
                 std::cout << "Median time: " << std::fixed << std::setprecision(6) << median << "s\n";
                 std::cout << "90th percentile time: " << std::fixed << std::setprecision(6) << percentile_90 << "s\n";
                 std::cout << "95th percentile time: " << std::fixed << std::setprecision(6) << percentile_95 << "s\n";
                 std::cout << "99th percentile time: " << std::fixed << std::setprecision(6) << percentile_99 << "s\n";
+                std::cout << "\n";
             }
         }
     }
@@ -250,13 +271,13 @@ public:
         times = std::vector<std::vector<double>>(NUM_OPERATIONS, std::vector<double>(0, 0.0));
         value_distribution = std::uniform_int_distribution<int64_t>(INT64_MIN + 1, INT64_MAX);
         generator = std::mt19937(42);
+        operations_vector.resize(operation_count_arg);
+        indice_vector.resize(operation_count_arg);
+        insert_index = record_count;
     }
 
     ~Workload()
     {
-        struct rusage usage;
-        getrusage(RUSAGE_SELF, &usage);
-        std::cout << "Memory usage: " << usage.ru_maxrss << " KB\n";
         data_manager.destroy();
     }
 

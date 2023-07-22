@@ -79,4 +79,10 @@ public:
      * @param value The value corresponding to the key
      */
     void update(int64_t key, int64_t value); 
+
+    /**
+     * @brief Checks if the b+ tree and the radix tree fullfill all invariants
+     * @return if trees are valid
+    */
+    bool validate(); 
 };

@@ -63,3 +63,8 @@ void DataManager::update(int64_t key, int64_t value)
 {
     bplus_tree->update(key, value);
 }
+
+bool DataManager::validate()
+{
+    return true; 
+}
