@@ -54,5 +54,5 @@ public:
      * @brief Traverses the tree and checks if a key is contained
      * @param key The key that is searched for
      */
-    bool contains_key(int64_t keys);
+    bool contains_key(int64_t key);
 };

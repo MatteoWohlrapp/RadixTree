@@ -12,10 +12,11 @@
 #include "r_nodes.h"
 #include "../bplus_tree/b_nodes.h"
 #include "spdlog/spdlog.h"
+#include <netinet/in.h>
 
 /// friend class
 class RadixTreeTest;
-class Debuger; 
+class Debuger;
 
 template <int PAGE_SIZE>
 class RadixTree
@@ -26,6 +27,34 @@ private:
     // Root Node
     RHeader *root = nullptr;
 
+    /// maximum size of the cache in bytes
+    int radix_tree_size;
+    int current_size = 0;
+
+    /**
+     * @brief transforms a signed key to an unsigned key
+     * @param key The signed key
+     * @return The unsigned key
+     */
+    uint64_t transform(int64_t key)
+    {
+        uint64_t transformed_key = ((uint64_t)key) + INT64_MAX + 1;
+        logger->debug("Transformed key is: {} from key: {}", transformed_key, key);
+        return transformed_key;
+    }
+
+    /**
+     * @brief transforms an unsigned key to a signed key
+     * @param key The unsigned key
+     * @return The signed key
+     */
+    int64_t inverse_transform(uint64_t key)
+    {
+        uint64_t transformed_key = ((uint64_t)key) - INT64_MAX - 1;
+        logger->debug("Inverse Transformed key is: {} from key: {}", transformed_key, key);
+        return transformed_key;
+    }
+
     /**
      * @brief Insert an element into the radix_tree recursively
      * @param rheader The current node of the radix tree
@@ -33,7 +62,7 @@ private:
      * @param page_id The page id of the page where the key is located
      * @param bheader The pointer to the header where the key is located
      */
-    void insert_recursive(RHeader *rheader, int64_t key, uint64_t page_id, BHeader *bheader)
+    void insert_recursive(RHeader *rheader, uint64_t key, uint64_t page_id, BHeader *bheader)
     {
         logger->debug("In recursive insert");
         if (!root)
@@ -42,9 +71,9 @@ private:
             // insert first element
             RHeader *new_root_header = (RHeader *)malloc(size_4);
             RNode4 *new_root = new (new_root_header) RNode4(true, 8, key, 0);
-            logger->debug("Partial key; {}", get_key(key, 8));
 
-            new_root->insert(get_key(key, 8), page_id, bheader);
+            current_size += size_4;
+            current_size += new_root->insert(get_key(key, 8), page_id, bheader);
 
             root = new_root_header;
         }
@@ -57,7 +86,7 @@ private:
                 {
                     logger->debug("Cant insert into root");
                     root = increase_node_size(rheader);
-                    insert(key, page_id, bheader);
+                    insert(inverse_transform(key), page_id, bheader);
                     return;
                 }
                 if (rheader->depth != 1)
@@ -76,6 +105,8 @@ private:
                         new (new_root_header) RNode4(false, prefix_length + 1, key, 0);
 
                         node_insert(new_root_header, get_key(root->key, prefix_length + 1), rheader);
+                        current_size += size_4;
+                        // here, current size will be updated implicitly via return from node
                         node_insert(new_root_header, get_key(key, prefix_length + 1), key, page_id, bheader);
                         rheader->unfix_node();
                         // set new root
@@ -86,25 +117,11 @@ private:
             }
             // at this point, up to the current node, the values have the same prefix
 
-            int partial_key = get_key(key, rheader->depth);
+            uint8_t partial_key = get_key(key, rheader->depth);
 
             if (rheader->leaf)
             {
-                logger->debug("Header is leaf");
-                // we reached a leaf node
-                RFrame *leaf = (RFrame *)get_next_page(rheader, partial_key);
-                // check if there is already an entry
-                if (leaf)
-                {
-                    logger->debug("Leaf true, current size of node is: {}", rheader->type);
-                    leaf->header = bheader;
-                    leaf->page_id = page_id;
-                }
-                else
-                {
-                    logger->debug("Leaf true");
-                    node_insert(rheader, partial_key, key, page_id, bheader);
-                }
+                node_insert(rheader, partial_key, key, page_id, bheader);
                 rheader->unfix_node();
             }
             else
@@ -124,6 +141,8 @@ private:
                     {
                         // if child is full we need to resize it
                         child_header = increase_node_size(child_header);
+                        logger->info("Increased node size, child header: {}", (void *)child_header);
+                        logger->flush();
                         node_insert(rheader, partial_key, child_header);
                     }
 
@@ -137,9 +156,12 @@ private:
                         RHeader *new_node_header = (RHeader *)malloc(size_4);
                         new (new_node_header) RNode4(false, prefix_length + 1, key, 0);
 
+                        // size will be updated implicitly
                         node_insert(new_node_header, get_key(key, prefix_length + 1), key, page_id, bheader);
+                        // size not update as just header is passed
                         node_insert(new_node_header, get_key(child_header->key, prefix_length + 1), child_header);
                         node_insert(rheader, partial_key, new_node_header);
+                        current_size += size_4;
                         rheader->unfix_node();
                     }
                     else
@@ -227,6 +249,8 @@ private:
      */
     void destroy_recursive(RHeader *header)
     {
+        logger->info("Destroying pointer: {}", (void *)header);
+        logger->flush();
         if (!header)
             return;
         if (header->leaf)
@@ -254,11 +278,11 @@ private:
             case 48:
             {
                 RNode48 *node = (RNode48 *)header;
-                for (int i = 0; i < 256; ++i)
+                for (int i = 0; i < 48; ++i)
                 {
-                    if (node->keys[i] != 255)
+                    if (node->children[i])
                     {
-                        free(node->children[node->keys[i]]);
+                        free(node->children[i]);
                     }
                 }
                 break;
@@ -276,69 +300,80 @@ private:
                 break;
             }
             }
-            return;
         }
-
-        switch (header->type)
+        else
         {
-        case 4:
-        {
-            RNode4 *node = (RNode4 *)header;
-            for (int i = 0; i < header->current_size; ++i)
+            switch (header->type)
             {
-                destroy_recursive((RHeader *)node->children[i]);
-                free(node->children[i]);
-            }
-            break;
-        }
-        case 16:
-        {
-            RNode16 *node = (RNode16 *)header;
-            for (int i = 0; i < header->current_size; ++i)
+            case 4:
             {
-                destroy_recursive((RHeader *)node->children[i]);
-                free(node->children[i]);
-            }
-            break;
-        }
-        case 48:
-        {
-            RNode48 *node = (RNode48 *)header;
-            for (int i = 0; i < 256; ++i)
-            {
-                if (node->keys[i] != 255)
-                {
-                    destroy_recursive((RHeader *)node->children[node->keys[i]]);
-                    free(node->children[node->keys[i]]);
-                }
-            }
-        }
-        break;
-        case 256:
-        {
-            RNode256 *node = (RNode256 *)header;
-            for (int i = 0; i < 256; ++i)
-            {
-                if (node->children[i])
+                RNode4 *node = (RNode4 *)header;
+                for (int i = 0; i < header->current_size; ++i)
                 {
                     destroy_recursive((RHeader *)node->children[i]);
-                    free(node->children[i]);
+                }
+                break;
+            }
+            case 16:
+            {
+                RNode16 *node = (RNode16 *)header;
+                for (int i = 0; i < header->current_size; ++i)
+                {
+                    destroy_recursive((RHeader *)node->children[i]);
+                }
+                break;
+            }
+            case 48:
+            {
+                RNode48 *node = (RNode48 *)header;
+                for (int i = 0; i < 48; ++i)
+                {
+                    if (node->children[i])
+                    {
+                        destroy_recursive((RHeader *)node->children[i]);
+                    }
                 }
             }
             break;
+            case 256:
+            {
+                RNode256 *node = (RNode256 *)header;
+                for (int i = 0; i < 256; ++i)
+                {
+                    if (node->children[i])
+                    {
+                        destroy_recursive((RHeader *)node->children[i]);
+                    }
+                }
+                break;
+            }
+            }
         }
-        }
+
+        free(header);
     }
 
     /**
-     * @brief Check if you can insert into a header
+     * @brief Returns the 8 bit key at a certain depth
      * @param key The complete key
      * @param depth Which bits are currently relevant
      * @return the 8 bit part of the key that apply to the current node
      */
-    uint8_t get_key(int64_t key, int depth)
+    uint8_t get_key(uint64_t key, int depth)
     {
         return (key >> ((8 - depth) * 8)) & 0xFF;
+    }
+
+    /**
+     * @brief Returns the key up until a certain depth and replaces the last 8 bit with intermediate_key
+     * @param key The complete key
+     * @param intermediate_key The 8 bit that will represent the least significant byte
+     * @param depth Which bits are currently relevant
+     * @return the 8 bit part of the key that apply to the current node
+     */
+    uint64_t get_intermediate_key(uint64_t key, uint8_t intermediate_key, int depth)
+    {
+        return ((key >> ((8 - depth) * 8)) & ~0xFF) | intermediate_key;
     }
 
     /**
@@ -363,6 +398,8 @@ private:
             }
 
             free(node);
+            current_size -= size_4;
+            current_size += size_16;
             return new_header;
         }
         case 16:
@@ -378,6 +415,8 @@ private:
             }
 
             free(node);
+            current_size -= size_16;
+            current_size += size_48;
             return new_header;
         }
         case 48:
@@ -396,9 +435,12 @@ private:
             }
 
             free(node);
+            current_size -= size_48;
+            current_size += size_256;
             return new_header;
         }
         }
+        logger->info("Node Type: {}", header->type);
         return nullptr;
     }
 
@@ -424,6 +466,8 @@ private:
             }
 
             free(node);
+            current_size -= size_16;
+            current_size += size_4;
             return new_header;
         }
         break;
@@ -443,6 +487,8 @@ private:
             }
 
             free(node);
+            current_size -= size_48;
+            current_size += size_16;
             return new_header;
         }
         break;
@@ -462,10 +508,14 @@ private:
             }
 
             free(node);
+            current_size -= size_256;
+            current_size += size_48;
             return new_header;
         }
         break;
         }
+        logger->info("Node Type: {}", header->type);
+        logger->flush();
         return nullptr;
     }
 
@@ -475,7 +525,7 @@ private:
      * @param key_b The second key
      * @return How many bytes they have in common
      */
-    int longest_common_prefix(int64_t key_a, int64_t key_b)
+    int longest_common_prefix(uint64_t key_a, uint64_t key_b)
     {
         int prefix = 0;
 
@@ -540,50 +590,74 @@ private:
      * @param page_id The page id of the page where the data is stored
      * @param bheader The bheader where the data is stored
      */
-    void node_insert(RHeader *parent, uint8_t partial_key, int64_t key, uint64_t page_id, BHeader *bheader)
+    void node_insert(RHeader *parent, uint8_t partial_key, uint64_t key, uint64_t page_id, BHeader *bheader)
     {
         void *new_header;
         if (parent->leaf)
         {
-            new_header = malloc(16);
-            RFrame *frame = (RFrame *)new_header;
-            frame->header = bheader;
-            frame->page_id = page_id;
+            switch (parent->type)
+            {
+            case 4:
+            {
+                RNode4 *node = (RNode4 *)parent;
+                current_size += node->insert(partial_key, page_id, bheader);
+            }
+            break;
+            case 16:
+            {
+                RNode16 *node = (RNode16 *)parent;
+                current_size += node->insert(partial_key, page_id, bheader);
+            }
+            break;
+            case 48:
+            {
+                RNode48 *node = (RNode48 *)parent;
+                current_size += node->insert(partial_key, page_id, bheader);
+            }
+            break;
+            case 256:
+            {
+                RNode256 *node = (RNode256 *)parent;
+                current_size += node->insert(partial_key, page_id, bheader);
+            }
+            break;
+            }
         }
         else
         {
             // parent is not leaf, meaning we create a node with lazy expansion and add it
             new_header = malloc(size_4);
             RNode4 *new_node = new (new_header) RNode4(true, 8, key, 0);
-            new_node->insert(get_key(key, 8), page_id, bheader);
-        }
+            current_size += size_4;
+            current_size += new_node->insert(get_key(key, 8), page_id, bheader);
 
-        switch (parent->type)
-        {
-        case 4:
-        {
-            RNode4 *node = (RNode4 *)parent;
-            node->insert(partial_key, new_header);
-        }
-        break;
-        case 16:
-        {
-            RNode16 *node = (RNode16 *)parent;
-            node->insert(partial_key, new_header);
-        }
-        break;
-        case 48:
-        {
-            RNode48 *node = (RNode48 *)parent;
-            node->insert(partial_key, new_header);
-        }
-        break;
-        case 256:
-        {
-            RNode256 *node = (RNode256 *)parent;
-            node->insert(partial_key, new_header);
-        }
-        break;
+            switch (parent->type)
+            {
+            case 4:
+            {
+                RNode4 *node = (RNode4 *)parent;
+                node->insert(partial_key, new_header);
+            }
+            break;
+            case 16:
+            {
+                RNode16 *node = (RNode16 *)parent;
+                node->insert(partial_key, new_header);
+            }
+            break;
+            case 48:
+            {
+                RNode48 *node = (RNode48 *)parent;
+                node->insert(partial_key, new_header);
+            }
+            break;
+            case 256:
+            {
+                RNode256 *node = (RNode256 *)parent;
+                node->insert(partial_key, new_header);
+            }
+            break;
+            }
         }
     }
 
@@ -627,10 +701,12 @@ private:
      * @param key The key where the value is stored at
      * @return The value corresponding to the key or INT64_MIN if not present
      */
-    int64_t get_value_recursive(RHeader *header, int64_t key)
+    int64_t get_value_recursive(RHeader *header, uint64_t key)
     {
         if (header == nullptr)
             return INT64_MIN;
+
+        logger->info("Key is {}", get_key(key, header->depth));
 
         void *next = get_next_page(header, get_key(key, header->depth));
         if (next)
@@ -641,7 +717,7 @@ private:
                 RFrame *frame = (RFrame *)next;
                 if (frame->header->page_id == frame->page_id)
                 {
-                    int64_t value = ((BOuterNode<PAGE_SIZE> *)frame->header)->get_value(key);
+                    int64_t value = ((BOuterNode<PAGE_SIZE> *)frame->header)->get_value(inverse_transform(key));
                     logger->debug("Page id {} matching, value is: {}", frame->page_id, value);
                     header->unfix_node();
                     return value;
@@ -673,14 +749,60 @@ private:
     }
 
     /**
+     * @brief Get the page a key is located on
+     * @param header The radix tree node
+     * @param key The key which is on the page
+     * @return The page
+     */
+    BHeader *get_page_recursive(RHeader *header, uint64_t key)
+    {
+        if (header == nullptr)
+            return nullptr;
+
+        void *next = get_next_page(header, get_key(key, header->depth));
+        if (next)
+        {
+            if (header->leaf)
+            {
+                RFrame *frame = (RFrame *)next;
+                if (frame->header->page_id == frame->page_id)
+                {
+                    header->unfix_node();
+                    return frame->header;
+                }
+                else
+                {
+                    header->unfix_node();
+                    // Delete from tree as the reference is not matching and the page_id is wrong
+                    delete_reference(key);
+                    return nullptr;
+                }
+            }
+            else
+            {
+                RHeader *child = (RHeader *)next;
+                child->fix_node();
+                header->unfix_node();
+                return get_page_recursive(child, key);
+            }
+        }
+        else
+        {
+            logger->debug("Next was null");
+            header->unfix_node();
+            return nullptr;
+        }
+    }
+
+    /**
      * @brief Deletes a value from the tree
      * @param parent The parent radix tree node
      * @param child The child node of parent
      * @param key The key that will be deleted
      */
-    void delete_reference_recursive(RHeader *parent, RHeader *child, int64_t key)
+    void delete_reference_recursive(RHeader *parent, RHeader *child, uint64_t key)
     {
-        int partial_key = get_key(key, child->depth);
+        uint8_t partial_key = get_key(key, child->depth);
         RHeader *grand_child = (RHeader *)get_next_page(child, partial_key);
 
         if (!grand_child)
@@ -702,7 +824,7 @@ private:
                     if (child->current_size == 1)
                     {
                         node_insert(parent, get_key(key, parent->depth), get_single_child(child));
-                        free(child);
+                        free_node(child);
                     }
                     else if (!can_delete(child))
                     {
@@ -739,25 +861,25 @@ private:
         case 4:
         {
             RNode4 *node = (RNode4 *)header;
-            node->delete_reference(key);
+            current_size -= node->delete_reference(key);
         }
         break;
         case 16:
         {
             RNode16 *node = (RNode16 *)header;
-            node->delete_reference(key);
+            current_size -= node->delete_reference(key);
         }
         break;
         case 48:
         {
             RNode48 *node = (RNode48 *)header;
-            node->delete_reference(key);
+            current_size -= node->delete_reference(key);
         }
         break;
         case 256:
         {
             RNode256 *node = (RNode256 *)header;
-            node->delete_reference(key);
+            current_size -= node->delete_reference(key);
         }
         break;
         }
@@ -796,16 +918,430 @@ private:
         return nullptr;
     }
 
-    int size_4 = 64;     /// size for node 4 in bytes
-    int size_16 = 168;   /// size for node 16 in bytes
-    int size_48 = 920;   /// size for node 48 in bytes
-    int size_256 = 2072; /// size for node 256 in bytes
+    /**
+     * @brief Updates a range of values recurisvely, specified by values from and to
+     * @param header of the current radix tree node
+     * @param from key from which updates are applied
+     * @param to key until which updates are applied
+     * @param page_id page_id of the page that is updated
+     * @param bheader the header to the page where the value can be found
+     */
+    void update_range_recursive(RHeader *header, uint64_t from, uint64_t to, uint64_t page_id, BHeader *bheader)
+    {
+
+        uint64_t from_key = get_intermediate_key(from, get_key(from, header->depth), header->depth);
+        uint64_t to_key = get_intermediate_key(to, get_key(to, header->depth), header->depth);
+        uint64_t intermediate_key;
+
+        switch (header->type)
+        {
+        case 4:
+        {
+            RNode4 *node = (RNode4 *)header;
+            for (int i = 0; i < node->header.current_size; i++)
+            {
+                if (header->depth == 1 && from < 0 && to >= 0)
+                {
+                    uint8_t from_byte = get_key(from, 1);
+                    uint8_t to_byte = get_key(to, 1);
+
+                    if (node->keys[i] >= from_byte || node->keys[i] <= to_byte)
+                    {
+                        ((RHeader *)node->children[i])->fix_node();
+                        update_range_recursive(((RHeader *)node->children[i]), from, to, page_id, bheader);
+                    }
+                }
+                else
+                {
+                    intermediate_key = get_intermediate_key(header->key, node->keys[i], header->depth);
+                    if (intermediate_key >= from_key && intermediate_key <= to_key)
+                    {
+                        if (header->leaf)
+                        {
+                            node_insert(header, node->keys[i], header->key, page_id, bheader);
+                        }
+                        else
+                        {
+                            ((RHeader *)node->children[i])->fix_node();
+                            update_range_recursive(((RHeader *)node->children[i]), from, to, page_id, bheader);
+                        }
+                    }
+                }
+            }
+        }
+        break;
+        case 16:
+        {
+            RNode16 *node = (RNode16 *)header;
+            for (int i = 0; i < node->header.current_size; i++)
+            {
+                intermediate_key = get_intermediate_key(header->key, node->keys[i], header->depth);
+
+                if (intermediate_key >= from_key && intermediate_key <= to_key)
+                {
+                    if (header->leaf)
+                    {
+                        node_insert(header, node->keys[i], header->key, page_id, bheader);
+                    }
+                    else
+                    {
+                        ((RHeader *)node->children[i])->fix_node();
+                        update_range_recursive(((RHeader *)node->children[i]), from, to, page_id, bheader);
+                    }
+                }
+            }
+        }
+        break;
+        case 48:
+        {
+            RNode48 *node = (RNode48 *)header;
+            for (int i = 0; i < 256; i++)
+            {
+                if (node->keys[i] != 255)
+                {
+
+                    intermediate_key = get_intermediate_key(header->key, i, header->depth);
+                    if (intermediate_key >= from_key && intermediate_key <= to_key)
+                    {
+                        if (header->leaf)
+                        {
+                            node_insert(header, i, header->key, page_id, bheader);
+                        }
+                        else
+                        {
+                            ((RHeader *)node->children[node->keys[i]])->fix_node();
+                            update_range_recursive(((RHeader *)node->children[node->keys[i]]), from, to, page_id, bheader);
+                        }
+                    }
+                }
+            }
+        }
+        break;
+        case 256:
+        {
+            RNode256 *node = (RNode256 *)header;
+            for (int i = 0; i < 256; i++)
+            {
+                if (node->children[i])
+                {
+
+                    intermediate_key = get_intermediate_key(header->key, i, header->depth);
+                    if (intermediate_key >= from_key && intermediate_key <= to_key)
+                    {
+                        if (header->leaf)
+                        {
+                            node_insert(header, i, header->key, page_id, bheader);
+                        }
+                        else
+                        {
+                            ((RHeader *)node->children[i])->fix_node();
+                            update_range_recursive(((RHeader *)node->children[i]), from, to, page_id, bheader);
+                        }
+                    }
+                }
+            }
+        }
+        break;
+        }
+        header->unfix_node();
+    }
+
+    /**
+     * @brief Frees a node and updates the byte count
+     * @param header The node that should be deleted
+     */
+    void free_node(RHeader *header)
+    {
+        switch (header->type)
+        {
+        case 4:
+            current_size -= size_4;
+            break;
+        case 16:
+            current_size -= size_16;
+            break;
+        case 48:
+            current_size -= size_48;
+            break;
+        case 256:
+            current_size -= size_256;
+            break;
+        default:
+            break;
+        }
+        free(header);
+    }
+
+    /**
+     * @brief checks if the tree is compressed
+     * @param header The current node
+     * @return true if the tree is compressed false, if not
+     */
+    bool is_compressed(RHeader *header)
+    {
+        if (!header)
+            return true;
+        if (header->leaf)
+            return true;
+        else
+        {
+            if (header->current_size <= 1)
+                return false;
+        }
+
+        switch (header->type)
+        {
+        case 4:
+        {
+            RNode4 *node = (RNode4 *)header;
+            for (int i = 0; i < header->current_size; i++)
+            {
+                RHeader *child = (RHeader *)node->children[i];
+                if (!child->leaf)
+                {
+                    if (child->current_size <= 1 || !is_compressed(child))
+                        return false;
+                }
+            }
+        }
+        break;
+        case 16:
+        {
+            RNode16 *node = (RNode16 *)header;
+            for (int i = 0; i < header->current_size; i++)
+            {
+                RHeader *child = (RHeader *)node->children[i];
+                if (!child->leaf)
+                {
+                    if (child->current_size <= 1 || !is_compressed(child))
+                        return false;
+                }
+            }
+        }
+        break;
+        case 48:
+        {
+            RNode48 *node = (RNode48 *)header;
+            for (int i = 0; i < 256; i++)
+            {
+                if (node->keys[i] != 255)
+                {
+                    RHeader *child = (RHeader *)node->children[node->keys[i]];
+                    if (!child->leaf)
+                    {
+                        if (child->current_size <= 1 || !is_compressed(child))
+                            return false;
+                    }
+                }
+            }
+        }
+        break;
+        case 256:
+        {
+            RNode256 *node = (RNode256 *)header;
+            for (int i = 0; i < 256; i++)
+            {
+                if (node->children[i])
+                {
+                    RHeader *child = (RHeader *)node->children[i];
+                    if (!child->leaf)
+                    {
+                        if (child->current_size <= 1 || !is_compressed(child))
+                            return false;
+                    }
+                }
+            }
+        }
+        break;
+        default:
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * @brief checks if the depth of leaf nodes is correct
+     * @param header The current node
+     * @return true if the depth of the leaves is correct, false if not
+     */
+    bool leaf_depth_correct(RHeader *header)
+    {
+        if (!header)
+            return true;
+        if (header->leaf)
+            return header->depth == 8;
+        else
+        {
+            if (header->depth == 8)
+                return false;
+        }
+
+        switch (header->type)
+        {
+        case 4:
+        {
+            RNode4 *node = (RNode4 *)header;
+            for (int i = 0; i < header->current_size; i++)
+            {
+                RHeader *child = (RHeader *)node->children[i];
+                if (!child->leaf)
+                {
+                    if (!leaf_depth_correct(child))
+                        return false;
+                }
+                else
+                {
+                    if (child->depth != 8)
+                        return false;
+                }
+            }
+        }
+        break;
+        case 16:
+        {
+            RNode16 *node = (RNode16 *)header;
+            for (int i = 0; i < header->current_size; i++)
+            {
+                RHeader *child = (RHeader *)node->children[i];
+                if (!child->leaf)
+                {
+                    if (!leaf_depth_correct(child))
+                        return false;
+                }
+                else
+                {
+                    if (child->depth != 8)
+                        return false;
+                }
+            }
+        }
+        break;
+        case 48:
+        {
+            RNode48 *node = (RNode48 *)header;
+            for (int i = 0; i < 256; i++)
+            {
+                if (node->keys[i] != 255)
+                {
+                    RHeader *child = (RHeader *)node->children[node->keys[i]];
+                    if (!child->leaf)
+                    {
+                        if (!leaf_depth_correct(child))
+                            return false;
+                    }
+                    else
+                    {
+                        if (child->depth != 8)
+                            return false;
+                    }
+                }
+            }
+        }
+        break;
+        case 256:
+        {
+            RNode256 *node = (RNode256 *)header;
+            for (int i = 0; i < 256; i++)
+            {
+                if (node->children[i])
+                {
+                    RHeader *child = (RHeader *)node->children[i];
+                    if (!child->leaf)
+                    {
+                        if (!leaf_depth_correct(child))
+                            return false;
+                    }
+                    else
+                    {
+                        if (child->depth != 8)
+                            return false;
+                    }
+                }
+            }
+        }
+        break;
+        default:
+            break;
+        }
+        return true;
+    }
+
+    /**
+     * @brief checks if the prefixes of the keys in the tree match
+     * @param header The current node
+     * @return true if all key match, false if not
+     */
+    bool key_matches(RHeader *header)
+    {
+        if (!header)
+            return true;
+
+        if (header->leaf)
+            return true;
+
+        switch (header->type)
+        {
+        case 4:
+        {
+            RNode4 *node = (RNode4 *)header;
+            for (int i = 0; i < header->current_size; i++)
+            {
+                RHeader *child = (RHeader *)node->children[i];
+                if (header->depth - 1 > longest_common_prefix(header->key, child->key) || !key_matches(child))
+                    return false;
+            }
+        }
+        break;
+        case 16:
+        {
+            RNode16 *node = (RNode16 *)header;
+            for (int i = 0; i < header->current_size; i++)
+            {
+                RHeader *child = (RHeader *)node->children[i];
+                if (header->depth - 1 > longest_common_prefix(header->key, child->key) || !key_matches(child))
+                    return false;
+            }
+        }
+        break;
+        case 48:
+        {
+            RNode48 *node = (RNode48 *)header;
+            for (int i = 0; i < 256; i++)
+            {
+                if (node->keys[i] != 255)
+                {
+                    RHeader *child = (RHeader *)node->children[node->keys[i]];
+                    if (header->depth - 1 > longest_common_prefix(header->key, child->key) || !key_matches(child))
+                        return false;
+                }
+            }
+        }
+        break;
+        case 256:
+        {
+            RNode256 *node = (RNode256 *)header;
+            for (int i = 0; i < 256; i++)
+            {
+                if (node->children[i])
+                {
+                    RHeader *child = (RHeader *)node->children[i];
+                    if (header->depth - 1 > longest_common_prefix(header->key, child->key) || !key_matches(child))
+                        return false;
+                }
+            }
+        }
+        break;
+        default:
+            break;
+        }
+        return true;
+    }
 
 public:
     friend class RadixTreeTest;
-    friend class Debuger; 
+    friend class Debuger;
 
-    RadixTree()
+    RadixTree(int radix_tree_size_arg) : radix_tree_size(radix_tree_size_arg)
     {
         logger = spdlog::get("logger");
     }
@@ -818,20 +1354,28 @@ public:
      */
     void insert(int64_t key, uint64_t page_id, BHeader *bheader)
     {
-        if (root)
+        if (current_size < radix_tree_size)
         {
-            root->fix_node();
+            if (root)
+            {
+                root->fix_node();
+            }
+            insert_recursive(root, transform(key), page_id, bheader);
         }
-        insert_recursive(root, key, page_id, bheader);
+        else
+        {
+            logger->debug("Radix Tree is full, can't insert more elements.");
+        }
     }
 
     /**
      * @brief Delete the reference from the tree
-     * @param key The key that will be deleted
+     * @param s_key The key that will be deleted
      */
-    void delete_reference(int64_t key)
+    void delete_reference(int64_t s_key)
     {
-        logger->debug("Deleting: {}", key);
+        uint64_t key = transform(s_key);
+        logger->debug("Deleting in Radix Tree: {}", key);
         if (!root)
             return;
 
@@ -845,7 +1389,7 @@ public:
             {
                 RHeader *temp = root;
                 root = nullptr;
-                free(temp);
+                free_node(temp);
             }
             else if (!can_delete(root))
             {
@@ -858,7 +1402,7 @@ public:
         }
         else
         {
-            int partial_key = get_key(key, root->depth);
+            uint8_t partial_key = get_key(key, root->depth);
             RHeader *child_header = (RHeader *)get_next_page(root, partial_key);
 
             if (child_header)
@@ -877,7 +1421,7 @@ public:
                         {
                             RHeader *temp = root;
                             root = (RHeader *)get_single_child(root);
-                            free(temp);
+                            free_node(temp);
                             return;
                         }
                         else if (!can_delete(root))
@@ -916,7 +1460,37 @@ public:
         if (!root)
             return INT64_MIN;
         root->fix_node();
-        return get_value_recursive(root, key);
+        return get_value_recursive(root, transform(key));
+    }
+
+    /**
+     * @brief Get the page a key is located on
+     * @param key The key which is on the page
+     * @return The page
+     */
+    BHeader *get_page(int64_t key)
+    {
+        if (!root)
+            return nullptr;
+        root->fix_node();
+        return get_page_recursive(root, transform(key));
+    }
+
+    /**
+     * @brief Updates a range of values, specified by values from and to
+     * @param from key from which updates are applied
+     * @param to key until which updates are applied
+     * @param page_id page_id of the page that is updated
+     * @param bheader the header to the page where the value can be found
+     */
+    void update_range(int64_t from, int64_t to, int64_t page_id, BHeader *bheader)
+    {
+        if (!root)
+            return;
+
+        root->fix_node();
+
+        update_range_recursive(root, transform(from), transform(to), page_id, bheader);
     }
 
     /**
@@ -925,6 +1499,22 @@ public:
     void destroy()
     {
         destroy_recursive(root);
-        free(root);
+    }
+
+    /**
+     * @brief Validates the radix tree
+     */
+    bool valdidate()
+    {
+        std::cout << "Size of Radix Tree: " << current_size << std::endl;
+
+        if (!is_compressed(root))
+            return false;
+        if (!leaf_depth_correct(root))
+            return false;
+        if (!key_matches(root))
+            return false;
+
+        return true;
     }
 };

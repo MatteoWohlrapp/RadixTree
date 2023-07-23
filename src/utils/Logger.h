@@ -16,7 +16,7 @@
 #include <list>
 #include <iostream>
 #include <filesystem>
-#include "Time.h"
+#include "time.h"
 
 /**
  * @brief namespace for the logger, includes functions for flushing and initialization of spdlog loggers

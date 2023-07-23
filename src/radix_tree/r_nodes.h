@@ -12,6 +12,11 @@
 #include <cassert>
 #include <iostream>
 
+constexpr int size_4 = 64;     /// size for node 4 in bytes
+constexpr int size_16 = 168;   /// size for node 16 in bytes
+constexpr int size_48 = 920;   /// size for node 48 in bytes
+constexpr int size_256 = 2072; /// size for node 256 in bytes
+
 /**
  * @brief Structure for the node with size of 4
  */
@@ -38,7 +43,7 @@ struct RNode4
      * @param key the key which is equal for each child until depth
      * @param current_size how many elements there are in the node currently
      */
-    RNode4(bool leaf, uint8_t depth, int64_t key, uint16_t current_size) : header{4, leaf, depth, key, current_size}
+    RNode4(bool leaf, uint8_t depth, uint64_t key, uint16_t current_size) : header{4, leaf, depth, key, current_size}
     {
     }
 
@@ -49,7 +54,7 @@ struct RNode4
      */
     void insert(uint8_t key, void *child)
     {
-
+        assert(child && "Trying to insert null pointer."); 
         for (int i = 0; i < header.current_size; i++)
         {
             if (keys[i] == key)
@@ -71,8 +76,9 @@ struct RNode4
      * @param key the key which identifies the value
      * @param page_id the page_id where the information can be found
      * @param bheader the bplus tree node where the value can be found
+     * @return the number of bytes allocated
      */
-    void insert(uint8_t key, uint64_t page_id, BHeader *bheader)
+    int insert(uint8_t key, uint64_t page_id, BHeader *bheader)
     {
 
         assert(header.leaf && "Inserting a new frame in a non leaf node");
@@ -83,7 +89,7 @@ struct RNode4
             {
                 ((RFrame *)children[i])->page_id = page_id;
                 ((RFrame *)children[i])->header = bheader;
-                return;
+                return 0;
             }
         }
 
@@ -95,6 +101,7 @@ struct RNode4
         keys[header.current_size] = key;
         children[header.current_size] = frame;
         header.current_size++;
+        return 16;
     }
 
     /**
@@ -117,20 +124,50 @@ struct RNode4
     /**
      * @brief deletes an element from the tree
      * @brief the key that corresponds to the child that should be deleted
+     * @return the number of bytes freed
      */
-    void delete_reference(uint8_t key)
+    int delete_reference(uint8_t key)
     {
+        int deleted_bytes = 0;
         for (int i = 0; i < header.current_size; i++)
         {
             if (keys[i] == key)
             {
+                if (header.leaf)
+                {
+                    deleted_bytes = 16;
+                }
+                else
+                {
+                    switch (((RHeader *)children[i])->type)
+                    {
+                    case 4:
+                        deleted_bytes = size_4;
+                        break;
+                    case 16:
+                        deleted_bytes = size_16;
+                        break;
+                    case 48:
+                        deleted_bytes = size_48;
+                        break;
+                    case 256:
+                        deleted_bytes = size_256;
+                        break;
+                    default:
+                        break;
+                    }
+                }
                 free(children[i]);
-                keys[i] = keys[header.current_size - 1];
-                children[i] = children[header.current_size - 1];
+                if (i != header.current_size - 1)
+                {
+                    keys[i] = keys[header.current_size - 1];
+                    children[i] = children[header.current_size - 1];
+                }
                 header.current_size--;
-                return;
+                return deleted_bytes;
             }
         }
+        return deleted_bytes;
     }
 
     /**
@@ -190,7 +227,7 @@ struct RNode16
      * @param key the key which is equal for each child until depth
      * @param current_size how many elements there are in the node currently
      */
-    RNode16(bool leaf, uint8_t depth, int64_t key, uint16_t current_size) : header{16, leaf, depth, key, current_size}
+    RNode16(bool leaf, uint8_t depth, uint64_t key, uint16_t current_size) : header{16, leaf, depth, key, current_size}
     {
     }
 
@@ -201,7 +238,7 @@ struct RNode16
      */
     void insert(uint8_t key, void *child)
     {
-
+        assert(child && "Trying to insert null pointer."); 
         for (int i = 0; i < header.current_size; i++)
         {
             if (keys[i] == key)
@@ -223,8 +260,9 @@ struct RNode16
      * @param key the key which identifies the value
      * @param page_id the page_id where the information can be found
      * @param bheader the bplus tree node where the value can be found
+     * @return the number of bytes allocated
      */
-    void insert(uint8_t key, uint64_t page_id, BHeader *bheader)
+    int insert(uint8_t key, uint64_t page_id, BHeader *bheader)
     {
 
         assert(header.leaf && "Inserting a new frame in a non leaf node");
@@ -235,7 +273,7 @@ struct RNode16
             {
                 ((RFrame *)children[i])->page_id = page_id;
                 ((RFrame *)children[i])->header = bheader;
-                return;
+                return 0;
             }
         }
         assert(header.current_size < 16 && "Trying to insert into full node");
@@ -246,6 +284,7 @@ struct RNode16
         keys[header.current_size] = key;
         children[header.current_size] = frame;
         header.current_size++;
+        return 16;
     }
 
     /**
@@ -268,13 +307,39 @@ struct RNode16
     /**
      * @brief deletes an element from the tree
      * @brief the key that corresponds to the child that should be deleted
+     * @return the number of freed bytes
      */
-    void delete_reference(uint8_t key)
+    int delete_reference(uint8_t key)
     {
+        int deleted_bytes = 0;
         for (int i = 0; i < header.current_size; i++)
         {
             if (keys[i] == key)
             {
+                if (header.leaf)
+                {
+                    deleted_bytes = 16;
+                }
+                else
+                {
+                    switch (((RHeader *)children[i])->type)
+                    {
+                    case 4:
+                        deleted_bytes = size_4;
+                        break;
+                    case 16:
+                        deleted_bytes = size_16;
+                        break;
+                    case 48:
+                        deleted_bytes = size_48;
+                        break;
+                    case 256:
+                        deleted_bytes = size_256;
+                        break;
+                    default:
+                        break;
+                    }
+                }
                 free(children[i]);
                 if (i != header.current_size - 1)
                 {
@@ -282,9 +347,10 @@ struct RNode16
                     children[i] = children[header.current_size - 1];
                 }
                 header.current_size--;
-                return;
+                return deleted_bytes;
             }
         }
+        return deleted_bytes;
     }
 
     /**
@@ -325,7 +391,7 @@ struct RNode48
     /// 8 byte part of the key, 255 means not filled
     uint8_t keys[256];
     /// Pointer to the children
-    void *children[48];
+    void *children[48] = {nullptr};
 
     /**
      * @brief Constructor
@@ -344,7 +410,7 @@ struct RNode48
      * @param key the key which is equal for each child until depth
      * @param current_size how many elements there are in the node currently
      */
-    RNode48(bool leaf, uint8_t depth, int64_t key, uint16_t current_size) : header{48, leaf, depth, key, current_size}
+    RNode48(bool leaf, uint8_t depth, uint64_t key, uint16_t current_size) : header{48, leaf, depth, key, current_size}
     {
         // need to fill the node because 255 cant be initialized into every element
         std::fill_n(keys, 256, 255);
@@ -357,7 +423,7 @@ struct RNode48
      */
     void insert(uint8_t key, void *child)
     {
-
+        assert(child && "Trying to insert null pointer."); 
         if (keys[key] != 255)
         {
             children[keys[key]] = child;
@@ -365,9 +431,16 @@ struct RNode48
         else
         {
             assert(header.current_size < 48 && "Trying to insert into full node");
-            keys[key] = header.current_size;
-            children[header.current_size] = child;
-            header.current_size++;
+            for (int i = 0; i < 48; i++)
+            {
+                if (!children[i])
+                {
+                    children[i] = child;
+                    keys[key] = i;
+                    header.current_size++;
+                    return;
+                }
+            }
         }
     }
 
@@ -376,25 +449,35 @@ struct RNode48
      * @param key the key which identifies the value
      * @param page_id the page_id where the information can be found
      * @param bheader the bplus tree node where the value can be found
+     * @return the number of bytes allocated
      */
-    void insert(uint8_t key, uint64_t page_id, BHeader *bheader)
+    int insert(uint8_t key, uint64_t page_id, BHeader *bheader)
     {
         assert(header.leaf && "Inserting a new frame in a non leaf node");
 
         if (keys[key] == 255)
         {
             assert(header.current_size < 48 && "Trying to insert into full node");
-            RFrame *frame = (RFrame *)malloc(16);
-            frame->page_id = page_id;
-            frame->header = bheader;
-            children[header.current_size] = frame;
-            keys[key] = header.current_size;
-            header.current_size++;
+            for (int i = 0; i < 48; i++)
+            {
+                if (!children[i])
+                {
+                    RFrame *frame = (RFrame *)malloc(16);
+                    frame->page_id = page_id;
+                    frame->header = bheader;
+                    children[i] = frame;
+                    keys[key] = i;
+                    header.current_size++;
+                    return 16;
+                }
+            }
+            return 0;
         }
         else
         {
             ((RFrame *)children[keys[key]])->page_id = page_id;
             ((RFrame *)children[keys[key]])->header = bheader;
+            return 0;
         }
     }
 
@@ -414,16 +497,44 @@ struct RNode48
     /**
      * @brief deletes an element from the tree
      * @brief the key that corresponds to the child that should be deleted
+     * @return the number of freed bytes
      */
-    void delete_reference(uint8_t key)
+    int delete_reference(uint8_t key)
     {
+        int deleted_bytes = 0;
         if (keys[key] != 255)
         {
+            if (header.leaf)
+            {
+                deleted_bytes = 16;
+            }
+            else
+            {
+                switch (((RHeader *)children[keys[key]])->type)
+                {
+                case 4:
+                    deleted_bytes = size_4;
+                    break;
+                case 16:
+                    deleted_bytes = size_16;
+                    break;
+                case 48:
+                    deleted_bytes = size_48;
+                    break;
+                case 256:
+                    deleted_bytes = size_256;
+                    break;
+                default:
+                    break;
+                }
+            }
             free(children[keys[key]]);
+            children[keys[key]] = nullptr;
             keys[key] = 255;
             header.current_size--;
-            return;
+            return deleted_bytes;
         }
+        return deleted_bytes;
     }
 
     /**
@@ -484,7 +595,7 @@ struct RNode256
      * @param key the key which is equal for each child until depth
      * @param current_size how many elements there are in the node currently
      */
-    RNode256(bool leaf, uint8_t depth, int64_t key, uint16_t current_size) : header{256, leaf, depth, key, current_size}
+    RNode256(bool leaf, uint8_t depth, uint64_t key, uint16_t current_size) : header{256, leaf, depth, key, current_size}
     {
     }
 
@@ -495,7 +606,7 @@ struct RNode256
      */
     void insert(uint8_t key, void *child)
     {
-
+        assert(child && "Trying to insert null pointer."); 
         if (children[key] == nullptr)
             header.current_size++;
 
@@ -507,8 +618,9 @@ struct RNode256
      * @param key the key which identifies the value
      * @param page_id the page_id where the information can be found
      * @param bheader the bplus tree node where the value can be found
+     * @return the number of bytes allocated
      */
-    void insert(uint8_t key, uint64_t page_id, BHeader *bheader)
+    int insert(uint8_t key, uint64_t page_id, BHeader *bheader)
     {
         assert(header.leaf && "Inserting a new frame in a non leaf node");
 
@@ -519,11 +631,13 @@ struct RNode256
             frame->page_id = page_id;
             frame->header = bheader;
             children[key] = frame;
+            return 16;
         }
         else
         {
             ((RFrame *)children[key])->page_id = page_id;
             ((RFrame *)children[key])->header = bheader;
+            return 0;
         }
     }
 
@@ -540,16 +654,43 @@ struct RNode256
     /**
      * @brief deletes an element from the tree
      * @brief the key that corresponds to the child that should be deleted
+     * @return the number of freed bytes
      */
-    void delete_reference(uint8_t key)
+    int delete_reference(uint8_t key)
     {
+        int deleted_bytes = 0;
         if (children[key])
         {
+            if (header.leaf)
+            {
+                deleted_bytes = 16;
+            }
+            else
+            {
+                switch (((RHeader *)children[key])->type)
+                {
+                case 4:
+                    deleted_bytes = size_4;
+                    break;
+                case 16:
+                    deleted_bytes = size_16;
+                    break;
+                case 48:
+                    deleted_bytes = size_48;
+                    break;
+                case 256:
+                    deleted_bytes = size_256;
+                    break;
+                default:
+                    break;
+                }
+            }
             free(children[key]);
             children[key] = nullptr;
             header.current_size--;
-            return;
+            return deleted_bytes;
         }
+        return deleted_bytes;
     }
 
     /**
@@ -582,6 +723,6 @@ struct RNode256
      */
     bool can_insert()
     {
-        return header.current_size < 256;
+        return true;
     }
 };

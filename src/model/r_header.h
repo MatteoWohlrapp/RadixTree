@@ -26,7 +26,7 @@ struct RHeader
     uint8_t depth;
 
     /// partial key that gives info about the key in the compressed path
-    int64_t key;
+    uint64_t key;
 
     /// how many elements are in the node
     uint16_t current_size = 0;
@@ -49,7 +49,7 @@ struct RHeader
      * @param key_arg The key of the node 
      * @param current_size_arg The current size of the node
      */
-    RHeader(uint16_t type_arg, bool leaf_arg, uint8_t depth_arg, int64_t key_arg, uint16_t current_size_arg) : type(type_arg), leaf(leaf_arg), depth(depth_arg), key(key_arg), current_size(current_size_arg){};
+    RHeader(uint16_t type_arg, bool leaf_arg, uint8_t depth_arg, uint64_t key_arg, uint16_t current_size_arg) : type(type_arg), leaf(leaf_arg), depth(depth_arg), key(key_arg), current_size(current_size_arg){};
 
     /**
      * @brief Constructor that does not change anything, can be used when correct values are already in the right memory position

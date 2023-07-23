@@ -15,7 +15,7 @@
 class RunConfigTwo : public RunConfig
 {
 public:
-    RunConfigTwo(bool cache = false) : RunConfig(cache) {}
+    RunConfigTwo(int buffer_size_arg, bool cache_arg, int radix_tree_size_arg) : RunConfig(buffer_size_arg, cache_arg, radix_tree_size_arg) {}
     
     /**
      * @brief Execute a specific run with different operations on the database
