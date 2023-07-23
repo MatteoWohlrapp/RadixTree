@@ -116,15 +116,13 @@ struct BInnerNode
     }
 
     /**
-     * @brief Ineserting a key and child pair: the child id will be deleted on the right side of the key
+     * @brief Deleting a key and child pair
      * @param key The key to delete
      */
     void delete_value(int64_t key)
     {
         // we always delete key and the right child because the new elements will be in the left node from the key
         int index = binary_search(key);
-
-        assert((keys[index] == key) && "Key to delete not found");
 
         if (keys[index] == key)
         {
@@ -289,8 +287,6 @@ struct BOuterNode
     {
         int index = binary_search(key);
 
-        assert((keys[index] == key) && "Key to update not found");
-
         if (keys[index] == key)
         {
             values[index] = value;
@@ -304,8 +300,6 @@ struct BOuterNode
     void delete_value(int64_t key)
     {
         int index = binary_search(key);
-
-        assert((keys[index] == key) && "Key to delete not found");
 
         if (keys[index] == key)
         {

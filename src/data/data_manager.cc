@@ -64,9 +64,9 @@ void DataManager::update(int64_t key, int64_t value)
     bplus_tree->update(key, value);
 }
 
-bool DataManager::validate()
+bool DataManager::validate(int num_elements)
 {
-    std::cout << "Validating b+ tree: " << true << std::endl;
+    std::cout << "Validating b+ tree: " << bplus_tree->validate(num_elements) << std::endl;
     if (radix_tree)
     {   
         bool validated = radix_tree->valdidate(); 

@@ -253,7 +253,7 @@ private:
 
         std::cout << "Checking for content: " << faulty_records << " out of " << records_vector.size() << " are faulty" << std::endl;
 
-        data_manager.validate();
+        data_manager.validate(records_vector.size() - delete_operations.size());
         std::cout << "\n";
     }
 

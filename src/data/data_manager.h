@@ -82,7 +82,8 @@ public:
 
     /**
      * @brief Checks if the b+ tree and the radix tree fullfill all invariants
+     * @param num_elements The number of elements that should be in the tree
      * @return if trees are valid
     */
-    bool validate(); 
+    bool validate(int num_elements); 
 };
