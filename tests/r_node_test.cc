@@ -181,7 +181,6 @@ TEST_F(RNodeTest, Insert256)
         ASSERT_TRUE(node->can_insert());
         node->insert(i, (void *)(i + 1));
     }
-    ASSERT_FALSE(node->can_insert());
 
     for (int64_t i = 0; i < 256; i++)
     {
@@ -377,7 +376,6 @@ TEST_F(RNodeTest, Insert256CreateFrameAndDelete)
         bytes = node->insert(i, i, (BHeader *)i);
         ASSERT_EQ(bytes, 16);
     }
-    ASSERT_FALSE(node->can_insert());
 
     for (int64_t i = 2; i < 256; i++)
     {

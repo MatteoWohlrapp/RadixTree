@@ -1342,7 +1342,7 @@ TEST_F(BPlusTreeTest, ScanWithSeed42)
     int sum = 0;
     for (int i = 0; i < 70; i++)
     {
-        sum += values[i];
+        sum ^= values[i];
     }
 
     ASSERT_EQ(bplus_tree->scan(values[0], 70), sum);

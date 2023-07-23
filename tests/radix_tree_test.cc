@@ -57,257 +57,19 @@ protected:
         return radix_tree->longest_common_prefix(key_a, key_b);
     }
 
-    bool is_compressed(RHeader *header)
+    bool is_compressed()
     {
-        if (!header)
-            return true;
-        if (header->leaf)
-            return true;
-        else
-        {
-            if (header->current_size <= 1)
-                return false;
-        }
-
-        switch (header->type)
-        {
-        case 4:
-        {
-            RNode4 *node = (RNode4 *)header;
-            for (int i = 0; i < header->current_size; i++)
-            {
-                RHeader *child = (RHeader *)node->children[i];
-                if (!child->leaf)
-                {
-                    if (child->current_size <= 1 || !is_compressed(child))
-                        return false;
-                }
-            }
-        }
-        break;
-        case 16:
-        {
-            RNode16 *node = (RNode16 *)header;
-            for (int i = 0; i < header->current_size; i++)
-            {
-                RHeader *child = (RHeader *)node->children[i];
-                if (!child->leaf)
-                {
-                    if (child->current_size <= 1 || !is_compressed(child))
-                        return false;
-                }
-            }
-        }
-        break;
-        case 48:
-        {
-            RNode48 *node = (RNode48 *)header;
-            for (int i = 0; i < 256; i++)
-            {
-                if (node->keys[i] != 255)
-                {
-                    RHeader *child = (RHeader *)node->children[node->keys[i]];
-                    if (!child->leaf)
-                    {
-                        if (child->current_size <= 1 || !is_compressed(child))
-                            return false;
-                    }
-                }
-            }
-        }
-        break;
-        case 256:
-        {
-            RNode256 *node = (RNode256 *)header;
-            for (int i = 0; i < 256; i++)
-            {
-                if (node->children[i])
-                {
-                    RHeader *child = (RHeader *)node->children[i];
-                    if (!child->leaf)
-                    {
-                        if (child->current_size <= 1 || !is_compressed(child))
-                            return false;
-                    }
-                }
-            }
-        }
-        break;
-        default:
-            break;
-        }
-        return true;
+        return radix_tree->is_compressed(radix_tree->root); 
     }
 
-    bool leaf_depth_correct(RHeader *header)
+    bool leaf_depth_correct()
     {
-        if (!header)
-            return true;
-        if (header->leaf)
-            return header->depth == 8;
-        else
-        {
-            if (header->depth == 8)
-                return false;
-        }
-
-        switch (header->type)
-        {
-        case 4:
-        {
-            RNode4 *node = (RNode4 *)header;
-            for (int i = 0; i < header->current_size; i++)
-            {
-                RHeader *child = (RHeader *)node->children[i];
-                if (!child->leaf)
-                {
-                    if (!leaf_depth_correct(child))
-                        return false;
-                }
-                else
-                {
-                    if (child->depth != 8)
-                        return false;
-                }
-            }
-        }
-        break;
-        case 16:
-        {
-            RNode16 *node = (RNode16 *)header;
-            for (int i = 0; i < header->current_size; i++)
-            {
-                RHeader *child = (RHeader *)node->children[i];
-                if (!child->leaf)
-                {
-                    if (!leaf_depth_correct(child))
-                        return false;
-                }
-                else
-                {
-                    if (child->depth != 8)
-                        return false;
-                }
-            }
-        }
-        break;
-        case 48:
-        {
-            RNode48 *node = (RNode48 *)header;
-            for (int i = 0; i < 256; i++)
-            {
-                if (node->keys[i] != 255)
-                {
-                    RHeader *child = (RHeader *)node->children[node->keys[i]];
-                    if (!child->leaf)
-                    {
-                        if (!leaf_depth_correct(child))
-                            return false;
-                    }
-                    else
-                    {
-                        if (child->depth != 8)
-                            return false;
-                    }
-                }
-            }
-        }
-        break;
-        case 256:
-        {
-            RNode256 *node = (RNode256 *)header;
-            for (int i = 0; i < 256; i++)
-            {
-                if (node->children[i])
-                {
-                    RHeader *child = (RHeader *)node->children[i];
-                    if (!child->leaf)
-                    {
-                        if (!leaf_depth_correct(child))
-                            return false;
-                    }
-                    else
-                    {
-                        if (child->depth != 8)
-                            return false;
-                    }
-                }
-            }
-        }
-        break;
-        default:
-            break;
-        }
-        return true;
+       return radix_tree->leaf_depth_correct(radix_tree->root);
     }
 
-    bool key_matches(RHeader *header)
+    bool key_matches()
     {
-        if (!header)
-            return true;
-
-        if (header->leaf)
-            return true;
-
-        switch (header->type)
-        {
-        case 4:
-        {
-            RNode4 *node = (RNode4 *)header;
-            for (int i = 0; i < header->current_size; i++)
-            {
-                RHeader *child = (RHeader *)node->children[i];
-                if (header->depth - 1 > radix_tree->longest_common_prefix(header->key, child->key) || !key_matches(child))
-                {
-                    logger->debug("Not matching for keys: {}, and {}; depth {}, lcp {}", header->key, child->key, header->depth, radix_tree->longest_common_prefix(header->key, child->key));
-                    return false;
-                }
-            }
-        }
-        break;
-        case 16:
-        {
-            RNode16 *node = (RNode16 *)header;
-            for (int i = 0; i < header->current_size; i++)
-            {
-                RHeader *child = (RHeader *)node->children[i];
-                if (header->depth - 1 > radix_tree->longest_common_prefix(header->key, child->key) || !key_matches(child))
-                    return false;
-            }
-        }
-        break;
-        case 48:
-        {
-            RNode48 *node = (RNode48 *)header;
-            for (int i = 0; i < 256; i++)
-            {
-                if (node->keys[i] != 255)
-                {
-                    RHeader *child = (RHeader *)node->children[node->keys[i]];
-                    if (header->depth - 1 > radix_tree->longest_common_prefix(header->key, child->key) || !key_matches(child))
-                        return false;
-                }
-            }
-        }
-        break;
-        case 256:
-        {
-            RNode256 *node = (RNode256 *)header;
-            for (int i = 0; i < 256; i++)
-            {
-                if (node->children[i])
-                {
-                    RHeader *child = (RHeader *)node->children[i];
-                    if (header->depth - 1 > radix_tree->longest_common_prefix(header->key, child->key) || !key_matches(child))
-                        return false;
-                }
-            }
-        }
-        break;
-        default:
-            break;
-        }
-        return true;
+        return radix_tree->key_matches(radix_tree->root); 
     }
 };
 
@@ -345,20 +107,20 @@ TEST_F(RadixTreeTest, IsCompressed)
     radix_tree->insert(281474976710656, 0, 0);
     radix_tree->insert(72057594037927936, 0, 0);
 
-    ASSERT_TRUE(is_compressed(get_root()));
+    ASSERT_TRUE(is_compressed());
 
     get_root()->current_size = 1;
-    ASSERT_FALSE(is_compressed(get_root()));
+    ASSERT_FALSE(is_compressed());
 
     get_root()->current_size = 2;
-    ASSERT_TRUE(is_compressed(get_root()));
+    ASSERT_TRUE(is_compressed());
 
     RNode4 *node = (RNode4 *)((RNode4 *)get_root())->children[0];
     node = (RNode4 *)node->children[0];
     node = (RNode4 *)node->children[0];
     node = (RNode4 *)node->children[0];
     node->header.current_size = 1;
-    ASSERT_FALSE(is_compressed(get_root()));
+    ASSERT_FALSE(is_compressed());
 }
 
 TEST_F(RadixTreeTest, LeafDepthCorrect)
@@ -372,27 +134,27 @@ TEST_F(RadixTreeTest, LeafDepthCorrect)
     radix_tree->insert(281474976710656, 0, 0);
     radix_tree->insert(72057594037927936, 0, 0);
 
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
+    ASSERT_TRUE(leaf_depth_correct());
 
     RNode4 *node = (RNode4 *)((RNode4 *)get_root())->children[1];
     node->header.depth = 7;
-    ASSERT_FALSE(leaf_depth_correct(get_root()));
+    ASSERT_FALSE(leaf_depth_correct());
 
     node->header.depth = 8;
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
+    ASSERT_TRUE(leaf_depth_correct());
 
     node = (RNode4 *)((RNode4 *)get_root())->children[0];
     node = (RNode4 *)node->children[0];
     node = (RNode4 *)node->children[0];
 
     node->header.leaf = true;
-    ASSERT_FALSE(leaf_depth_correct(get_root()));
+    ASSERT_FALSE(leaf_depth_correct());
 
     node->header.leaf = false;
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
+    ASSERT_TRUE(leaf_depth_correct());
 
     node->header.depth = 8;
-    ASSERT_FALSE(leaf_depth_correct(get_root()));
+    ASSERT_FALSE(leaf_depth_correct());
 }
 
 TEST_F(RadixTreeTest, KeyMatches)
@@ -406,14 +168,14 @@ TEST_F(RadixTreeTest, KeyMatches)
     radix_tree->insert(281474976710656, 0, 0);
     radix_tree->insert(72057594037927936, 0, 0);
 
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(key_matches());
 
     RNode4 *node = (RNode4 *)((RNode4 *)get_root())->children[0];
     node = (RNode4 *)node->children[0];
     node = (RNode4 *)node->children[0];
     node = (RNode4 *)node->children[0];
     node->header.key = 72057594037927936;
-    ASSERT_FALSE(key_matches(get_root()));
+    ASSERT_FALSE(key_matches());
 }
 
 // Isolated testing of a few use cases that I identified as correct during manual testing
@@ -429,9 +191,9 @@ TEST_F(RadixTreeTest, InsertLazyLeaf)
     radix_tree->insert(72057594037927936, 0, 0);
     radix_tree->insert(72057594054705152, 0, 0);
 
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 }
 
 TEST_F(RadixTreeTest, InsertResizeNonLazyLeaf)
@@ -449,9 +211,9 @@ TEST_F(RadixTreeTest, InsertResizeNonLazyLeaf)
     radix_tree->insert(4, 0, 0);
     radix_tree->insert(5, 0, 0);
 
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 }
 
 TEST_F(RadixTreeTest, InsertResizeLazyLeaf)
@@ -469,9 +231,9 @@ TEST_F(RadixTreeTest, InsertResizeLazyLeaf)
     radix_tree->insert(72057594037927939, 0, 0);
     radix_tree->insert(72057594037927940, 0, 0);
 
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 }
 
 TEST_F(RadixTreeTest, InsertResizeInnerNode)
@@ -488,9 +250,9 @@ TEST_F(RadixTreeTest, InsertResizeInnerNode)
     radix_tree->insert(12884901888, 0, 0);
     radix_tree->insert(17179869184, 0, 0);
 
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 }
 
 TEST_F(RadixTreeTest, InsertResizeRoot)
@@ -507,9 +269,9 @@ TEST_F(RadixTreeTest, InsertResizeRoot)
     radix_tree->insert(216172782113783808, 0, 0);
     radix_tree->insert(288230376151711744, 0, 0);
 
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 }
 
 // Testing get value with use cases identified above
@@ -537,9 +299,9 @@ TEST_F(RadixTreeTest, InsertLazyLeafBPlusTree)
     ASSERT_EQ(radix_tree->get_value(72057594037927936), 72057594037927936);
     ASSERT_EQ(radix_tree->get_value(72057594054705152), 72057594054705152);
 
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
     logger->info("InsertLazyLeafBPlusTree ends");
 }
 
@@ -572,9 +334,9 @@ TEST_F(RadixTreeTest, InsertResizeNonLazyLeafBPlusTree)
     ASSERT_EQ(radix_tree->get_value(4), 4);
     ASSERT_EQ(radix_tree->get_value(5), 5);
 
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 }
 
 TEST_F(RadixTreeTest, InsertResizeLazyLeafBPlusTree)
@@ -606,9 +368,9 @@ TEST_F(RadixTreeTest, InsertResizeLazyLeafBPlusTree)
     ASSERT_EQ(radix_tree->get_value(72057594037927939), 72057594037927939);
     ASSERT_EQ(radix_tree->get_value(72057594037927940), 72057594037927940);
 
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 }
 
 TEST_F(RadixTreeTest, InsertResizeInnerNodeBPlusTree)
@@ -638,9 +400,9 @@ TEST_F(RadixTreeTest, InsertResizeInnerNodeBPlusTree)
     ASSERT_EQ(radix_tree->get_value(12884901888), 12884901888);
     ASSERT_EQ(radix_tree->get_value(17179869184), 17179869184);
 
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 }
 
 TEST_F(RadixTreeTest, InsertResizeRootBPlusTree)
@@ -670,9 +432,9 @@ TEST_F(RadixTreeTest, InsertResizeRootBPlusTree)
     ASSERT_EQ(radix_tree->get_value(216172782113783808), 216172782113783808);
     ASSERT_EQ(radix_tree->get_value(288230376151711744), 288230376151711744);
 
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 }
 
 // Testing insert and get value with a random tests, first with seed, then completely random
@@ -703,9 +465,9 @@ TEST_F(RadixTreeTest, InsertWithSeed42)
     {
         logger->debug("i: {}, value: {}", i, values[i]);
         ASSERT_EQ(radix_tree->get_value(values[i]), values[i]);
-        ASSERT_TRUE(is_compressed(get_root()));
-        ASSERT_TRUE(leaf_depth_correct(get_root()));
-        ASSERT_TRUE(key_matches(get_root()));
+        ASSERT_TRUE(is_compressed());
+        ASSERT_TRUE(leaf_depth_correct());
+        ASSERT_TRUE(key_matches());
     }
 
     // testing if values are not in there
@@ -718,9 +480,9 @@ TEST_F(RadixTreeTest, InsertWithSeed42)
             value = dist(generator);
         }
         ASSERT_EQ(radix_tree->get_value(value), INT64_MIN);
-        ASSERT_TRUE(is_compressed(get_root()));
-        ASSERT_TRUE(leaf_depth_correct(get_root()));
-        ASSERT_TRUE(key_matches(get_root()));
+        ASSERT_TRUE(is_compressed());
+        ASSERT_TRUE(leaf_depth_correct());
+        ASSERT_TRUE(key_matches());
     }
 }
 
@@ -751,9 +513,9 @@ TEST_F(RadixTreeTest, InsertRandom)
     {
         logger->debug("i: {}, value: {}", i, values[i]);
         ASSERT_EQ(radix_tree->get_value(values[i]), values[i]);
-        ASSERT_TRUE(is_compressed(get_root()));
-        ASSERT_TRUE(leaf_depth_correct(get_root()));
-        ASSERT_TRUE(key_matches(get_root()));
+        ASSERT_TRUE(is_compressed());
+        ASSERT_TRUE(leaf_depth_correct());
+        ASSERT_TRUE(key_matches());
     }
 
     // testing if values are not in there
@@ -766,9 +528,9 @@ TEST_F(RadixTreeTest, InsertRandom)
             value = dist(rd);
         }
         ASSERT_EQ(radix_tree->get_value(value), INT64_MIN);
-        ASSERT_TRUE(is_compressed(get_root()));
-        ASSERT_TRUE(leaf_depth_correct(get_root()));
-        ASSERT_TRUE(key_matches(get_root()));
+        ASSERT_TRUE(is_compressed());
+        ASSERT_TRUE(leaf_depth_correct());
+        ASSERT_TRUE(key_matches());
     }
 }
 
@@ -799,9 +561,9 @@ TEST_F(RadixTreeTest, DeleteWithoutResizing)
     ASSERT_EQ(radix_tree->get_value(281474976710656), 281474976710656);
     ASSERT_EQ(radix_tree->get_value(72057594037927936), 72057594037927936);
 
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 }
 
 TEST_F(RadixTreeTest, DeleteWithResizing)
@@ -840,9 +602,9 @@ TEST_F(RadixTreeTest, DeleteWithResizing)
     ASSERT_EQ(radix_tree->get_value(281474976710656), 281474976710656);
     ASSERT_EQ(radix_tree->get_value(72057594037927936), 72057594037927936);
 
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 }
 
 TEST_F(RadixTreeTest, DeleteWithRemovalOfNode)
@@ -885,9 +647,9 @@ TEST_F(RadixTreeTest, DeleteWithRemovalOfNode)
     ASSERT_EQ(radix_tree->get_value(281474976710656), 281474976710656);
     ASSERT_EQ(radix_tree->get_value(72057594037927936), 72057594037927936);
 
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 }
 
 TEST_F(RadixTreeTest, DeleteWithRemovalOfNodeFurtherUpTheTree)
@@ -930,9 +692,9 @@ TEST_F(RadixTreeTest, DeleteWithRemovalOfNodeFurtherUpTheTree)
     ASSERT_EQ(radix_tree->get_value(281474976710656), 281474976710656);
     ASSERT_EQ(radix_tree->get_value(72057594037927936), 72057594037927936);
 
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 }
 
 TEST_F(RadixTreeTest, DeleteWithDecreaseAndDeleteOfInnerNode)
@@ -975,9 +737,9 @@ TEST_F(RadixTreeTest, DeleteWithDecreaseAndDeleteOfInnerNode)
     ASSERT_EQ(radix_tree->get_value(281474976710656), 281474976710656);
     ASSERT_EQ(radix_tree->get_value(72057594037927936), 72057594037927936);
 
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 }
 
 TEST_F(RadixTreeTest, DeleteFromLeafRoot)
@@ -1004,9 +766,9 @@ TEST_F(RadixTreeTest, DeleteFromLeafRoot)
     ASSERT_EQ(radix_tree->get_value(2), INT64_MIN);
     ASSERT_EQ(radix_tree->get_value(3), INT64_MIN);
 
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 
     bplus_tree->delete_value(4);
     ASSERT_EQ(radix_tree->get_value(4), INT64_MIN);
@@ -1037,9 +799,9 @@ TEST_F(RadixTreeTest, DeleteWithDepthTwo)
     ASSERT_EQ(radix_tree->get_value(2), INT64_MIN);
     ASSERT_EQ(radix_tree->get_value(3), INT64_MIN);
 
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 
     bplus_tree->delete_value(4);
     ASSERT_EQ(radix_tree->get_value(4), INT64_MIN);
@@ -1072,9 +834,9 @@ TEST_F(RadixTreeTest, InsertAndDeleteWithSeed42)
     {
         ASSERT_EQ(radix_tree->get_value(values[i]), values[i]);
     }
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 
     // delete 500 elements
     for (int i = 0; i < 500; i++)
@@ -1088,9 +850,9 @@ TEST_F(RadixTreeTest, InsertAndDeleteWithSeed42)
     {
         ASSERT_EQ(radix_tree->get_value(values[i]), INT64_MIN);
     }
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 
     // insert elements again
     for (int i = 0; i < 500; i++)
@@ -1112,9 +874,9 @@ TEST_F(RadixTreeTest, InsertAndDeleteWithSeed42)
     {
         ASSERT_EQ(radix_tree->get_value(values[i]), values[i]);
     }
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 
     // delete all
     for (int i = 0; i < 1000; i++)
@@ -1123,9 +885,9 @@ TEST_F(RadixTreeTest, InsertAndDeleteWithSeed42)
         unique_values.erase(value);
         bplus_tree->delete_value(value);
 
-        ASSERT_TRUE(is_compressed(get_root()));
-        ASSERT_TRUE(leaf_depth_correct(get_root()));
-        ASSERT_TRUE(key_matches(get_root()));
+        ASSERT_TRUE(is_compressed());
+        ASSERT_TRUE(leaf_depth_correct());
+        ASSERT_TRUE(key_matches());
     }
 
     ASSERT_FALSE(get_root());
@@ -1157,9 +919,9 @@ TEST_F(RadixTreeTest, InsertAndDeleteRandom)
     {
         ASSERT_EQ(radix_tree->get_value(values[i]), values[i]);
     }
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 
     // delete 500 elements
     for (int i = 0; i < 500; i++)
@@ -1173,9 +935,9 @@ TEST_F(RadixTreeTest, InsertAndDeleteRandom)
     {
         ASSERT_EQ(radix_tree->get_value(values[i]), INT64_MIN);
     }
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 
     // insert elements again
     for (int i = 0; i < 500; i++)
@@ -1197,9 +959,9 @@ TEST_F(RadixTreeTest, InsertAndDeleteRandom)
     {
         ASSERT_EQ(radix_tree->get_value(values[i]), values[i]);
     }
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 
     // delete all
     for (int i = 0; i < 1000; i++)
@@ -1208,9 +970,9 @@ TEST_F(RadixTreeTest, InsertAndDeleteRandom)
         unique_values.erase(value);
         bplus_tree->delete_value(value);
 
-        ASSERT_TRUE(is_compressed(get_root()));
-        ASSERT_TRUE(leaf_depth_correct(get_root()));
-        ASSERT_TRUE(key_matches(get_root()));
+        ASSERT_TRUE(is_compressed());
+        ASSERT_TRUE(leaf_depth_correct());
+        ASSERT_TRUE(key_matches());
     }
 
     ASSERT_FALSE(get_root());
@@ -1238,9 +1000,9 @@ TEST_F(RadixTreeTest, GetPage)
     ASSERT_EQ(radix_tree->get_page(281474976710656), header);
     ASSERT_EQ(radix_tree->get_page(72057594037927936), header);
 
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 }
 
 TEST_F(RadixTreeTest, UpdateRangeWithSeed42)
@@ -1280,9 +1042,9 @@ TEST_F(RadixTreeTest, UpdateRangeWithSeed42)
         else
             ASSERT_EQ(radix_tree->get_page(values[i]), header);
     }
-    ASSERT_TRUE(is_compressed(get_root()));
-    ASSERT_TRUE(leaf_depth_correct(get_root()));
-    ASSERT_TRUE(key_matches(get_root()));
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 }
 
 TEST_F(RadixTreeTest, Size)

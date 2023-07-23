@@ -16,7 +16,6 @@
 class Workload
 {
 private:
-    int buffer_size;
     int record_count;
     int operation_count;
     std::string distribution;
@@ -26,8 +25,6 @@ private:
     double update_proportion;
     double scan_proportion;
     double delete_proportion;
-    bool cache;
-    int radix_tree_size;
     bool measure_per_operation;
     int max_scan_range = 100;
 
@@ -335,7 +332,7 @@ public:
      * @param radix_tree_size_arg The size of the cache
      * @param measure_per_operation Decides about the type of measurements
      */
-    Workload(int buffer_size_arg, int record_count_arg, int operation_count_arg, std::string distribution_arg, double coefficient_arg, double insert_proportion_arg, double read_proportion_arg, double update_proportion_arg, double scan_proportion_arg, double delete_proportion_arg, bool cache_arg, int radix_tree_size_arg, bool measure_per_operation_arg) : buffer_size(buffer_size_arg), record_count(record_count_arg), operation_count(operation_count_arg), distribution(distribution_arg), coefficient(coefficient_arg), insert_proportion(insert_proportion_arg), read_proportion(read_proportion_arg), update_proportion(update_proportion_arg), scan_proportion(scan_proportion_arg), delete_proportion(delete_proportion_arg), cache(cache_arg), radix_tree_size(radix_tree_size_arg), measure_per_operation(measure_per_operation_arg), data_manager(buffer_size_arg, cache_arg, radix_tree_size_arg)
+    Workload(int buffer_size_arg, int record_count_arg, int operation_count_arg, std::string distribution_arg, double coefficient_arg, double insert_proportion_arg, double read_proportion_arg, double update_proportion_arg, double scan_proportion_arg, double delete_proportion_arg, bool cache_arg, int radix_tree_size_arg, bool measure_per_operation_arg) : record_count(record_count_arg), operation_count(operation_count_arg), distribution(distribution_arg), coefficient(coefficient_arg), insert_proportion(insert_proportion_arg), read_proportion(read_proportion_arg), update_proportion(update_proportion_arg), scan_proportion(scan_proportion_arg), delete_proportion(delete_proportion_arg), measure_per_operation(measure_per_operation_arg), data_manager(buffer_size_arg, cache_arg, radix_tree_size_arg)
     {
         logger = spdlog::get("logger");
         times = std::vector<std::vector<double>>(NUM_OPERATIONS, std::vector<double>(0, 0.0));

@@ -67,6 +67,10 @@ void DataManager::update(int64_t key, int64_t value)
 bool DataManager::validate()
 {
     std::cout << "Validating b+ tree: " << true << std::endl;
-    std::cout << "Validating radix tree: " << true << std::endl;
+    if (radix_tree)
+    {   
+        bool validated = radix_tree->valdidate(); 
+        std::cout << "Validating radix tree: " << validated << std::endl;
+    }
     return true;
 }

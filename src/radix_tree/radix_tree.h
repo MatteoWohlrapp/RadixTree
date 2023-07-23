@@ -33,9 +33,9 @@ private:
 
     /**
      * @brief transforms a signed key to an unsigned key
-     * @param key The signed key 
+     * @param key The signed key
      * @return The unsigned key
-    */
+     */
     uint64_t transform(int64_t key)
     {
         uint64_t transformed_key = ((uint64_t)key) + INT64_MAX + 1;
@@ -45,9 +45,9 @@ private:
 
     /**
      * @brief transforms an unsigned key to a signed key
-     * @param key The unsigned key 
+     * @param key The unsigned key
      * @return The signed key
-    */
+     */
     int64_t inverse_transform(uint64_t key)
     {
         uint64_t transformed_key = ((uint64_t)key) - INT64_MAX - 1;
@@ -1072,6 +1072,271 @@ private:
         free(header);
     }
 
+    /**
+     * @brief checks if the tree is compressed
+     * @param header The current node
+     * @return true if the tree is compressed false, if not
+     */
+    bool is_compressed(RHeader *header)
+    {
+        if (!header)
+            return true;
+        if (header->leaf)
+            return true;
+        else
+        {
+            if (header->current_size <= 1)
+                return false;
+        }
+
+        switch (header->type)
+        {
+        case 4:
+        {
+            RNode4 *node = (RNode4 *)header;
+            for (int i = 0; i < header->current_size; i++)
+            {
+                RHeader *child = (RHeader *)node->children[i];
+                if (!child->leaf)
+                {
+                    if (child->current_size <= 1 || !is_compressed(child))
+                        return false;
+                }
+            }
+        }
+        break;
+        case 16:
+        {
+            RNode16 *node = (RNode16 *)header;
+            for (int i = 0; i < header->current_size; i++)
+            {
+                RHeader *child = (RHeader *)node->children[i];
+                if (!child->leaf)
+                {
+                    if (child->current_size <= 1 || !is_compressed(child))
+                        return false;
+                }
+            }
+        }
+        break;
+        case 48:
+        {
+            RNode48 *node = (RNode48 *)header;
+            for (int i = 0; i < 256; i++)
+            {
+                if (node->keys[i] != 255)
+                {
+                    RHeader *child = (RHeader *)node->children[node->keys[i]];
+                    if (!child->leaf)
+                    {
+                        if (child->current_size <= 1 || !is_compressed(child))
+                            return false;
+                    }
+                }
+            }
+        }
+        break;
+        case 256:
+        {
+            RNode256 *node = (RNode256 *)header;
+            for (int i = 0; i < 256; i++)
+            {
+                if (node->children[i])
+                {
+                    RHeader *child = (RHeader *)node->children[i];
+                    if (!child->leaf)
+                    {
+                        if (child->current_size <= 1 || !is_compressed(child))
+                            return false;
+                    }
+                }
+            }
+        }
+        break;
+        default:
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * @brief checks if the depth of leaf nodes is correct
+     * @param header The current node
+     * @return true if the depth of the leaves is correct, false if not
+     */
+    bool leaf_depth_correct(RHeader *header)
+    {
+        if (!header)
+            return true;
+        if (header->leaf)
+            return header->depth == 8;
+        else
+        {
+            if (header->depth == 8)
+                return false;
+        }
+
+        switch (header->type)
+        {
+        case 4:
+        {
+            RNode4 *node = (RNode4 *)header;
+            for (int i = 0; i < header->current_size; i++)
+            {
+                RHeader *child = (RHeader *)node->children[i];
+                if (!child->leaf)
+                {
+                    if (!leaf_depth_correct(child))
+                        return false;
+                }
+                else
+                {
+                    if (child->depth != 8)
+                        return false;
+                }
+            }
+        }
+        break;
+        case 16:
+        {
+            RNode16 *node = (RNode16 *)header;
+            for (int i = 0; i < header->current_size; i++)
+            {
+                RHeader *child = (RHeader *)node->children[i];
+                if (!child->leaf)
+                {
+                    if (!leaf_depth_correct(child))
+                        return false;
+                }
+                else
+                {
+                    if (child->depth != 8)
+                        return false;
+                }
+            }
+        }
+        break;
+        case 48:
+        {
+            RNode48 *node = (RNode48 *)header;
+            for (int i = 0; i < 256; i++)
+            {
+                if (node->keys[i] != 255)
+                {
+                    RHeader *child = (RHeader *)node->children[node->keys[i]];
+                    if (!child->leaf)
+                    {
+                        if (!leaf_depth_correct(child))
+                            return false;
+                    }
+                    else
+                    {
+                        if (child->depth != 8)
+                            return false;
+                    }
+                }
+            }
+        }
+        break;
+        case 256:
+        {
+            RNode256 *node = (RNode256 *)header;
+            for (int i = 0; i < 256; i++)
+            {
+                if (node->children[i])
+                {
+                    RHeader *child = (RHeader *)node->children[i];
+                    if (!child->leaf)
+                    {
+                        if (!leaf_depth_correct(child))
+                            return false;
+                    }
+                    else
+                    {
+                        if (child->depth != 8)
+                            return false;
+                    }
+                }
+            }
+        }
+        break;
+        default:
+            break;
+        }
+        return true;
+    }
+
+    /**
+     * @brief checks if the prefixes of the keys in the tree match
+     * @param header The current node
+     * @return true if all key match, false if not
+     */
+    bool key_matches(RHeader *header)
+    {
+        if (!header)
+            return true;
+
+        if (header->leaf)
+            return true;
+
+        switch (header->type)
+        {
+        case 4:
+        {
+            RNode4 *node = (RNode4 *)header;
+            for (int i = 0; i < header->current_size; i++)
+            {
+                RHeader *child = (RHeader *)node->children[i];
+                if (header->depth - 1 > longest_common_prefix(header->key, child->key) || !key_matches(child))
+                    return false;
+            }
+        }
+        break;
+        case 16:
+        {
+            RNode16 *node = (RNode16 *)header;
+            for (int i = 0; i < header->current_size; i++)
+            {
+                RHeader *child = (RHeader *)node->children[i];
+                if (header->depth - 1 > longest_common_prefix(header->key, child->key) || !key_matches(child))
+                    return false;
+            }
+        }
+        break;
+        case 48:
+        {
+            RNode48 *node = (RNode48 *)header;
+            for (int i = 0; i < 256; i++)
+            {
+                if (node->keys[i] != 255)
+                {
+                    RHeader *child = (RHeader *)node->children[node->keys[i]];
+                    if (header->depth - 1 > longest_common_prefix(header->key, child->key) || !key_matches(child))
+                        return false;
+                }
+            }
+        }
+        break;
+        case 256:
+        {
+            RNode256 *node = (RNode256 *)header;
+            for (int i = 0; i < 256; i++)
+            {
+                if (node->children[i])
+                {
+                    RHeader *child = (RHeader *)node->children[i];
+                    if (header->depth - 1 > longest_common_prefix(header->key, child->key) || !key_matches(child))
+                        return false;
+                }
+            }
+        }
+        break;
+        default:
+            break;
+        }
+        return true;
+    }
+
 public:
     friend class RadixTreeTest;
     friend class Debuger;
@@ -1234,5 +1499,22 @@ public:
     void destroy()
     {
         destroy_recursive(root);
+    }
+
+    /**
+     * @brief Validates the radix tree
+     */
+    bool valdidate()
+    {
+        std::cout << "Size of Radix Tree: " << current_size << std::endl;
+
+        if (!is_compressed(root))
+            return false;
+        if (!leaf_depth_correct(root))
+            return false;
+        if (!key_matches(root))
+            return false;
+
+        return true;
     }
 };
