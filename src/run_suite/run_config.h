@@ -18,7 +18,7 @@ class RunConfig
 {
 protected:
     Benchmark benchmark;
-    DataManager data_manager;
+    DataManager<Configuration::page_size> data_manager;
     std::shared_ptr<spdlog::logger> logger;
 
     int buffer_size; 

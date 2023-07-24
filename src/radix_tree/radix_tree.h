@@ -11,6 +11,7 @@
 #include "../model/r_header.h"
 #include "r_nodes.h"
 #include "../bplus_tree/b_nodes.h"
+#include "../utils/tree_operations.h"
 #include "spdlog/spdlog.h"
 #include <netinet/in.h>
 
@@ -27,9 +28,14 @@ private:
     // Root Node
     RHeader *root = nullptr;
 
-    /// maximum size of the cache in bytes
-    int radix_tree_size;
-    int current_size = 0;
+    uint64_t radix_tree_size;  /// maximum size of the cache in bytes
+    uint64_t current_size = 0; /// current size of the cache in bytes
+
+    BufferManager *buffer_manager;
+
+    int64_t buffer[256]; /// buffer that handles deletes if the cache is full
+    int read = 0;
+    int write = 0;
 
     /**
      * @brief transforms a signed key to an unsigned key
@@ -713,27 +719,23 @@ private:
         {
             if (header->leaf)
             {
-                logger->debug("Header is leaf");
                 RFrame *frame = (RFrame *)next;
                 if (frame->header->page_id == frame->page_id)
                 {
                     int64_t value = ((BOuterNode<PAGE_SIZE> *)frame->header)->get_value(inverse_transform(key));
-                    logger->debug("Page id {} matching, value is: {}", frame->page_id, value);
                     header->unfix_node();
                     return value;
                 }
                 else
                 {
-                    logger->debug("Page id from header {} not matching saved id {}", frame->header->page_id, frame->page_id);
                     header->unfix_node();
                     // Delete from tree as the reference is not matching and the page_id is wrong
-                    delete_reference(key);
+                    delete_reference(inverse_transform(key));
                     return INT64_MIN;
                 }
             }
             else
             {
-                logger->debug("Header is not leaf");
                 RHeader *child = (RHeader *)next;
                 child->fix_node();
                 header->unfix_node();
@@ -774,7 +776,7 @@ private:
                 {
                     header->unfix_node();
                     // Delete from tree as the reference is not matching and the page_id is wrong
-                    delete_reference(key);
+                    delete_reference(inverse_transform(key));
                     return nullptr;
                 }
             }
@@ -1341,7 +1343,7 @@ public:
     friend class RadixTreeTest;
     friend class Debuger;
 
-    RadixTree(int radix_tree_size_arg) : radix_tree_size(radix_tree_size_arg)
+    RadixTree(uint64_t radix_tree_size_arg, BufferManager *buffer_manager_arg) : radix_tree_size(radix_tree_size_arg), buffer_manager(buffer_manager_arg)
     {
         logger = spdlog::get("logger");
     }
@@ -1356,6 +1358,11 @@ public:
     {
         if (current_size < radix_tree_size)
         {
+            buffer[write] = key;
+            write = (write + 1) % 256;
+            if (write == read)
+                read = (read + 1) % 256;
+
             if (root)
             {
                 root->fix_node();
@@ -1365,6 +1372,12 @@ public:
         else
         {
             logger->debug("Radix Tree is full, can't insert more elements.");
+
+            if (read != write)
+            {
+                delete_reference(buffer[read]);
+                read = (read + 1) % 256;
+            }
         }
     }
 
@@ -1503,6 +1516,7 @@ public:
 
     /**
      * @brief Validates the radix tree
+     * @return true if the tree is valid, false otherwise
      */
     bool valdidate()
     {
@@ -1516,5 +1530,64 @@ public:
             return false;
 
         return true;
+    }
+
+    /**
+     * @brief Updates a key if it is cached
+     * @param key The key to update
+     * @param value The value to update
+     * @return true if update was possible, false otherwise
+     */
+    bool update(int64_t key, int64_t value)
+    {
+        BHeader *header = get_page(key);
+        if (header)
+        {
+            buffer_manager->fix_page(header->page_id); 
+            ((BOuterNode<PAGE_SIZE> *)header)->update(key, value);
+            buffer_manager->unfix_page(header->page_id, true); 
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * @brief Performs a scan if the value is cached
+     * @param key The key to start the scan from
+     * @param range How many elements to scan
+     * @return the sum of the scan, INT64_MIN otherwise
+     */
+    int64_t scan(int64_t key, int range)
+    {
+        BHeader *header = get_page(key);
+        if (header)
+        {
+            buffer_manager->fix_page(header->page_id);
+            return TreeOperations::scan<PAGE_SIZE>(buffer_manager, nullptr, header, key, range);
+        }
+        return INT64_MIN;
+    }
+
+    /**
+     * @brief Deletes a value from the tree when the page is cached
+     * @param key The key corresponding to the value that will be deleted
+     * @return true if it can delete the value, false otherwise
+     */
+    bool delete_value(int64_t key)
+    {
+        BHeader *header = get_page(key);
+        if (header)
+        {
+            BOuterNode<PAGE_SIZE> *node = (BOuterNode<PAGE_SIZE> *)header;
+            if (node->can_delete())
+            {
+                buffer_manager->fix_page(header->page_id);
+                node->delete_value(key);
+                delete_reference(key);
+                buffer_manager->unfix_page(header->page_id, true); 
+                return true;
+            }
+        }
+        return false;
     }
 };

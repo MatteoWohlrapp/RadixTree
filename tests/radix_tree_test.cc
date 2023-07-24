@@ -2,6 +2,7 @@
 #include "../src/radix_tree/radix_tree.h"
 #include "../src/radix_tree/r_nodes.h"
 #include "../src/data/buffer_manager.h"
+#include "../src/data/data_manager.h"
 #include "../src/data/storage_manager.h"
 #include "../src/bplus_tree/bplus_tree.h"
 #include <unordered_set>
@@ -27,9 +28,9 @@ protected:
     {
         std::filesystem::remove(base_path / bitmap);
         std::filesystem::remove(base_path / data);
-        radix_tree = new RadixTree<PAGE_SIZE>(1000000);
         storage_manager = new StorageManager(base_path, PAGE_SIZE);
         buffer_manager = new BufferManager(storage_manager, buffer_size, PAGE_SIZE);
+        radix_tree = new RadixTree<PAGE_SIZE>(1000000, buffer_manager);
         bplus_tree = new BPlusTree<PAGE_SIZE>(buffer_manager, radix_tree);
     }
 
@@ -59,17 +60,17 @@ protected:
 
     bool is_compressed()
     {
-        return radix_tree->is_compressed(radix_tree->root); 
+        return radix_tree->is_compressed(radix_tree->root);
     }
 
     bool leaf_depth_correct()
     {
-       return radix_tree->leaf_depth_correct(radix_tree->root);
+        return radix_tree->leaf_depth_correct(radix_tree->root);
     }
 
     bool key_matches()
     {
-        return radix_tree->key_matches(radix_tree->root); 
+        return radix_tree->key_matches(radix_tree->root);
     }
 };
 
@@ -1087,4 +1088,79 @@ TEST_F(RadixTreeTest, Size)
     radix_tree->delete_reference(-9223370937343148032);
     radix_tree->delete_reference(-9151314442816847872);
     ASSERT_EQ(get_current_size(), 0);
+}
+
+TEST_F(RadixTreeTest, UpdateWithSeed42)
+{
+    DataManager<PAGE_SIZE> data_manager = DataManager<PAGE_SIZE>(storage_manager, buffer_manager, bplus_tree, radix_tree);
+    std::mt19937 generator(42); // 42 is the seed value
+    std::uniform_int_distribution<int64_t> dist(INT64_MIN + 1, INT64_MAX);
+    std::unordered_set<int64_t> unique_values;
+    int64_t values[100];
+    BHeader *header = (BHeader *)malloc(96);
+    header->page_id = 0;
+
+    for (int i = 0; i < 100; i++)
+    {
+        int64_t value = dist(generator); // generate a random number
+
+        // Ensure we have a unique value, if not, generate another one
+        while (unique_values.count(value))
+        {
+            value = dist(generator);
+        }
+
+        unique_values.insert(value);
+        values[i] = value;
+        data_manager.insert(value, value);
+    }
+
+    for (int i = 0; i < 100; i++)
+    {
+        radix_tree->update(values[i], values[i] + 1);
+    }
+
+    for (int i = 0; i < 100; i++)
+    {
+        ASSERT_EQ(bplus_tree->get_value(values[i]), values[i] + 1);
+    }
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
+}
+
+TEST_F(RadixTreeTest, ScanWithSeed42)
+{
+    DataManager<PAGE_SIZE> data_manager = DataManager<PAGE_SIZE>(storage_manager, buffer_manager, bplus_tree, radix_tree);
+    std::mt19937 generator(42); // 42 is the seed value
+    std::uniform_int_distribution<int64_t> dist(INT64_MIN + 1, INT64_MAX);
+    std::unordered_set<int64_t> unique_values;
+    int64_t values[100];
+    BHeader *header = (BHeader *)malloc(96);
+    header->page_id = 0;
+
+    for (int i = 0; i < 100; i++)
+    {
+        int64_t value = dist(generator); // generate a random number
+
+        // Ensure we have a unique value, if not, generate another one
+        while (unique_values.count(value))
+        {
+            value = dist(generator);
+        }
+
+        unique_values.insert(value);
+        values[i] = value;
+        data_manager.insert(value, value);
+    }
+
+    std::sort(values, values + 100);
+    BHeader *new_header = (BHeader *)malloc(96);
+    new_header->page_id = 1;
+
+    ASSERT_EQ(bplus_tree->scan(values[20], 40), radix_tree->scan(values[20], 40));
+
+    ASSERT_TRUE(is_compressed());
+    ASSERT_TRUE(leaf_depth_correct());
+    ASSERT_TRUE(key_matches());
 }

@@ -287,7 +287,7 @@ struct BOuterNode
     {
         int index = binary_search(key);
 
-        if (keys[index] == key)
+        if (index != current_index && keys[index] == key)
         {
             values[index] = value;
         }

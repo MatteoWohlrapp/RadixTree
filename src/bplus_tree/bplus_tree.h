@@ -15,6 +15,7 @@
 #include <iostream>
 #include <cassert>
 #include "spdlog/spdlog.h"
+#include "../utils/tree_operations.h"
 
 /// forward declaration
 class BPlusTreeTest;
@@ -773,42 +774,7 @@ private:
     {
         if (!header->inner)
         {
-            BOuterNode<PAGE_SIZE> *node = (BOuterNode<PAGE_SIZE> *)header;
-
-            int index = node->binary_search(key);
-            int scanned = 0;
-            int64_t sum = 0;
-
-            assert((node->keys[index] == key) && "Scan on key that does not exist.");
-            if (node->keys[index] == key)
-            {
-                if (cache)
-                {
-                    cache->insert(key, header->page_id, header);
-                }
-                while (scanned < range)
-                {
-                    if (index == node->current_index)
-                    {
-                        if (node->next_lef_id == 0)
-                        {
-                            buffer_manager->unfix_page(node->header.page_id, false);
-                            return sum;
-                        }
-                        BOuterNode<PAGE_SIZE> *temp = node;
-                        node = (BOuterNode<PAGE_SIZE> *)buffer_manager->request_page(node->next_lef_id);
-                        buffer_manager->unfix_page(temp->header.page_id, false);
-                        index = 0;
-                    }
-
-                    sum ^= node->values[index];
-                    logger->debug("Sum: {}", sum);
-                    scanned++;
-                    index++;
-                }
-                buffer_manager->unfix_page(node->header.page_id, false);
-            }
-            return sum;
+            return TreeOperations::scan<PAGE_SIZE>(buffer_manager, cache, header, key, range); 
         }
         else
         {
@@ -820,10 +786,10 @@ private:
     }
 
     /**
-     * @brief Validates if the tree is balanced 
+     * @brief Validates if the tree is balanced
      * @param page_id The page_id of node
      * @return true if the tree is balanced, false if not
-    */
+     */
     bool is_balanced()
     {
         BHeader *root = buffer_manager->request_page(root_id);
@@ -836,7 +802,7 @@ private:
      * @brief Validates if the tree is balanced recursively
      * @param header The current node
      * @return -1 if the tree is unbalanced, the depth otherwise
-    */
+     */
     int recursive_is_balanced(BHeader *header)
     {
         if (!header->inner)
@@ -873,9 +839,9 @@ private:
     }
 
     /**
-     * @brief Validates if the tree is ordered 
+     * @brief Validates if the tree is ordered
      * @return true if the tree is ordered, false if not
-    */
+     */
     bool is_ordered()
     {
         BHeader *root = buffer_manager->request_page(root_id);
@@ -888,7 +854,7 @@ private:
      * @brief Validates if the tree is ordered recursively
      * @param header The current node
      * @return true if the tree is ordered, false otherwise
-    */
+     */
     bool recursive_is_ordered(BHeader *header)
     {
         if (!header->inner)
@@ -928,10 +894,10 @@ private:
 
     /**
      * @brief Checks if all keys in a page are smaller or equal to key
-     * @param page_id The page to check 
+     * @param page_id The page to check
      * @param key The key to compare to
      * @return true if all keys are smaller or equal, false otherwise
-    */
+     */
     bool smaller_or_equal(uint64_t page_id, int64_t key)
     {
         BHeader *header = buffer_manager->request_page(page_id);
@@ -978,10 +944,10 @@ private:
 
     /**
      * @brief Checks if all keys in a page are bigger to key
-     * @param page_id The page to check 
+     * @param page_id The page to check
      * @param key The key to compare to
      * @return true if all keys are bigger, false otherwise
-    */
+     */
     bool bigger(uint64_t page_id, int64_t key)
     {
         BHeader *header = buffer_manager->request_page(page_id);
@@ -1028,9 +994,9 @@ private:
 
     /**
      * @brief Validates if the tree nodes are concatenated
-     * @param num_elements Checks the number of elements in the tree 
+     * @param num_elements Checks the number of elements in the tree
      * @return true if the tree is concatenated, false otherwise
-    */
+     */
     bool is_concatenated(int num_elements)
     {
         uint64_t page_id = find_leftmost(root_id);
@@ -1065,10 +1031,10 @@ private:
     }
 
     /**
-     * @brief Finds the leftmost element in the tree 
+     * @brief Finds the leftmost element in the tree
      * @param page_id The page id of the node
      * @returns the page_id of the leftmost node
-    */
+     */
     uint64_t find_leftmost(uint64_t page_id)
     {
         BHeader *header = buffer_manager->request_page(page_id);
@@ -1155,15 +1121,16 @@ public:
     /**
      * @brief Validates the b+ tree
      * @param num_elements The number of elements in the tree
+     * @return true if the tree is valid, false otherwise
      */
     bool validate(int num_elements)
     {
-        if(!is_balanced())
-            return false; 
-        if(!is_ordered())
-            return false; 
-        if(!is_concatenated(num_elements))
-            return false; 
+        if (!is_balanced())
+            return false;
+        if (!is_ordered())
+            return false;
+        if (!is_concatenated(num_elements))
+            return false;
         return true;
     }
 };

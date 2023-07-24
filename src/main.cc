@@ -176,11 +176,11 @@ void handle_arguments(int argc, char *argsv[])
         {
         case 0:
             if (std::string(long_options[option_index].name) == "buffer_size")
-                configuration.buffer_size = atoi(optarg);
+                configuration.buffer_size = atoll(optarg);
             else if (std::string(long_options[option_index].name) == "record_count")
-                configuration.record_count = atoi(optarg);
+                configuration.record_count = atoll(optarg);
             else if (std::string(long_options[option_index].name) == "operation_count")
-                configuration.operation_count = atoi(optarg);
+                configuration.operation_count = atoll(optarg);
             else if (std::string(long_options[option_index].name) == "distribution")
                 configuration.distribution = std::string(optarg);
             else if (std::string(long_options[option_index].name) == "insert_proportion")
@@ -196,7 +196,7 @@ void handle_arguments(int argc, char *argsv[])
             else if (std::string(long_options[option_index].name) == "cache")
                 configuration.cache = atoi(optarg);
             else if (std::string(long_options[option_index].name) == "radix_tree_size")
-                configuration.radix_tree_size = atoi(optarg);
+                configuration.radix_tree_size = atoll(optarg);
             else if (std::string(long_options[option_index].name) == "measure_per_operation")
                 configuration.measure_per_operation = true;
             else if (std::string(long_options[option_index].name) == "coefficient")

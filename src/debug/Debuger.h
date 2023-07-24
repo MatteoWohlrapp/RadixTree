@@ -20,20 +20,20 @@ class Debuger
 {
 private:
     std::shared_ptr<spdlog::logger> logger;
-    DataManager *data_manager;
+    DataManager<Configuration::page_size> *data_manager;
     BPlusTree<Configuration::page_size> *bplus_tree; 
     RadixTree<Configuration::page_size> *radix_tree; 
     BufferManager *buffer_manager; 
 
 public:
-    friend class DataManager; 
+    friend class DataManager<Configuration::page_size>; 
     friend class BPlusTree<Configuration::page_size>; 
     friend class RadixTree<Configuration::page_size>; 
     /**
      * @brief Constructor for the Debuger
      * @param data_manager_arg Reference to the data manager that contains all the information about data
      */
-    Debuger(DataManager *data_manager_arg = nullptr);
+    Debuger(DataManager<Configuration::page_size> *data_manager_arg = nullptr);
 
     /**
      * @brief traverses the bplus tree with BFS

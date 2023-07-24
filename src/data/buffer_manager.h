@@ -67,7 +67,7 @@ public:
      * @param buffer_size_arg The size of the buffer
      * @param page_size_arg The size of the page that needs to be allocated
      */
-    BufferManager(StorageManager *storage_manager_arg, int buffer_size_arg, int page_size_arg);
+    BufferManager(StorageManager *storage_manager_arg, uint64_t buffer_size_arg, int page_size_arg);
 
     /**
      * @brief Request a page

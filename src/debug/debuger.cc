@@ -7,7 +7,7 @@
 #include <sstream>
 #include <set>
 
-Debuger::Debuger(DataManager *data_manager_arg) : data_manager(data_manager_arg)
+Debuger::Debuger(DataManager<Configuration::page_size> *data_manager_arg) : data_manager(data_manager_arg)
 {
     logger = spdlog::get("logger");
     bplus_tree = data_manager->bplus_tree; 
