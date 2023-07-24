@@ -75,7 +75,7 @@ public:
         storage_manager->destroy();
         if (radix_tree)
         {
-            logger->info("Destroying radix tree");
+            logger->debug("Destroying radix tree");
             logger->flush();
             radix_tree->destroy();
             delete radix_tree;

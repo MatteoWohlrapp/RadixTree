@@ -203,6 +203,7 @@ private:
      */
     void recursive_delete(BHeader *header, int64_t key)
     {
+        logger->debug("Deleting key {}", key);
         if (!header->inner)
         {
             // outer node
@@ -335,7 +336,8 @@ private:
             int64_t value = node->get_value(key);
             if (cache)
             {
-                cache->insert(key, header->page_id, header);
+                if (value != INT64_MIN)
+                    cache->insert(key, header->page_id, header);
             }
             buffer_manager->unfix_page(header->page_id, false);
             return value;
@@ -534,8 +536,8 @@ private:
                             child->insert(substitute->keys[0], substitute->values[0]);
                             if (cache)
                                 cache->insert(substitute->keys[0], child_header->page_id, child_header);
-                            node->keys[index] = substitute->keys[0];
                             substitute->delete_value(substitute->keys[0]);
+                            node->keys[index] = substitute->keys[0];
 
                             // unfix
                             buffer_manager->unfix_page(node->child_ids[index + 1], true);
@@ -648,15 +650,32 @@ private:
                         merge = (BOuterNode<PAGE_SIZE> *)merge_header;
                         if (!merge->can_delete())
                         {
+                            logger->debug("Child has address {}", (void *)&child->header);
+                            for (int i = 0; i < child->current_index; i++)
+                            {
+                                logger->debug("Contains key: {}", child->keys[i]);
+                            }
+
+                            logger->debug("Merge has address {}", (void *)&merge->header);
+                            for (int i = 0; i < merge->current_index; i++)
+                            {
+                                logger->debug("Contains key: {}", merge->keys[i]);
+                            }
                             // add all from right node to left node
                             if (cache)
                             {
-                                cache->update_range(child->keys[0], child->keys[child->current_index - 1], merge_header->page_id, merge_header);
+                                // cache->update_range(child->keys[0], child->keys[child->current_index - 1], merge_header->page_id, merge_header);
                             }
 
+                            logger->debug("Deleting page {}", (void *)&child->header);
                             for (int i = 0; i < child->current_index; i++)
                             {
                                 merge->insert(child->keys[i], child->values[i]);
+                                if (cache)
+                                {
+                                    logger->debug("Updating key {} for new page {}", child->keys[i], (void *)&merge->header);
+                                    cache->insert(child->keys[i], merge->header.page_id, &merge->header);
+                                }
                             }
 
                             merge->next_lef_id = child->next_lef_id;
@@ -774,7 +793,7 @@ private:
     {
         if (!header->inner)
         {
-            return TreeOperations::scan<PAGE_SIZE>(buffer_manager, cache, header, key, range); 
+            return TreeOperations::scan<PAGE_SIZE>(buffer_manager, cache, header, key, range);
         }
         else
         {

@@ -712,14 +712,15 @@ private:
         if (header == nullptr)
             return INT64_MIN;
 
-        logger->info("Key is {}", get_key(key, header->depth));
-
         void *next = get_next_page(header, get_key(key, header->depth));
         if (next)
         {
             if (header->leaf)
             {
+
                 RFrame *frame = (RFrame *)next;
+                logger->info("About to compare to page {} for key {}", (void *) frame->header, inverse_transform(key));
+                logger->flush(); 
                 if (frame->header->page_id == frame->page_id)
                 {
                     int64_t value = ((BOuterNode<PAGE_SIZE> *)frame->header)->get_value(inverse_transform(key));
@@ -1356,6 +1357,7 @@ public:
      */
     void insert(int64_t key, uint64_t page_id, BHeader *bheader)
     {
+        logger->info("Inserting into Radix Tree key: {}, at address {}", key, (void *) bheader);
         if (current_size < radix_tree_size)
         {
             buffer[write] = key;
@@ -1388,7 +1390,7 @@ public:
     void delete_reference(int64_t s_key)
     {
         uint64_t key = transform(s_key);
-        logger->debug("Deleting in Radix Tree: {}", key);
+        logger->info("Deleting in Radix Tree: {}", s_key);
         if (!root)
             return;
 
@@ -1543,9 +1545,9 @@ public:
         BHeader *header = get_page(key);
         if (header)
         {
-            buffer_manager->fix_page(header->page_id); 
+            buffer_manager->fix_page(header->page_id);
             ((BOuterNode<PAGE_SIZE> *)header)->update(key, value);
-            buffer_manager->unfix_page(header->page_id, true); 
+            buffer_manager->unfix_page(header->page_id, true);
             return true;
         }
         return false;
@@ -1584,7 +1586,7 @@ public:
                 buffer_manager->fix_page(header->page_id);
                 node->delete_value(key);
                 delete_reference(key);
-                buffer_manager->unfix_page(header->page_id, true); 
+                buffer_manager->unfix_page(header->page_id, true);
                 return true;
             }
         }

@@ -1,0 +1,9 @@
+Vary records-size tests started...
+Test 1: Running test with record_count=4000000, distribution=geometric, workload=a, cache=-c, measure_operation=--measure_per_operation
+Starting validation ...
+Checking for content: 0 out of 4000000 are faulty
+Validating b+ tree: 1
+Size of Radix Tree: 468641064
+Validating radix tree: 1
+
+Memory usage: 1725776 KB

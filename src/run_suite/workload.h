@@ -156,11 +156,12 @@ private:
 
             if (op == INSERT)
             {
-                while (records_set.size() < record_count)
+                int64_t value = value_distribution(generator); 
+                while (records_set.count(value) > 0)
                 {
-                    // Generate uniform random number and insert into set
-                    records_set.insert(value_distribution(generator));
+                    value = value_distribution(generator); 
                 }
+                records_set.insert(value); 
             }
         }
 
@@ -172,10 +173,6 @@ private:
         // Inserting all elements
         for (int i = 0; i < record_count; i++)
         {
-            if (i % 1000000 == 0)
-            {
-                std::cout << "Inserted " << i << " elements" << std::endl << std::flush;
-            }
             logger->debug("Inserting in workload initialization: {}", records_vector[i]);
             data_manager.insert(records_vector[i], records_vector[i]);
         }
@@ -291,7 +288,6 @@ private:
                 std::vector<double> &operation_times = times[i];
                 if (operation_times.empty())
                 {
-                    logger->info("No operations for {}", operation_names[i]);
                     continue;
                 }
 
@@ -347,7 +343,7 @@ public:
         generator = std::mt19937(42);
         operations_vector.resize(operation_count_arg);
         indice_vector.resize(operation_count_arg);
-        insert_index = record_count;
+        insert_index = record_count_arg;
     }
 
     ~Workload()
