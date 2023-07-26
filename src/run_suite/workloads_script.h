@@ -19,9 +19,9 @@ class WorkloadScript
 private:
     /*uint64_t total_records = 25000000;
     uint64_t buffer_size = 524288;
-    uint64_t radix_tree_size = 2147483648;
-    uint64_t operation_count = 15000000;
-    uint64_t record_count = 15000000;
+    uint64_t radix_tree_size = 1500000000;
+    uint64_t operation_count = 50000000;
+    uint64_t record_count = 20000000;
     int max_scan_range = 100;*/
 
     uint64_t total_records = 2500;
@@ -113,6 +113,25 @@ private:
         }
     }
 
+
+    /**
+     * @brief Runs a workload
+     * @param test_name The name of the test 
+     * @param iteration The current iteration of the test
+     * @param buffer_size_arg The amounts of pages in the buffer manager
+     * @param record_count_arg The number of records in the trees
+     * @param operation_count_arg The number of performed operations
+     * @param distribution_arg The distribution
+     * @param coefficient_arg The coefficient for the distribution
+     * @param insert_proportion The proportion of inserts
+     * @param read_proportion The proportion of reads
+     * @param update_proportion The proportion of updates
+     * @param scan_proportion The proportion of scancs
+     * @param delete_proportion The proportion of deletes
+     * @param cache_arg If the cache is activated or not
+     * @param radix_tree_size_arg The size of the cache
+     * @param workload_arg The workload that is run
+     */
     void run_workload(std::string test_name, int iteration, uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, double insert_proportion_arg, double read_proportion_arg, double update_proportion_arg, double scan_proportion_arg, double delete_proportion_arg, bool cache_arg, uint64_t radix_tree_size_arg, int workload_arg)
     {
         std::cout << "Starting iteration " << iteration << " of test " << test_name << std::endl
@@ -222,7 +241,24 @@ private:
     };
 
     /**
-     * @brief Analyzes the results of the workload
+     * @brief Analyzes the result of the workload
+     * @param test_name The name of the test 
+     * @param iteration The current iteration of the test
+     * @param buffer_size_arg The amounts of pages in the buffer manager
+     * @param record_count_arg The number of records in the trees
+     * @param operation_count_arg The number of performed operations
+     * @param distribution_arg The distribution
+     * @param coefficient_arg The coefficient for the distribution
+     * @param insert_proportion The proportion of inserts
+     * @param read_proportion The proportion of reads
+     * @param update_proportion The proportion of updates
+     * @param scan_proportion The proportion of scancs
+     * @param delete_proportion The proportion of deletes
+     * @param cache_arg If the cache is activated or not
+     * @param radix_tree_size_arg The size of the cache
+     * @param cache_size_arg The actual size of the cache
+     * @param current_buffer_size_arg The size of the buffer
+     * @param workload_arg The workload that is run
      */
     void analyze(std::string test_name, int iteration, uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, double insert_proportion_arg, double read_proportion_arg, double update_proportion_arg, double scan_proportion_arg, double delete_proportion_arg, bool cache_arg, uint64_t radix_tree_size_arg, uint64_t cache_size_arg, uint64_t current_buffer_size_arg, int workload_arg)
     {
@@ -286,6 +322,9 @@ private:
     }
 
 public:
+    /**
+     * @brief Constructor for the workload script
+    */
     WorkloadScript() : data_manager(1, false, 1)
     {
         logger = spdlog::get("logger");

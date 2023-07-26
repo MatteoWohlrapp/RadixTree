@@ -175,6 +175,10 @@ public:
         return true;
     }
 
+    /**
+     * @brief Returns the current size of the cache
+     * @return the size of the cache
+    */
     uint64_t get_cache_size()
     {
         if (radix_tree)
@@ -184,6 +188,10 @@ public:
         return 0; 
     }
 
+    /**
+     * @brief Returns the current size of the buffer
+     * @return the size of the buffer
+    */
     uint64_t get_current_buffer_size()
     {
         return buffer_manager->get_current_buffer_size(); 

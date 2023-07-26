@@ -1581,6 +1581,10 @@ public:
         return false;
     }
 
+    /**
+     * @brief Returns the current size of the cache
+     * @return the size of the cache
+    */
     uint64_t get_cache_size(){
         return current_size;
     }

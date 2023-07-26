@@ -112,5 +112,9 @@ public:
      */
     void destroy();
 
+    /**
+     * @brief Returns the current size of the buffer
+     * @return the size of the buffer
+    */
     uint64_t get_current_buffer_size(); 
 };
