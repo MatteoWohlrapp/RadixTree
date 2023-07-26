@@ -35,7 +35,7 @@ private:
     std::vector<int64_t> records_vector; /// entries inserted into the DB
     std::vector<int> indice_vector;      /// indices in the records vector that are addressed
     std::random_device rd;
-    std::function<int()> index_distribution;
+    std::function<uint64_t()> index_distribution;
     std::uniform_int_distribution<int64_t> value_distribution;
     std::mt19937 generator;
     int insert_index = 0; /// offset at the end of records that specifies where current insert operations draw elements from
@@ -107,20 +107,20 @@ private:
         // Function for index distribution
         if (distribution == "uniform")
         {
-            std::uniform_int_distribution<int> dist(0, record_count - 1);
+            std::uniform_int_distribution<uint64_t> dist(0, record_count - 1);
 
             // Store the lambda function
-            index_distribution = [this, dist]() mutable -> int
+            index_distribution = [this, dist]() mutable -> uint64_t
             { return dist(rd); };
         }
         else if (distribution == "geometric")
         {
-            std::geometric_distribution<int> dist(coefficient);
+            std::geometric_distribution<uint64_t> dist(coefficient);
             ;
 
-            index_distribution = [this, dist]() mutable -> int
+            index_distribution = [this, dist]() mutable -> uint64_t
             {
-                int num = dist(generator);
+                uint64_t num = dist(generator);
                 if (num >= this->record_count)
                     num = this->record_count - 1;
                 return num;
@@ -138,7 +138,7 @@ private:
         // Use for discrete distribution
         std::discrete_distribution<> op_dist(weights.begin(), weights.end());
 
-        for (int i = 0; i < operation_count; i++)
+        for (uint64_t i = 0; i < operation_count; i++)
         {
             Operation op = static_cast<Operation>(op_dist(rd));
             operations_vector[i] = op;
@@ -171,7 +171,7 @@ private:
         records_set.clear();
 
         // Inserting all elements
-        for (int i = 0; i < record_count; i++)
+        for (uint64_t i = 0; i < record_count; i++)
         {
             logger->debug("Inserting in workload initialization: {}", records_vector[i]);
             data_manager.insert(records_vector[i], records_vector[i]);
@@ -189,16 +189,16 @@ private:
             exit(1);
         }
 
-        const int thread_count = 1;
-        int num_op_per_thread = operation_count / thread_count;
+        uint64_t thread_count = 1;
+        uint64_t num_op_per_thread = operation_count / thread_count;
 
-        for (int t = 0; t < thread_count; t++)
+        for (uint64_t t = 0; t < thread_count; t++)
         {
             if (measure_per_operation)
             {
                 std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
                 Operation op;
-                for (int i = thread_count * t; i < thread_count * t + num_op_per_thread; i++)
+                for (uint64_t i = thread_count * t; i < thread_count * t + num_op_per_thread; i++)
                 {
                     op = operations_vector[i];
                     start = std::chrono::high_resolution_clock::now();
@@ -213,7 +213,7 @@ private:
                 std::chrono::time_point<std::chrono::high_resolution_clock> total_start, total_end;
 
                 total_start = std::chrono::high_resolution_clock::now();
-                for (int i = thread_count * t; i < thread_count * t + num_op_per_thread; i++)
+                for (uint64_t i = thread_count * t; i < thread_count * t + num_op_per_thread; i++)
                 {
                     perform_operation(operations_vector[i], i);
                 }
@@ -233,7 +233,7 @@ private:
 
         int faulty_records = 0;
 
-        for (int i = 0; i < records_vector.size(); i++)
+        for (uint64_t i = 0; i < records_vector.size(); i++)
         {
             if (delete_operations.count(i) > 0)
             {

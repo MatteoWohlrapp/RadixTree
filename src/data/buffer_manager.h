@@ -40,7 +40,7 @@ private:
     std::uniform_int_distribution<int> dist;
 
     /// how many pages will be stored in the buffer manager
-    int buffer_size; 
+    uint64_t buffer_size; 
 
     /// the size of the page
     int page_size; 

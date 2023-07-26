@@ -102,8 +102,8 @@ void StorageManager::destroy()
         exit(1);
     }
 
-    int last_zero = 1;
-    for (int i = 1; i < free_space_map.size(); i++)
+    uint64_t last_zero = 1;
+    for (uint64_t i = 1; i < free_space_map.size(); i++)
     {
         if (free_space_map[i] == 0)
             last_zero = i / 8;
@@ -112,13 +112,11 @@ void StorageManager::destroy()
     bitmap_fs.close();
     bitmap_fs.open(base_path / bitmap, std::ios::binary | std::ios::out | std::ios::trunc);
 
-    int highest = 0;
-    for (int i = 0; i < (last_zero + 1) * 8; i += 8)
+    for (uint64_t i = 0; i < (last_zero + 1) * 8; i += 8)
     {
         char byte = 0;
-        for (int j = 0; j < 8 && j + i < free_space_map.size(); j++)
+        for (uint64_t j = 0; j < 8 && j + i < free_space_map.size(); j++)
         {
-            highest = i + j;
             if (free_space_map[j + i])
             {
                 byte |= (1 << j);

@@ -49,10 +49,10 @@ private:
     boost::dynamic_bitset<> free_space_map;
 
     /// how many pages there are saved
-    int current_page_count = 0;
+    uint64_t current_page_count = 0;
 
     /// where to find the next free space
-    int next_free_space = 1;
+    uint64_t next_free_space = 1;
 
     /**
      * @brief Find the next free space in the bitmap and set the attribute
