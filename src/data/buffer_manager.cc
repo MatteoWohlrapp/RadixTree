@@ -16,7 +16,7 @@ void BufferManager::destroy()
     logger->trace("Destroying");
     for (auto &pair : page_id_map)
     {
-        logger->info("Freeing: {}", pair.first);
+        logger->debug("Freeing: {}", pair.first);
         logger->flush();
         if (pair.second->dirty)
         {
@@ -78,7 +78,7 @@ void BufferManager::delete_page(uint64_t page_id)
     {
         assert(it->second->fix_count == 0 && "Fix count is not zero when deleting");
         BFrame *temp = it->second;
-        logger->info("page_id is in memory at {} and will be deleted", (void *)&it->second->header);
+        logger->debug("page_id is in memory at {} and will be deleted", (void *)&it->second->header);
         temp->header.page_id = 0;
         temp->marked = false;
         temp->dirty = false;

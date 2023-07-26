@@ -34,7 +34,7 @@ void RunConfigTwo::execute(bool benchmark)
         data_manager.insert(144115188075855872, 144115188075855872);
         data_manager.insert(216172782113783808, 216172782113783808);
         data_manager.insert(288230376151711744, 288230376151711744);
-        logger->info("Getting value"); 
+        logger->debug("Getting value"); 
         data_manager.get_value(288230376151711744);
         debuger.traverse_bplus_tree();
         debuger.traverse_radix_tree();

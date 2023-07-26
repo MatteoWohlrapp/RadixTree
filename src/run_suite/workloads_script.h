@@ -17,18 +17,11 @@
 class WorkloadScript
 {
 private:
-    /*uint64_t total_records = 25000000;
-    uint64_t buffer_size = 524288;
-    uint64_t radix_tree_size = 1500000000;
+    uint64_t total_records = 25000000;
+    uint64_t buffer_size = 80000; // around 0.3 gb - 0.5 gb at 15 mio entries
+    uint64_t radix_tree_size = 1395864371; // around 1.3 gb - 1.5 gb at 15 mio entries
     uint64_t operation_count = 50000000;
     uint64_t record_count = 20000000;
-    int max_scan_range = 100;*/
-
-    uint64_t total_records = 2500;
-    uint64_t buffer_size = 524288;
-    uint64_t radix_tree_size = 2147483648;
-    uint64_t operation_count = 1500;
-    uint64_t record_count = 1500;
     int max_scan_range = 100;
 
     std::shared_ptr<spdlog::logger> logger;
@@ -45,22 +38,16 @@ private:
     std::string results_filename;
     std::ofstream csv_file;
 
-    /*uint64_t operation_counts[5] = {20000000, 40000000, 60000000, 80000000, 100000000};
+    uint64_t operation_counts[5] = {20000000, 40000000, 60000000, 80000000, 100000000};
+    uint64_t small_operations_counts[5] = {2000, 20000, 200000, 2000000, 20000000};
     uint64_t record_counts[5] = {4000000, 8000000, 12000000, 16000000, 20000000};
+    uint64_t small_record_counts[5] = {2000, 20000, 200000, 2000000, 20000000};
     double coefficients[10] = {0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01};
     std::vector<std::string> distributions = {"uniform", "geometric"};
     bool caches[2] = {true, false};
     double workloads[5][5] = {
         {0, 0.5, 0.5, 0, 0}, {0, 0.95, 0.05, 0, 0}, {0, 1, 0, 0, 0}, {0.05, 0, 0, 0.95, 0}, {0, 0.90, 0, 0, 0.1}};
-    uint64_t memory_distributions[3][2] = {{1073741824, 786432}, {2147483648, 524288}, {3221225472, 262144}};*/
-    uint64_t operation_counts[5] = {2000, 4000, 6000, 8000, 10000};
-    uint64_t record_counts[5] = {400, 800, 1200, 1600, 2000};
-    double coefficients[10] = {0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01};
-    std::vector<std::string> distributions = {"uniform", "geometric"};
-    bool caches[2] = {true, false};
-    double workloads[5][5] = {
-        {0, 0.5, 0.5, 0, 0}, {0, 0.95, 0.05, 0, 0}, {0, 1, 0, 0, 0}, {0.05, 0, 0, 0.95, 0}, {0, 0.90, 0, 0, 0.1}};
-    uint64_t memory_distributions[3][2] = {{1073741824, 786432}, {2147483648, 524288}, {3221225472, 262144}};
+    uint64_t memory_distributions[5][2] = {{262144000, 448000}, {524288000, 1572864000}, {1048576000, 256000}, {1572864000, 128000}, {1835008000, 64000}};
 
     /**
      * @brief enumeration for the different kinds of operation possible
@@ -113,10 +100,9 @@ private:
         }
     }
 
-
     /**
      * @brief Runs a workload
-     * @param test_name The name of the test 
+     * @param test_name The name of the test
      * @param iteration The current iteration of the test
      * @param buffer_size_arg The amounts of pages in the buffer manager
      * @param record_count_arg The number of records in the trees
@@ -173,7 +159,7 @@ private:
         // Use for discrete distribution
         std::discrete_distribution<> op_dist(weights.begin(), weights.end());
 
-        for (int i = 0; i < operation_count_arg; i++)
+        for (uint64_t i = 0; i < operation_count_arg; i++)
         {
             Operation op = static_cast<Operation>(op_dist(rd));
             operations_vector[i] = op;
@@ -183,7 +169,7 @@ private:
         }
 
         // Inserting all elements
-        for (int i = 0; i < record_count_arg; i++)
+        for (uint64_t i = 0; i < record_count_arg; i++)
         {
             data_manager.insert(records_vector[i], records_vector[i]);
         }
@@ -242,7 +228,7 @@ private:
 
     /**
      * @brief Analyzes the result of the workload
-     * @param test_name The name of the test 
+     * @param test_name The name of the test
      * @param iteration The current iteration of the test
      * @param buffer_size_arg The amounts of pages in the buffer manager
      * @param record_count_arg The number of records in the trees
@@ -324,7 +310,7 @@ private:
 public:
     /**
      * @brief Constructor for the workload script
-    */
+     */
     WorkloadScript() : data_manager(1, false, 1)
     {
         logger = spdlog::get("logger");
@@ -383,7 +369,7 @@ public:
         std::cout << "Vary geometric distribution coefficient tests started..." << std::endl;
         for (auto &cache : caches)
         {
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 5; i++)
             {
                 for (auto &coefficient_l : coefficients)
                 {
@@ -395,9 +381,21 @@ public:
         std::cout << "Vary geometric distribution coefficient tests completed..." << std::endl;
 
         iteration = 1;
+        std::cout << "Show memory size tests started..." << std::endl;
+
+        for (int j = 0; j < 5; j++)
+        {
+            run_workload("vary memory size", iteration, 2147483648 /*2 GB*/, small_record_counts[j], small_operations_counts[j], "geometric", 0.001, workloads[0][0], workloads[0][1], workloads[0][2], workloads[0][3], workloads[0][4], true, 524288 /*2 GB*/, 0);
+            iteration++;
+        }
+
+        std::cout << "Vary memory distribution coefficient tests completed..." << std::endl;
+        std::cout << "All tests completed!" << std::endl;
+
+        iteration = 1;
         std::cout << "Vary memory distribution coefficient tests started..." << std::endl;
 
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 5; i++)
         {
             for (auto &memory_distribution_l : memory_distributions)
             {

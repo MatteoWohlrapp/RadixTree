@@ -26,3 +26,12 @@ legend('Location', 'southeast');
 grid on;
 
 % Other plots go here...
+p = 0.001; % Geometric distribution parameter, change as necessary
+x = 0:20000000; % Values
+y = geopdf(x,p); % Geometric Probability Distribution Function
+
+figure
+semilogy(x,y) % Plot on a semilogarithmic scale to better visualize the data
+title('Geometric Distribution')
+xlabel('x')
+ylabel('Probability')

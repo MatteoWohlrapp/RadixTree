@@ -713,7 +713,7 @@ private:
             return INT64_MIN;
 
         void *next = get_next_page(header, get_key(key, header->depth));
-        logger->info("RTree: In get_value_recursive, next page is {}", next);
+        logger->debug("RTree: In get_value_recursive, next page is {}", next);
         if (next)
         {
             if (header->leaf)

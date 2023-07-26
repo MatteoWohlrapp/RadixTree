@@ -31,7 +31,7 @@ void RunConfigOne::execute(bool benchmark)
 
             unique_values.insert(value);
             values[i] = value;
-            logger->info("Inserting: {}", i);
+            logger->debug("Inserting: {}", i);
             logger->flush();
             data_manager.insert(value, value);
         }
@@ -42,7 +42,7 @@ void RunConfigOne::execute(bool benchmark)
             int num = geom(generator);
             if (num >= 10000)
                 num = 9999;
-            logger->info("Reading i: {}", i);
+            logger->debug("Reading i: {}", i);
             logger->flush();
             data_manager.get_value(values[num]);
         }
