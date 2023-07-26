@@ -29,13 +29,9 @@ private:
 
     std::filesystem::path base_path;
 
-    /// path to the bitmap file
-    std::filesystem::path bitmap = "bitmap.bin";
     /// path to the data file
     std::filesystem::path data = "data.bin";
-
-    /// file handle for the offset file
-    std::fstream bitmap_fs;
+    
     /// file handle for the data file
     std::fstream data_fs;
 

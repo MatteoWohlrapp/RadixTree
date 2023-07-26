@@ -31,6 +31,7 @@ namespace Configuration
         bool measure_per_operation = false;   /// Either measure throughput or individual operations which gives the percentiles etc.
         bool benchmark = false;               /// whether benchmarking is enabled or not, only applicable for run config
         bool run_workload = false;            /// if a workload or a run config should be run
+        bool script = false; 
         double coefficient = 0.01;            /// coefficient of the distribution
     };
 }

@@ -111,4 +111,6 @@ public:
      * @brief Function that needs to be called before exiting the program, saved all pages to the disc, important to be called before the storage manager is destroyed
      */
     void destroy();
+
+    uint64_t get_current_buffer_size(); 
 };

@@ -174,4 +174,18 @@ public:
         }
         return true;
     }
+
+    uint64_t get_cache_size()
+    {
+        if (radix_tree)
+        {
+            return radix_tree->get_cache_size();
+        }
+        return 0; 
+    }
+
+    uint64_t get_current_buffer_size()
+    {
+        return buffer_manager->get_current_buffer_size(); 
+    }
 };

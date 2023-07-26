@@ -25,6 +25,7 @@
 #include "utils/logger.h"
 #include "configuration.h"
 #include "run_suite/workload.h"
+#include "run_suite/workloads_script.h"
 #include <boost/dynamic_bitset.hpp>
 #include <getopt.h>
 
@@ -59,12 +60,14 @@ static struct option long_options[] = {
     {"workload", optional_argument, 0, 'w'},
     {"help", no_argument, 0, 'h'},
     {"coefficient", required_argument, 0, 0},
+    {"script", no_argument, 0, 's'},
     {0, 0, 0, 0}};
 
 void print_help()
 {
     printf(" -r, --run_config <run config> ........... Select which run configuration you want to choose. Currently available: 1, 2\n");
     printf(" -w, --workload .......................... Select the workload (a, b, c, e, x), If no argument is specified, the general workload with the configured parameters is executed. Be aware that because the parameter is optional, it must in the same argv element, e.g. -we.\n");
+    printf(" -s, ..................................... Runs the workload script.\n");
     printf(" -c, --cache  ............................ Activate cache. Creates a radix tree that is placed in front of the b+ tree to act as a cache.\n");
     printf(" -b, --benchmark ......................... Activate benchmark mode. Overwrites any log-level specification to turn all loggers off\n");
     printf(" -v, --verbosity_level <verbosity_level> . Sets the verbosity level for the program: 'o' (off), 'e' (error), 'c' (critical), 'w' (warn), 'i' (info), 'd' (debug), 't' (trace). By default info is used\n");
@@ -166,7 +169,7 @@ void handle_arguments(int argc, char *argsv[])
 
     while (true)
     {
-        int result = getopt_long(argc, argsv, "hbcr:v:l:dw::", long_options, &option_index);
+        int result = getopt_long(argc, argsv, "hbcr:v:l:dw::s", long_options, &option_index);
         if (result == -1)
         {
             break;
@@ -225,7 +228,7 @@ void handle_arguments(int argc, char *argsv[])
 
     while (1)
     {
-        int result = getopt_long(argc, argsv, "hbcr:v:l:dw::", long_options, &option_index);
+        int result = getopt_long(argc, argsv, "hbcr:v:l:dw::s", long_options, &option_index);
 
         if (result == -1)
         {
@@ -291,6 +294,13 @@ void handle_arguments(int argc, char *argsv[])
             }
         }
         break;
+        case 's':
+        {
+            run_option_set = true;
+            configuration.run_workload = true;
+            configuration.script = true;
+        }
+        break; 
         }
     }
 
@@ -308,7 +318,15 @@ int main(int argc, char *argsv[])
     handle_arguments(argc, argsv);
     if (configuration.run_workload)
     {
-        workload->execute();
+        if (configuration.script)
+        {
+            auto script = WorkloadScript();
+            script.execute();
+        }
+        else
+        {
+            workload->execute();
+        }
     }
     else
     {

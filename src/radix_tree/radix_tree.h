@@ -57,7 +57,7 @@ private:
     int64_t inverse_transform(uint64_t key)
     {
         uint64_t transformed_key = ((uint64_t)key) - INT64_MAX - 1;
-        logger->debug("Inverse Transformed key is: {} from key: {}", transformed_key, key);
+        logger->debug("Inverse Transformed key is: {} from key: {}", (int64_t)transformed_key, key);
         return transformed_key;
     }
 
@@ -147,7 +147,7 @@ private:
                     {
                         // if child is full we need to resize it
                         child_header = increase_node_size(child_header);
-                        logger->info("Increased node size, child header: {}", (void *)child_header);
+                        logger->debug("Increased node size, child header: {}", (void *)child_header);
                         logger->flush();
                         node_insert(rheader, partial_key, child_header);
                     }
@@ -255,7 +255,7 @@ private:
      */
     void destroy_recursive(RHeader *header)
     {
-        logger->info("Destroying pointer: {}", (void *)header);
+        logger->debug("Destroying pointer: {}", (void *)header);
         logger->flush();
         if (!header)
             return;
@@ -446,7 +446,7 @@ private:
             return new_header;
         }
         }
-        logger->info("Node Type: {}", header->type);
+        logger->debug("Node Type: {}", header->type);
         return nullptr;
     }
 
@@ -520,7 +520,7 @@ private:
         }
         break;
         }
-        logger->info("Node Type: {}", header->type);
+        logger->debug("Node Type: {}", header->type);
         logger->flush();
         return nullptr;
     }
@@ -713,14 +713,15 @@ private:
             return INT64_MIN;
 
         void *next = get_next_page(header, get_key(key, header->depth));
+        logger->info("RTree: In get_value_recursive, next page is {}", next);
         if (next)
         {
             if (header->leaf)
             {
 
                 RFrame *frame = (RFrame *)next;
-                logger->info("About to compare to page {} for key {}", (void *) frame->header, inverse_transform(key));
-                logger->flush(); 
+                logger->debug("About to compare to page {} for key {}", (void *)frame->header, inverse_transform(key));
+                logger->flush();
                 if (frame->header->page_id == frame->page_id)
                 {
                     int64_t value = ((BOuterNode<PAGE_SIZE> *)frame->header)->get_value(inverse_transform(key));
@@ -943,31 +944,18 @@ private:
             RNode4 *node = (RNode4 *)header;
             for (int i = 0; i < node->header.current_size; i++)
             {
-                if (header->depth == 1 && from < 0 && to >= 0)
-                {
-                    uint8_t from_byte = get_key(from, 1);
-                    uint8_t to_byte = get_key(to, 1);
+                intermediate_key = get_intermediate_key(header->key, node->keys[i], header->depth);
 
-                    if (node->keys[i] >= from_byte || node->keys[i] <= to_byte)
+                if (intermediate_key >= from_key && intermediate_key <= to_key)
+                {
+                    if (header->leaf)
+                    {
+                        node_insert(header, node->keys[i], header->key, page_id, bheader);
+                    }
+                    else
                     {
                         ((RHeader *)node->children[i])->fix_node();
                         update_range_recursive(((RHeader *)node->children[i]), from, to, page_id, bheader);
-                    }
-                }
-                else
-                {
-                    intermediate_key = get_intermediate_key(header->key, node->keys[i], header->depth);
-                    if (intermediate_key >= from_key && intermediate_key <= to_key)
-                    {
-                        if (header->leaf)
-                        {
-                            node_insert(header, node->keys[i], header->key, page_id, bheader);
-                        }
-                        else
-                        {
-                            ((RHeader *)node->children[i])->fix_node();
-                            update_range_recursive(((RHeader *)node->children[i]), from, to, page_id, bheader);
-                        }
                     }
                 }
             }
@@ -1357,7 +1345,7 @@ public:
      */
     void insert(int64_t key, uint64_t page_id, BHeader *bheader)
     {
-        logger->info("Inserting into Radix Tree key: {}, at address {}", key, (void *) bheader);
+        logger->debug("Inserting into Radix Tree key: {}, at address {}", key, (void *)bheader);
         if (current_size < radix_tree_size)
         {
             buffer[write] = key;
@@ -1390,7 +1378,7 @@ public:
     void delete_reference(int64_t s_key)
     {
         uint64_t key = transform(s_key);
-        logger->info("Deleting in Radix Tree: {}", s_key);
+        logger->debug("Deleting in Radix Tree: {}", s_key);
         if (!root)
             return;
 
@@ -1591,5 +1579,9 @@ public:
             }
         }
         return false;
+    }
+
+    uint64_t get_cache_size(){
+        return current_size;
     }
 };

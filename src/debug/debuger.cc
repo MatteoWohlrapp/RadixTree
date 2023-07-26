@@ -10,9 +10,12 @@
 Debuger::Debuger(DataManager<Configuration::page_size> *data_manager_arg) : data_manager(data_manager_arg)
 {
     logger = spdlog::get("logger");
-    bplus_tree = data_manager->bplus_tree; 
-    radix_tree = data_manager->radix_tree; 
-    buffer_manager = data_manager->buffer_manager; 
+    if (data_manager)
+    {
+        bplus_tree = data_manager->bplus_tree;
+        radix_tree = data_manager->radix_tree;
+        buffer_manager = data_manager->buffer_manager;
+    }
 }
 
 // BFS
@@ -44,7 +47,7 @@ void Debuger::traverse_bplus_tree()
             {
                 std::ostringstream node;
                 BOuterNode<Configuration::page_size> *outer_node = (BOuterNode<Configuration::page_size> *)current;
-                node << "BOuterNode:  " << outer_node->header.page_id << " {";
+                node << "BOuterNode:  " << outer_node->header.page_id << " at address: " << (void *) outer_node <<" {";
                 for (int j = 0; j < outer_node->current_index; j++)
                 {
                     node << " (Key: " << outer_node->keys[j] << ", Value: " << outer_node->values[j] << ")";
@@ -56,7 +59,7 @@ void Debuger::traverse_bplus_tree()
             {
                 std::ostringstream node;
                 BInnerNode<Configuration::page_size> *inner_node = (BInnerNode<Configuration::page_size> *)current;
-                node << "BInnerNode: " << inner_node->header.page_id << " {";
+                node << "BInnerNode: " << inner_node->header.page_id << " at address: " << (void *) inner_node << " {";
                 node << " (Child_id: " << inner_node->child_ids[0] << ", ";
                 for (int j = 0; j < inner_node->current_index; j++)
                 {
@@ -181,8 +184,8 @@ void Debuger::traverse_radix_tree()
 {
     if (!radix_tree->root)
     {
-        logger->debug("Radixtree null"); 
-        return; 
+        logger->debug("Radixtree null");
+        return;
     }
     std::queue<RHeader *> nodes_queue;
     nodes_queue.push(radix_tree->root);
@@ -250,9 +253,9 @@ void Debuger::traverse_radix_tree()
                     if (node->keys[i] != 255)
                     {
                         std::stringstream ss_frame;
-                        ss_frame << "child_key: " << static_cast<unsigned int>(i) << ", child_address: " << node->children[i];
+                        ss_frame << "child_key: " << static_cast<unsigned int>(i) << ", child_address: " << node->children[node->keys[i]];
                         logger->debug(ss_frame.str());
-                        nodes_queue.push((RHeader *)node->children[i]);
+                        nodes_queue.push((RHeader *)node->children[node->keys[i]]);
                     }
                 }
                 break;
@@ -286,7 +289,7 @@ void Debuger::traverse_radix_tree()
                 {
                     RFrame *frame = (RFrame *)node->children[i];
                     std::stringstream ss_frame;
-                    ss_frame << "leaf_child_frame_id: " << frame->page_id;
+                    ss_frame << "leaf_child_frame_id: " << frame->page_id << " at address: " << (void *) frame->header;
                     logger->debug(ss_frame.str());
                 }
                 break;
@@ -299,7 +302,7 @@ void Debuger::traverse_radix_tree()
 
                     RFrame *frame = (RFrame *)node->children[i];
                     std::stringstream ss_frame;
-                    ss_frame << "leaf_child_frame_id: " << frame->page_id;
+                    ss_frame << "leaf_child_frame_id: " << frame->page_id << " at address: " << (void *) frame->header;
                     logger->debug(ss_frame.str());
                 }
                 break;
@@ -311,10 +314,10 @@ void Debuger::traverse_radix_tree()
                 {
                     if (node->keys[i] != 255)
                     {
-                        logger->debug("Accessing key: {}", i); 
+                        logger->debug("Accessing key: {}", i);
                         RFrame *frame = (RFrame *)node->children[node->keys[i]];
                         std::stringstream ss_frame;
-                        ss_frame << "leaf_child_frame_id: " << frame->page_id;
+                        ss_frame << "leaf_child_frame_id: " << frame->page_id << " at address: " <<  (void *) frame->header;
                         logger->debug(ss_frame.str());
                     }
                 }
@@ -329,7 +332,7 @@ void Debuger::traverse_radix_tree()
                     {
                         RFrame *frame = (RFrame *)node->children[i];
                         std::stringstream ss_frame;
-                        ss_frame << "leaf_child_frame_id: " << frame->page_id;
+                        ss_frame << "leaf_child_frame_id: " << frame->page_id  << " at address: " << (void *) frame->header;
                         logger->debug(ss_frame.str());
                     }
                 }

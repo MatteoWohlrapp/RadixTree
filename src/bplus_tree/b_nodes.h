@@ -81,7 +81,6 @@ struct BInnerNode
         assert(!is_full() && "Inserting into inner node when its full.");
         // find index where to insert
         int index = binary_search(key);
-        ;
 
         // shift all keys bigger one space to the left
         for (int i = current_index; i > index; i--)
@@ -124,7 +123,7 @@ struct BInnerNode
         // we always delete key and the right child because the new elements will be in the left node from the key
         int index = binary_search(key);
 
-        if (keys[index] == key)
+        if (index != current_index && keys[index] == key)
         {
             for (int i = index + 1; i < current_index; i++)
             {
@@ -156,7 +155,6 @@ struct BInnerNode
     bool contains(int64_t key)
     {
         int index = binary_search(key);
-        ;
 
         return index != current_index && keys[index] == key;
     }
@@ -301,7 +299,7 @@ struct BOuterNode
     {
         int index = binary_search(key);
 
-        if (keys[index] == key)
+        if (index != current_index && keys[index] == key)
         {
             for (int i = index + 1; i < current_index; i++)
             {

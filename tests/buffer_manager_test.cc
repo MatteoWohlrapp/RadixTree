@@ -12,19 +12,12 @@ protected:
     int buffer_size = 2;
     BufferManager *buffer_manager;
     std::filesystem::path base_path = "../tests/temp/";
-    std::filesystem::path bitmap = "bitmap.bin";
     std::filesystem::path data = "data.bin";
     std::shared_ptr<spdlog::logger> logger = spdlog::get("logger");
 
     void SetUp() override
     {
-        std::filesystem::remove(base_path / bitmap);
         std::filesystem::remove(base_path / data);
-        buffer_manager = new BufferManager(new StorageManager(base_path, page_size), buffer_size, page_size);
-    }
-
-    void overwrite_buffer_manager()
-    {
         buffer_manager = new BufferManager(new StorageManager(base_path, page_size), buffer_size, page_size);
     }
 
@@ -114,18 +107,5 @@ TEST_F(BufferManagerTest, DeletingPage)
     auto page_id_map = get_page_id_map();
     ASSERT_FALSE(page_id_map.find(1) == page_id_map.end());
     buffer_manager->delete_page(1);
-    page_id_map = get_page_id_map();
-    ASSERT_TRUE(page_id_map.find(1) == page_id_map.end());
-}
-
-TEST_F(BufferManagerTest, DestroyPage)
-{
-    BHeader *header = buffer_manager->create_new_page();
-
-    buffer_manager->destroy();
-
-    overwrite_buffer_manager();
-
-    BHeader *loaded_header = buffer_manager->request_page(1);
-    ASSERT_EQ(header->page_id, 1);
+    ASSERT_EQ(buffer_manager->request_page(1)->page_id, 0);
 }

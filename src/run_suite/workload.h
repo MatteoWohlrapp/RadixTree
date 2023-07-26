@@ -9,6 +9,7 @@
 #include "../data/data_manager.h"
 #include <sys/resource.h>
 #include <iostream>
+#include "../debug/debuger.h"
 
 /**
  * @brief General abstraction for the YCSB workload
@@ -30,6 +31,7 @@ private:
 
     std::shared_ptr<spdlog::logger> logger;
     DataManager<Configuration::page_size> data_manager;
+    Debuger debuger;
     std::vector<std::vector<double>> times;
     std::set<int64_t> records_set;
     std::vector<int64_t> records_vector; /// entries inserted into the DB
@@ -156,12 +158,12 @@ private:
 
             if (op == INSERT)
             {
-                int64_t value = value_distribution(generator); 
+                int64_t value = value_distribution(generator);
                 while (records_set.count(value) > 0)
                 {
-                    value = value_distribution(generator); 
+                    value = value_distribution(generator);
                 }
-                records_set.insert(value); 
+                records_set.insert(value);
             }
         }
 
@@ -266,11 +268,6 @@ private:
      */
     void analyze()
     {
-        struct rusage usage;
-        getrusage(RUSAGE_SELF, &usage);
-        std::cout << "Memory usage: " << usage.ru_maxrss << " KB" << std::endl;
-        std::cout << "\n";
-
         if (!measure_per_operation)
         {
             double total_time = times[0][0];
@@ -283,6 +280,9 @@ private:
         {
             std::vector<std::string> operation_names = {"INSERT", "READ", "UPDATE", "SCAN", "DELETE"};
 
+            uint64_t total_operations = 0;
+            double total_time = 0;
+
             for (int i = 0; i < NUM_OPERATIONS; ++i)
             {
                 std::vector<double> &operation_times = times[i];
@@ -292,6 +292,8 @@ private:
                 }
 
                 double sum = std::accumulate(operation_times.begin(), operation_times.end(), 0.0);
+                total_time += sum;
+                total_operations += operation_times.size();
                 double mean = sum / operation_times.size();
 
                 std::sort(operation_times.begin(), operation_times.end());
@@ -307,14 +309,19 @@ private:
 
                 std::cout << "Analysis for " << operation_names[i] << " operations:\n";
                 std::cout << "Total number of operations: " << operation_times.size() << "\n";
-                std::cout << "Total time: " << std::fixed << std::setprecision(6) << sum << "s\n";
-                std::cout << "Mean time: " << std::fixed << std::setprecision(6) << mean << "s\n";
-                std::cout << "Median time: " << std::fixed << std::setprecision(6) << median << "s\n";
-                std::cout << "90th percentile time: " << std::fixed << std::setprecision(6) << percentile_90 << "s\n";
-                std::cout << "95th percentile time: " << std::fixed << std::setprecision(6) << percentile_95 << "s\n";
-                std::cout << "99th percentile time: " << std::fixed << std::setprecision(6) << percentile_99 << "s\n";
+                std::cout << "Total time: " << std::fixed << std::setprecision(10) << sum << "s\n";
+                std::cout << "Mean time: " << std::fixed << std::setprecision(10) << mean << "s\n";
+                std::cout << "Median time: " << std::fixed << std::setprecision(10) << median << "s\n";
+                std::cout << "90th percentile time: " << std::fixed << std::setprecision(10) << percentile_90 << "s\n";
+                std::cout << "95th percentile time: " << std::fixed << std::setprecision(10) << percentile_95 << "s\n";
+                std::cout << "99th percentile time: " << std::fixed << std::setprecision(10) << percentile_99 << "s\n";
                 std::cout << "\n";
             }
+
+            std::cout << "Total time: " << std::fixed << std::setprecision(10) << total_time << "s\n";
+            std::cout << "Throughput: " << std::fixed << std::setprecision(10) << total_operations / total_time << "s\n";
+            std::cout << "Cache Size: " << data_manager.get_cache_size() << std::endl; 
+            std::cout << "Buffer Size: " << data_manager.get_current_buffer_size() * Configuration::page_size << std::endl; 
         }
     }
 

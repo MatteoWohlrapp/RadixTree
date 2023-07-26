@@ -18,13 +18,11 @@ protected:
     BPlusTree<PAGE_SIZE> *bplus_tree;
     BufferManager *buffer_manager;
     std::filesystem::path base_path = "../tests/temp/";
-    std::filesystem::path bitmap = "bitmap.bin";
     std::filesystem::path data = "data.bin";
     std::shared_ptr<spdlog::logger> logger = spdlog::get("logger");
 
     void SetUp() override
     {
-        std::filesystem::remove(base_path / bitmap);
         std::filesystem::remove(base_path / data);
         buffer_manager = new BufferManager(new StorageManager(base_path, PAGE_SIZE), buffer_size, PAGE_SIZE);
         bplus_tree = new BPlusTree<PAGE_SIZE>(buffer_manager);
