@@ -20,7 +20,7 @@ private:
     uint64_t total_records = 25000000;
     uint64_t buffer_size = 80000; // around 0.3 gb - 0.5 gb at 15 mio entries
     uint64_t radix_tree_size = 1395864371; // around 1.3 gb - 1.5 gb at 15 mio entries
-    uint64_t operation_count = 50000000;
+    uint64_t operation_count = 40000000;
     uint64_t record_count = 20000000;
     int max_scan_range = 100;
 
@@ -271,6 +271,7 @@ private:
             result.total_time = sum;
             result.operation_count = operation_times.size();
             total_operations += operation_times.size();
+            total_time += sum;
 
             std::sort(operation_times.begin(), operation_times.end());
             double median = operation_times[operation_times.size() / 2];
@@ -351,19 +352,19 @@ public:
         std::cout << "Vary records-size tests completed..." << std::endl;
 
         iteration = 1;
-        std::cout << "Vary operations-size tests started..." << std::endl;
+        std::cout << "Vary distribution started..." << std::endl;
         for (auto &cache : caches)
         {
             for (int i = 0; i < 5; i++)
             {
-                for (auto &operation_count_l : operation_counts)
+                for (auto &distribution : distributions)
                 {
-                    run_workload("vary operations size", iteration, buffer_size, record_count, operation_count_l, "geometric", 0.001, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], cache, radix_tree_size, i);
+                    run_workload("vary distribution", iteration, buffer_size, record_count, operation_count, distribution, 0.001, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], cache, radix_tree_size, i);
                     iteration++;
                 }
             }
         }
-        std::cout << "Vary operations-size tests completed..." << std::endl;
+        std::cout << "Vary distribution tests completed..." << std::endl;
 
         iteration = 1;
         std::cout << "Vary geometric distribution coefficient tests started..." << std::endl;
@@ -389,8 +390,7 @@ public:
             iteration++;
         }
 
-        std::cout << "Vary memory distribution coefficient tests completed..." << std::endl;
-        std::cout << "All tests completed!" << std::endl;
+        std::cout << "Show memory size tests completed..." << std::endl;
 
         iteration = 1;
         std::cout << "Vary memory distribution coefficient tests started..." << std::endl;

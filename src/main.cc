@@ -94,7 +94,7 @@ const void handle_logging(int argc, char *argsv[])
     char log_mode = 'c';
     while (1)
     {
-        int result = getopt_long(argc, argsv, "hbcr:v:l:dw::", long_options, &option_index);
+        int result = getopt_long(argc, argsv, "hbcr:v:l:dw::s", long_options, &option_index);
         if (result == -1)
         {
             break;
