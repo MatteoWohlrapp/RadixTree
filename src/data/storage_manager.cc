@@ -129,7 +129,7 @@ void StorageManager::delete_page(uint64_t page_id)
         next_free_space = page_id;
 }
 
-int StorageManager::get_unused_page_id()
+uint64_t StorageManager::get_unused_page_id()
 {
     int next = next_free_space;
     free_space_map.reset(next);

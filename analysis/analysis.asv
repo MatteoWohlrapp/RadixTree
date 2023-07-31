@@ -4,7 +4,7 @@
 
 %% Load Data
 % Load data from CSV
-data = readtable('/Users/matteowohlrapp/Documents/Uni/Thesis/radixtree/results/2023-7-31-11:8:4_test_results.csv');
+data = readtable('/Users/matteowohlrapp/Documents/Uni/Thesis/radixtree/results/2023-7-27-19:47:17_test_results.csv');
 
 % Convert cell array of character arrays to string array
 data.TestName = string(data.TestName);
@@ -55,7 +55,7 @@ end
 
 
 % Bar graph
-max_record = 10000000;
+max_record = 2000000;
 
 operationsByWorkload = {
     {'Read', 'Update'},
@@ -101,7 +101,7 @@ for i = 0:4
     yticks = get(gca,'ytick');
 
     % Generate new labels
-    yticklabels_values = arrayfun(@(x) sprintf('%.1f\\mu s', x * 1e6), yticks, 'UniformOutput', false);
+    yticklabels_values = arrayfun(@(x) sprintf('%.0f\\mu s', x * 1e6), yticks, 'UniformOutput', false);
 
     % Set new labels
     set(gca, 'yticklabel', yticklabels_values);
@@ -259,13 +259,15 @@ yticklabels_values = arrayfun(@(x) sprintf('%.0fK', x / 1e3), yticks, 'UniformOu
 % Set new labels
 set(gca, 'yticklabel', yticklabels_values);
 hold off
-matlab2tikz([t '.tex'], 'extraAxisOptions','scaled y ticks=false', 'showInfo', false);
+matlab2tikz([t '.tex'], 'extraAxisOptions','scaled y ticks=false');
 
 %% Speed comparison 
 
 coefficients_table = data(strcmp(data.TestName, 'speed comparision'), :);
 coefficients = coefficients_table.Coefficient;
+disp(coefficients)
 coefficients = sort(unique(coefficients)); 
+disp(coefficients)
 
 bars_data = zeros(length(coefficients), 2);
 figure;

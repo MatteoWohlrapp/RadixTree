@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <string>
@@ -17,11 +16,11 @@
 class WorkloadScript
 {
 private:
-    uint64_t total_records = 25000000;
-    uint64_t buffer_size = 80000; // around 0.3 gb - 0.5 gb at 15 mio entries
-    uint64_t radix_tree_size = 1395864371; // around 1.3 gb - 1.5 gb at 15 mio entries
-    uint64_t operation_count = 40000000;
-    uint64_t record_count = 20000000;
+    uint64_t total_records = 12500000;
+    uint64_t buffer_size = 40000;         // around 0.3 gb - 0.5 gb at 15 mio entries
+    uint64_t radix_tree_size = 697932185; // around 1.3 gb - 1.5 gb at 15 mio entries
+    uint64_t operation_count = 20000000;
+    uint64_t record_count = 10000000;
     int max_scan_range = 100;
 
     std::shared_ptr<spdlog::logger> logger;
@@ -38,16 +37,17 @@ private:
     std::string results_filename;
     std::ofstream csv_file;
 
-    uint64_t operation_counts[5] = {20000000, 40000000, 60000000, 80000000, 100000000};
-    uint64_t small_operations_counts[5] = {2000, 20000, 200000, 2000000, 20000000};
-    uint64_t record_counts[5] = {4000000, 8000000, 12000000, 16000000, 20000000};
-    uint64_t small_record_counts[5] = {2000, 20000, 200000, 2000000, 20000000};
-    double coefficients[10] = {0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01};
+    uint64_t operation_counts[5] = {10000000, 20000000, 30000000, 40000000, 50000000};
+    uint64_t small_operations_counts[5] = {1000, 10000, 100000, 1000000, 10000000};
+    uint64_t record_counts[5] = {2000000, 4000000, 6000000, 8000000, 10000000};
+    uint64_t small_record_counts[5] = {200, 2000, 20000, 200000, 2000000};
+    double coefficients[10] = {0.0009, 0.009, 0.09, 0.9};
     std::vector<std::string> distributions = {"uniform", "geometric"};
     bool caches[2] = {true, false};
     double workloads[5][5] = {
         {0, 0.5, 0.5, 0, 0}, {0, 0.95, 0.05, 0, 0}, {0, 1, 0, 0, 0}, {0.05, 0, 0, 0.95, 0}, {0, 0.90, 0, 0, 0.1}};
-    uint64_t memory_distributions[5][2] = {{262144000, 448000}, {524288000, 1572864000}, {1048576000, 256000}, {1572864000, 128000}, {1835008000, 64000}};
+    // uint64_t memory_distributions[5][2] = {{262144000, 448000}, {524288000, 1572864000}, {1048576000, 256000}, {1572864000, 128000}, {1835008000, 64000}};
+    uint64_t memory_distributions[5][2] = {{131072000, 224000}, {262144000, 192000}, {524288000, 128000}, {786432000, 64000}, {917504000, 32000}};
 
     /**
      * @brief enumeration for the different kinds of operation possible
@@ -118,7 +118,7 @@ private:
      * @param radix_tree_size_arg The size of the cache
      * @param workload_arg The workload that is run
      */
-    void run_workload(std::string test_name, int iteration, uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, double insert_proportion_arg, double read_proportion_arg, double update_proportion_arg, double scan_proportion_arg, double delete_proportion_arg, bool cache_arg, uint64_t radix_tree_size_arg, int workload_arg)
+    void run_workload(std::string test_name, int iteration, uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, double insert_proportion_arg, double read_proportion_arg, double update_proportion_arg, double scan_proportion_arg, double delete_proportion_arg, bool cache_arg, uint64_t radix_tree_size_arg, int workload_arg, bool inverse = false)
     {
         std::cout << "Starting iteration " << iteration << " of test " << test_name << std::endl
                   << std::flush;
@@ -167,11 +167,20 @@ private:
             int index = index_distribution();
             indice_vector[i] = index;
         }
-
         // Inserting all elements
-        for (uint64_t i = 0; i < record_count_arg; i++)
+        if (!inverse)
         {
-            data_manager.insert(records_vector[i], records_vector[i]);
+            for (uint64_t i = 0; i < record_count_arg; i++)
+            {
+                data_manager.insert(records_vector[i], records_vector[i]);
+            }
+        }
+        else
+        {
+            for (uint64_t i = record_count_arg - 1; i >= 0; i--)
+            {
+                data_manager.insert(records_vector[i], records_vector[i]);
+            }
         }
 
         insert_index = record_count_arg;
@@ -193,8 +202,10 @@ private:
                 times[op].push_back(elapsed.count());
             }
         }
+        uint64_t cache_size = data_manager.get_cache_size();
+        uint64_t current_buffer_size = data_manager.get_current_buffer_size();
 
-        analyze(test_name, iteration, buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, insert_proportion_arg, read_proportion_arg, update_proportion_arg, scan_proportion_arg, delete_proportion_arg, cache_arg, radix_tree_size_arg, data_manager.get_cache_size(), data_manager.get_current_buffer_size(), workload_arg);
+        analyze(test_name, iteration, buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, insert_proportion_arg, read_proportion_arg, update_proportion_arg, scan_proportion_arg, delete_proportion_arg, cache_arg, radix_tree_size_arg, cache_size, current_buffer_size, workload_arg);
 
         data_manager.destroy();
     }
@@ -295,7 +306,7 @@ private:
         csv_file << test_name << "," << iteration << "," << buffer_size_arg << "," << record_count_arg << "," << operation_count_arg << ","
                  << distribution_arg << "," << workload_arg << "," << insert_proportion_arg << "," << read_proportion_arg << ","
                  << update_proportion_arg << "," << scan_proportion_arg << "," << delete_proportion_arg << ","
-                 << (cache_arg ? "true" : "false") << "," << radix_tree_size_arg << "," << coefficient_arg << ",";
+                 << (cache_arg ? "true" : "false") << "," << radix_tree_size_arg << "," << std::fixed << std::setprecision(5) << coefficient_arg << ",";
 
         for (const OperationResult &result : operation_results)
         {
@@ -303,7 +314,7 @@ private:
                      << result.mean_time << "," << result.median_time << "," << result.percentile_90 << ","
                      << result.percentile_95 << "," << result.percentile_99 << ",";
         }
-        csv_file << cache_arg << "," << current_buffer_size_arg << "," << std::fixed << std::setprecision(2) << total_time << ","
+        csv_file << cache_size_arg << "," << current_buffer_size_arg << "," << std::fixed << std::setprecision(2) << total_time << ","
                  << total_operations / total_time << "\n";
         csv_file.close();
     }
@@ -336,8 +347,10 @@ public:
         std::cout << "Initializing done" << std::endl
                   << std::flush;
 
-        std::cout << "Vary records-size tests started..." << std::endl;
         int iteration = 1;
+        std::cout << "Vary records-size tests started..." << std::endl;
+
+        iteration = 1;
         for (auto &cache : caches)
         {
             for (int i = 0; i < 5; i++)
@@ -351,7 +364,6 @@ public:
         }
         std::cout << "Vary records-size tests completed..." << std::endl;
 
-        iteration = 1;
         std::cout << "Vary distribution started..." << std::endl;
         for (auto &cache : caches)
         {
@@ -359,7 +371,7 @@ public:
             {
                 for (auto &distribution : distributions)
                 {
-                    run_workload("vary distribution", iteration, buffer_size, record_count, operation_count, distribution, 0.001, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], cache, radix_tree_size, i);
+                    run_workload("vary distribution", iteration, 4000, 500000, 500000, distribution, 0.001, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], cache, 69793215, i);
                     iteration++;
                 }
             }
@@ -370,13 +382,11 @@ public:
         std::cout << "Vary geometric distribution coefficient tests started..." << std::endl;
         for (auto &cache : caches)
         {
-            for (int i = 0; i < 5; i++)
+
+            for (auto &coefficient_l : coefficients)
             {
-                for (auto &coefficient_l : coefficients)
-                {
-                    run_workload("vary geometric distribution", iteration, buffer_size, record_count, operation_count, "geometric", coefficient_l, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], cache, radix_tree_size, i);
-                    iteration++;
-                }
+                run_workload("vary geometric distribution", iteration, buffer_size, record_count, operation_count, "geometric", coefficient_l, workloads[0][0], workloads[0][1], workloads[0][2], workloads[0][3], workloads[0][4], cache, radix_tree_size, 0, true);
+                iteration++;
             }
         }
         std::cout << "Vary geometric distribution coefficient tests completed..." << std::endl;
@@ -386,7 +396,7 @@ public:
 
         for (int j = 0; j < 5; j++)
         {
-            run_workload("vary memory size", iteration, 2147483648 /*2 GB*/, small_record_counts[j], small_operations_counts[j], "geometric", 0.001, workloads[0][0], workloads[0][1], workloads[0][2], workloads[0][3], workloads[0][4], true, 524288 /*2 GB*/, 0);
+            run_workload("vary memory size", iteration, 524288, small_record_counts[j], small_operations_counts[j], "geometric", 0.001, workloads[0][0], workloads[0][1], workloads[0][2], workloads[0][3], workloads[0][4], true, 2147483648, 0);
             iteration++;
         }
 
@@ -399,12 +409,24 @@ public:
         {
             for (auto &memory_distribution_l : memory_distributions)
             {
-                run_workload("vary memory size", iteration, memory_distribution_l[1], record_count, operation_count, "geometric", 0.001, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], true, memory_distribution_l[0], i);
+                run_workload("vary memory distribution", iteration, memory_distribution_l[1], record_count, operation_count, "geometric", 0.001, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], true, memory_distribution_l[0], i);
                 iteration++;
             }
         }
 
         std::cout << "Vary memory distribution coefficient tests completed..." << std::endl;
+
+        std::cout << "Speed tests started ...";
+        for (int i = 0; i < 5; i++)
+        {
+
+            run_workload("speed comparison", iteration, 104857, record_count, operation_count, "geometric", 0.01, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], false, 0, i);
+            iteration++;
+            run_workload("speed comparison", iteration, 52428, record_count, operation_count, "geometric", 0.01, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], true, 214748364, i);
+            iteration++;
+        }
+        std::cout << "Speed tests completed..." << std::endl;
+
         std::cout << "All tests completed!" << std::endl;
     }
 };

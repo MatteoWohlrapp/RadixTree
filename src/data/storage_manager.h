@@ -88,7 +88,7 @@ public:
      * @brief Gives an unsued page_id, when requesting a new unused page_id, the bitmap is already set, so its important to write the page at the end
      * @return page_id that is currently not in use
      */
-    int get_unused_page_id();
+    uint64_t get_unused_page_id();
 
     /**
      * @brief Used to save the offset to disc, needs to be called before exiting the program

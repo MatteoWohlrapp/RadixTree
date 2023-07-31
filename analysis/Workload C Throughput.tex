@@ -1,0 +1,52 @@
+% This file was created by matlab2tikz.
+%
+\definecolor{mycolor1}{rgb}{0.00000,0.44700,0.74100}%
+\definecolor{mycolor2}{rgb}{0.85000,0.32500,0.09800}%
+%
+\begin{tikzpicture}
+
+\begin{axis}[%
+width=6.028in,
+height=4.754in,
+at={(1.011in,0.642in)},
+scale only axis,
+xmin=2000000,
+xmax=10000000,
+xtick={2000000,4000000,6000000,8000000,10000000},
+xticklabels={{2.0M},{4.0M},{6.0M},{8.0M},{10.0M}},
+xlabel style={font=\color{white!15!black}},
+xlabel={Number of records},
+ymin=0,
+ymax=800000,
+ytick={0,100000,200000,300000,400000,500000,600000,700000,800000},
+yticklabels={{0K},{100K},{200K},{300K},{400K},{500K},{600K},{700K},{800K}},
+ylabel style={font=\color{white!15!black}},
+ylabel={Throughput [Operations / s]},
+axis background/.style={fill=white},
+xmajorgrids,
+ymajorgrids,
+legend style={at={(0.97,0.03)}, anchor=south east, legend cell align=left, align=left, draw=white!15!black},
+scaled y ticks=false
+]
+\addplot [color=mycolor1]
+  table[row sep=crcr]{%
+2000000	700770.88\\
+4000000	696877.16\\
+6000000	682289.9\\
+8000000	673230.33\\
+10000000	669197.96\\
+};
+\addlegendentry{Cached}
+
+\addplot [color=mycolor2]
+  table[row sep=crcr]{%
+2000000	718409.89\\
+4000000	705659.25\\
+6000000	540131.98\\
+8000000	538056.33\\
+10000000	545619.24\\
+};
+\addlegendentry{Not Cached}
+
+\end{axis}
+\end{tikzpicture}%

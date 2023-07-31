@@ -1,0 +1,61 @@
+% This file was created by matlab2tikz.
+%
+%The latest updates can be retrieved from
+%  http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz
+%where you can also make suggestions and rate matlab2tikz.
+%
+\definecolor{mycolor1}{rgb}{0.00000,0.44700,0.74100}%
+\definecolor{mycolor2}{rgb}{0.85000,0.32500,0.09800}%
+%
+\begin{tikzpicture}
+
+\begin{axis}[%
+width=6.028in,
+height=4.754in,
+at={(1.011in,0.642in)},
+scale only axis,
+bar shift auto,
+xmin=0.514285714285714,
+xmax=5.48571428571429,
+xtick={1,2,3,4,5},
+xticklabels={{Workload A},{Workload B},{Workload C},{Workload E},{Workload X}},
+ymin=0,
+ymax=900000,
+ytick={0,100000,200000,300000,400000,500000,600000,700000,800000,900000},
+yticklabels={{0K},{100K},{200K},{300K},{400K},{500K},{600K},{700K},{800K},{900K}},
+ylabel style={font=\color{white!15!black}},
+ylabel={Throughput [Operations / s]},
+axis background/.style={fill=white},
+xmajorgrids,
+ymajorgrids,
+legend style={at={(0.97,0.03)}, anchor=south east, legend cell align=left, align=left, draw=white!15!black},
+scaled y ticks=false
+]
+\addplot[ybar, bar width=0.229, fill=mycolor1, draw=black, area legend] table[row sep=crcr] {%
+1	440265.18\\
+2	463244.58\\
+3	402445.3\\
+4	50568.07\\
+5	320584.28\\
+};
+\addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
+0.514285714285714	0\\
+5.48571428571429	0\\
+};
+\addlegendentry{Uniform}
+
+\addplot[ybar, bar width=0.229, fill=mycolor2, draw=black, area legend] table[row sep=crcr] {%
+1	866777.34\\
+2	700623.57\\
+3	668493.11\\
+4	179199.86\\
+5	539468.94\\
+};
+\addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
+0.514285714285714	0\\
+5.48571428571429	0\\
+};
+\addlegendentry{Geometric}
+
+\end{axis}
+\end{tikzpicture}%

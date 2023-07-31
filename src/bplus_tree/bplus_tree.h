@@ -208,7 +208,6 @@ private:
         {
             // outer node
             BOuterNode<PAGE_SIZE> *node = (BOuterNode<PAGE_SIZE> *)header;
-            logger->flush();
             node->delete_value(key);
             if (cache)
                 cache->delete_reference(key);

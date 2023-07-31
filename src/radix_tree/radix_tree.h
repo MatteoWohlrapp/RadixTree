@@ -148,7 +148,6 @@ private:
                         // if child is full we need to resize it
                         child_header = increase_node_size(child_header);
                         logger->debug("Increased node size, child header: {}", (void *)child_header);
-                        logger->flush();
                         node_insert(rheader, partial_key, child_header);
                     }
 
@@ -256,7 +255,6 @@ private:
     void destroy_recursive(RHeader *header)
     {
         logger->debug("Destroying pointer: {}", (void *)header);
-        logger->flush();
         if (!header)
             return;
         if (header->leaf)
@@ -521,7 +519,6 @@ private:
         break;
         }
         logger->debug("Node Type: {}", header->type);
-        logger->flush();
         return nullptr;
     }
 
@@ -699,57 +696,6 @@ private:
         }
         }
         return nullptr;
-    }
-
-    /**
-     * @brief Get the value for a key
-     * @param header The radix tree node
-     * @param key The key where the value is stored at
-     * @return The value corresponding to the key or INT64_MIN if not present
-     */
-    int64_t get_value_recursive(RHeader *header, uint64_t key)
-    {
-        if (header == nullptr)
-            return INT64_MIN;
-
-        void *next = get_next_page(header, get_key(key, header->depth));
-        logger->debug("RTree: In get_value_recursive, next page is {}", next);
-        if (next)
-        {
-            if (header->leaf)
-            {
-
-                RFrame *frame = (RFrame *)next;
-                logger->debug("About to compare to page {} for key {}", (void *)frame->header, inverse_transform(key));
-                logger->flush();
-                if (frame->header->page_id == frame->page_id)
-                {
-                    int64_t value = ((BOuterNode<PAGE_SIZE> *)frame->header)->get_value(inverse_transform(key));
-                    header->unfix_node();
-                    return value;
-                }
-                else
-                {
-                    header->unfix_node();
-                    // Delete from tree as the reference is not matching and the page_id is wrong
-                    delete_reference(inverse_transform(key));
-                    return INT64_MIN;
-                }
-            }
-            else
-            {
-                RHeader *child = (RHeader *)next;
-                child->fix_node();
-                header->unfix_node();
-                return get_value_recursive(child, key);
-            }
-        }
-        else
-        {
-            logger->debug("Next was null");
-            header->unfix_node();
-            return INT64_MIN;
-        }
     }
 
     /**
@@ -1345,7 +1291,7 @@ public:
      */
     void insert(int64_t key, uint64_t page_id, BHeader *bheader)
     {
-        logger->debug("Inserting into Radix Tree key: {}, at address {}", key, (void *)bheader);
+        logger->info("Inserting into radix tree, current size: {}", current_size);
         if (current_size < radix_tree_size)
         {
             buffer[write] = key;
@@ -1454,32 +1400,6 @@ public:
     }
 
     /**
-     * @brief Get a value corresponding to the key
-     * @param key The key corresponding to the value
-     * @return The value
-     */
-    int64_t get_value(int64_t key)
-    {
-        if (!root)
-            return INT64_MIN;
-        root->fix_node();
-        return get_value_recursive(root, transform(key));
-    }
-
-    /**
-     * @brief Get the page a key is located on
-     * @param key The key which is on the page
-     * @return The page
-     */
-    BHeader *get_page(int64_t key)
-    {
-        if (!root)
-            return nullptr;
-        root->fix_node();
-        return get_page_recursive(root, transform(key));
-    }
-
-    /**
      * @brief Updates a range of values, specified by values from and to
      * @param from key from which updates are applied
      * @param to key until which updates are applied
@@ -1523,6 +1443,28 @@ public:
     }
 
     /**
+     * @brief Get a value corresponding to the key
+     * @param key The key corresponding to the value
+     * @return The value
+     */
+    int64_t get_value(int64_t key)
+    {
+        if (root)
+        {
+            root->fix_node();
+            BHeader *header = get_page_recursive(root, transform(key));
+            if (header)
+            {
+                buffer_manager->fix_page(header->page_id);
+                uint64_t value = ((BOuterNode<PAGE_SIZE> *)header)->get_value(key);
+                buffer_manager->unfix_page(header->page_id, false);
+                return value;
+            }
+        }
+        return INT64_MIN;
+    }
+
+    /**
      * @brief Updates a key if it is cached
      * @param key The key to update
      * @param value The value to update
@@ -1530,13 +1472,17 @@ public:
      */
     bool update(int64_t key, int64_t value)
     {
-        BHeader *header = get_page(key);
-        if (header)
+        if (root)
         {
-            buffer_manager->fix_page(header->page_id);
-            ((BOuterNode<PAGE_SIZE> *)header)->update(key, value);
-            buffer_manager->unfix_page(header->page_id, true);
-            return true;
+            root->fix_node();
+            BHeader *header = get_page_recursive(root, transform(key));
+            if (header)
+            {
+                buffer_manager->fix_page(header->page_id);
+                ((BOuterNode<PAGE_SIZE> *)header)->update(key, value);
+                buffer_manager->unfix_page(header->page_id, true);
+                return true;
+            }
         }
         return false;
     }
@@ -1549,11 +1495,15 @@ public:
      */
     int64_t scan(int64_t key, int range)
     {
-        BHeader *header = get_page(key);
-        if (header)
+        if (root)
         {
-            buffer_manager->fix_page(header->page_id);
-            return TreeOperations::scan<PAGE_SIZE>(buffer_manager, nullptr, header, key, range);
+            root->fix_node();
+            BHeader *header = get_page_recursive(root, transform(key));
+            if (header)
+            {
+                buffer_manager->fix_page(header->page_id);
+                return TreeOperations::scan<PAGE_SIZE>(buffer_manager, nullptr, header, key, range);
+            }
         }
         return INT64_MIN;
     }
@@ -1565,17 +1515,21 @@ public:
      */
     bool delete_value(int64_t key)
     {
-        BHeader *header = get_page(key);
-        if (header)
+        if (root)
         {
-            BOuterNode<PAGE_SIZE> *node = (BOuterNode<PAGE_SIZE> *)header;
-            if (node->can_delete())
+            root->fix_node();
+            BHeader *header = get_page_recursive(root, transform(key));
+            if (header)
             {
-                buffer_manager->fix_page(header->page_id);
-                node->delete_value(key);
-                delete_reference(key);
-                buffer_manager->unfix_page(header->page_id, true);
-                return true;
+                BOuterNode<PAGE_SIZE> *node = (BOuterNode<PAGE_SIZE> *)header;
+                if (node->can_delete())
+                {
+                    buffer_manager->fix_page(header->page_id);
+                    node->delete_value(key);
+                    delete_reference(key);
+                    buffer_manager->unfix_page(header->page_id, true);
+                    return true;
+                }
             }
         }
         return false;
@@ -1584,8 +1538,9 @@ public:
     /**
      * @brief Returns the current size of the cache
      * @return the size of the cache
-    */
-    uint64_t get_cache_size(){
+     */
+    uint64_t get_cache_size()
+    {
         return current_size;
     }
 };

@@ -72,6 +72,16 @@ protected:
     {
         return radix_tree->key_matches(radix_tree->root);
     }
+
+    BHeader *get_page(int64_t key)
+    {
+        if (radix_tree->root)
+        {
+            radix_tree->root->fix_node(); 
+            return radix_tree->get_page_recursive(radix_tree->root, radix_tree->transform(key));
+        }
+        return nullptr; 
+    }
 };
 
 TEST_F(RadixTreeTest, GetKey)
@@ -992,14 +1002,14 @@ TEST_F(RadixTreeTest, GetPage)
     radix_tree->insert(-9223090561878065152, 0, header);
     radix_tree->insert(-9151314442816847872, 0, header);
 
-    ASSERT_EQ(radix_tree->get_page(-9223372036854775807 - 1), header);
-    ASSERT_EQ(radix_tree->get_page(-9223372036854775552), header);
-    ASSERT_EQ(radix_tree->get_page(-9223372036854710272), header);
-    ASSERT_EQ(radix_tree->get_page(-9223372036837998592), header);
-    ASSERT_EQ(radix_tree->get_page(-9223372032559808512), header);
-    ASSERT_EQ(radix_tree->get_page(-9223370937343148032), header);
-    ASSERT_EQ(radix_tree->get_page(-9223090561878065152), header);
-    ASSERT_EQ(radix_tree->get_page(-9151314442816847872), header);
+    ASSERT_EQ(get_page(-9223372036854775807 - 1), header);
+    ASSERT_EQ(get_page(-9223372036854775552), header);
+    ASSERT_EQ(get_page(-9223372036854710272), header);
+    ASSERT_EQ(get_page(-9223372036837998592), header);
+    ASSERT_EQ(get_page(-9223372032559808512), header);
+    ASSERT_EQ(get_page(-9223370937343148032), header);
+    ASSERT_EQ(get_page(-9223090561878065152), header);
+    ASSERT_EQ(get_page(-9151314442816847872), header);
 
     ASSERT_TRUE(is_compressed());
     ASSERT_TRUE(leaf_depth_correct());
@@ -1039,9 +1049,9 @@ TEST_F(RadixTreeTest, UpdateRangeWithSeed42)
     for (int i = 0; i < 100; i++)
     {
         if (i >= 20 && i <= 80)
-            ASSERT_EQ(radix_tree->get_page(values[i]), new_header);
+            ASSERT_EQ(get_page(values[i]), new_header);
         else
-            ASSERT_EQ(radix_tree->get_page(values[i]), header);
+            ASSERT_EQ(get_page(values[i]), header);
     }
     ASSERT_TRUE(is_compressed());
     ASSERT_TRUE(leaf_depth_correct());

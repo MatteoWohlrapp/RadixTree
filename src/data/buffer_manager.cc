@@ -17,7 +17,6 @@ void BufferManager::destroy()
     for (auto &pair : page_id_map)
     {
         logger->debug("Freeing: {}", pair.first);
-        logger->flush();
         if (pair.second->dirty)
         {
             storage_manager->save_page(&pair.second->header);

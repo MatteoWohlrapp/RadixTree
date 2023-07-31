@@ -76,7 +76,6 @@ public:
         if (radix_tree)
         {
             logger->debug("Destroying radix tree");
-            logger->flush();
             radix_tree->destroy();
             delete radix_tree;
         }
