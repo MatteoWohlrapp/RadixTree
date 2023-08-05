@@ -9,7 +9,6 @@
 #include "../data/data_manager.h"
 #include <sys/resource.h>
 #include <iostream>
-#include "../debug/debuger.h"
 
 /**
  * @brief General abstraction for the YCSB workload
@@ -31,7 +30,6 @@ private:
 
     std::shared_ptr<spdlog::logger> logger;
     DataManager<Configuration::page_size> data_manager;
-    Debuger debuger;
     std::vector<std::vector<double>> times;
     std::set<int64_t> records_set;
     std::vector<int64_t> records_vector; /// entries inserted into the DB

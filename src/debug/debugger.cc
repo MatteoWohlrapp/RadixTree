@@ -1,5 +1,5 @@
 
-#include "debuger.h"
+#include "debugger.h"
 #include "../configuration.h"
 #include "../radix_tree/r_nodes.h"
 #include <iostream>

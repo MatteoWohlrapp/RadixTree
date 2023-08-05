@@ -2,7 +2,7 @@
 #include "run_config_two.h"
 #include "../data/data_manager.h"
 #include "./bplus_tree/bplus_tree.h"
-#include "./debug/debuger.h"
+#include "./debug/debugger.h"
 #include <iostream>
 #include <unistd.h>
 #include <unordered_set>
