@@ -1,6 +1,8 @@
 # Radix Tree
 
-Codebase for the Thesis: Evaluation of a Radix Tree Cache for Database Management Systems
+Codebase for the Thesis: Evaluation of a Radix Tree Cache for Database Management Systems <br>
+PDF of the thesis can be found in the root. <br>
+Author: Matteo Wohlrapp <br>
 
 
 ## Docker Instructions 
