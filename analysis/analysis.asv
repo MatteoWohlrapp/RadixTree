@@ -4,7 +4,7 @@
 
 %% Load Data
 % Load data from CSV
-data = readtable('/Users/matteowohlrapp/Documents/Uni/Thesis/radixtree/results/2023-7-27-19:47:17_test_results.csv');
+data = readtable('/Users/matteowohlrapp/Documents/Uni/Thesis/radixtree/results/2023-8-1-7:7:53_test_results-kemper.csv');
 
 % Convert cell array of character arrays to string array
 data.TestName = string(data.TestName);
@@ -55,7 +55,7 @@ end
 
 
 % Bar graph
-max_record = 2000000;
+max_record = 10000000;
 
 operationsByWorkload = {
     {'Read', 'Update'},
@@ -101,7 +101,7 @@ for i = 0:4
     yticks = get(gca,'ytick');
 
     % Generate new labels
-    yticklabels_values = arrayfun(@(x) sprintf('%.0f\\mu s', x * 1e6), yticks, 'UniformOutput', false);
+    yticklabels_values = arrayfun(@(x) sprintf('%.1f\\mu s', x * 1e6), yticks, 'UniformOutput', false);
 
     % Set new labels
     set(gca, 'yticklabel', yticklabels_values);
@@ -155,15 +155,18 @@ coefficients = coefficients_table.Coefficient;
 coefficients = sort(unique(coefficients)); 
 for c = 0:1
     figure;
-    for i = 0:4
-        workload = data(strcmp(data.TestName, 'vary geometric distribution') & data.Workload == i & data.Cache == c, :);
-        plot(coefficients, workload.Throughput, 'DisplayName', workloadNames{i+1});
-        hold on;
+    bars_data = zeros(length(coefficients), length(workloadNames)); % Initialize array
+    for p = 1:length(coefficients)
+        workload = data(strcmp(data.TestName, 'vary geometric distribution') & data.Coefficient == coefficients(p) & data.Cache == c, :);
+        bars_data(p, :) = workload.Throughput;
     end
+
+    bar(bars_data);
+    grid on;
 
     xlabel('p');
     grid on;
-    legend('Location', 'southeast'); % Create legend using the distribution names
+    legend(workloadNames ,'Location', 'southeast'); % Create legend using the distribution names
     t = ['Varying coefficient of geometric distribution ' cache_text{c+1}];
     ylabel('Throughput [Operations / s]');
 
@@ -181,48 +184,47 @@ for c = 0:1
     % Set new labels
     set(gca, 'yticklabel', yticklabels_values);
 
-    xticklabels_values = arrayfun(@(x) scaleGeometric(x), coefficients, 'UniformOutput', false);
-    set(gca, 'xticklabel', xticklabels_values);
+    set(gca, 'XTickLabel', num2str(coefficients));
 
-matlab2tikz([t '.tex'], 'extraAxisOptions','scaled y ticks=false', 'showInfo', false);
+    matlab2tikz([t '.tex'], 'extraAxisOptions','scaled y ticks=false', 'showInfo', false);
 
     hold off
 end
 
-%% Show Memory Size
-
-record_sizes_tab = unique(data(strcmp(data.TestName, 'vary memory size'), "RecordCount"));
-record_sizes = table2array(record_sizes_tab);
-record_sizes = record_sizes(:);
-memory_instances = {'Cache', 'Buffer'};
-bars_data = zeros(length(record_sizes), 2);
-figure;
-for i = 1:length(record_sizes)
-    workload = data(strcmp(data.TestName, 'vary memory size') & data.RecordCount == record_sizes(i), :);
-    bars_data(i, 1) = workload.CacheSize;
-    bars_data(i, 2) = workload.CurrentBufferSize * 4096;
-    hold on;
-end
-
-bar(bars_data);
-grid on;
-set(gca, 'XTickLabel', {'0.0002M', '','0.002M', '','0.02M', '','0.2M', '','2M'});
-t = 'Memory Size for different numbers of records';
-xlabel('Number of records');
-legend(memory_instances, 'Location', 'southeast'); % Create legend using the distribution names
-ylabel('Size [Bytes]');
-% Get current yticks
-yticks = get(gca,'ytick');
-
-% Generate new labels
-yticklabels_values = arrayfun(@(x) sprintf('%.0fM', x / 1e6), yticks, 'UniformOutput', false);
-
-% Set new labels
-set(gca, 'yticklabel', yticklabels_values);
-
-matlab2tikz([t '.tex'], 'extraAxisOptions','scaled y ticks=false', 'showInfo', false);
-
-hold off
+% %% Show Memory Size
+% 
+% record_sizes_tab = unique(data(strcmp(data.TestName, 'vary memory size'), "RecordCount"));
+% record_sizes = table2array(record_sizes_tab);
+% record_sizes = record_sizes(:);
+% memory_instances = {'Cache', 'Buffer'};
+% bars_data = zeros(length(record_sizes), 2);
+% figure;
+% for i = 1:length(record_sizes)
+%     workload = data(strcmp(data.TestName, 'vary memory size') & data.RecordCount == record_sizes(i), :);
+%     bars_data(i, 1) = workload.CacheSize;
+%     bars_data(i, 2) = workload.CurrentBufferSize * 4096;
+%     hold on;
+% end
+% 
+% bar(bars_data);
+% grid on;
+% set(gca, 'XTickLabel', {'0.0002M', '','0.002M', '','0.02M', '','0.2M', '','2M'});
+% t = 'Memory Size for different numbers of records';
+% xlabel('Number of records');
+% legend(memory_instances, 'Location', 'southeast'); % Create legend using the distribution names
+% ylabel('Size [Bytes]');
+% % Get current yticks
+% yticks = get(gca,'ytick');
+% 
+% % Generate new labels
+% yticklabels_values = arrayfun(@(x) sprintf('%.0fM', x / 1e6), yticks, 'UniformOutput', false);
+% 
+% % Set new labels
+% set(gca, 'yticklabel', yticklabels_values);
+% 
+% matlab2tikz([t '.tex'], 'extraAxisOptions','scaled y ticks=false', 'showInfo', false);
+% 
+% hold off
 
 
 %% Vary memory distribution
@@ -233,7 +235,7 @@ test = data(strcmp(data.TestName, 'vary memory distribution'), :);
 r_tree = unique(test.RadixTreeSize);
 b_tree = unique(test.BufferSize);
 memory_distribution = [r_tree, b_tree];
-memory_distribution_label = {'1:7', '2:6', '1:1', '6:2', '7:1'};
+memory_distribution_label = {'0:1', '1:7', '2:6', '1:1', '6:2', '7:1'};
 bars_data = zeros(length(memory_distribution), length(workloadNames));
 figure;
 set(gca,'YTickLabelMode','manual')  % Add this line
@@ -245,6 +247,7 @@ end
 
 bar(bars_data);
 grid on;
+ylim([0 max(bars_data(:))*1.1]);
 set(gca, 'XTickLabel', memory_distribution_label);
 t = 'Memory distribution between cache and buffer';
 xlabel('Distribution ratio');
@@ -259,53 +262,61 @@ yticklabels_values = arrayfun(@(x) sprintf('%.0fK', x / 1e3), yticks, 'UniformOu
 % Set new labels
 set(gca, 'yticklabel', yticklabels_values);
 hold off
-matlab2tikz([t '.tex'], 'extraAxisOptions','scaled y ticks=false');
-
-%% Speed comparison 
-
-coefficients_table = data(strcmp(data.TestName, 'speed comparision'), :);
-coefficients = coefficients_table.Coefficient;
-disp(coefficients)
-coefficients = sort(unique(coefficients)); 
-disp(coefficients)
-
-bars_data = zeros(length(coefficients), 2);
-figure;
-set(gca,'YTickLabelMode','manual')  % Add this line
-for i = 1:length(coefficients)
-    for c = 0:1
-        workload = data(strcmp(data.TestName, 'speed comparision') & data.Coefficient == coefficients(i) & data.Cache == c, :);
-        disp(workload)
-        bars_data(i, c+1) = workload.Throughput;
-    end
-end
-
-bar(bars_data);
-grid on;
-set(gca, 'XTickLabel', num2str(coefficients));
-t = 'Speed comparison for varying p';
-xlabel('p');
-legend({'Not Cached', 'Cached'}, 'Location', 'southeast'); % Create legend using the distribution names
-ylabel('Throughput [Operations / s]');
-% Get current yticks
-yticks = get(gca,'ytick');
-
-% Generate new labels
-yticklabels_values = arrayfun(@(x) sprintf('%.0fK', x / 1e3), yticks, 'UniformOutput', false);
-
-% Set new labels
-set(gca, 'yticklabel', yticklabels_values);
-hold off
 matlab2tikz([t '.tex'], 'extraAxisOptions','scaled y ticks=false', 'showInfo', false);
 
+% %% Speed comparison 
+% 
+% coefficients_table = data(strcmp(data.TestName, 'speed comparison'), :);
+% coefficients = coefficients_table.Coefficient;
+% coefficients = sort(unique(coefficients)); 
+% 
+% bars_data = zeros(length(workloadNames), 2);
+% figure;
+% set(gca,'YTickLabelMode','manual')  % Add this line
+% for i = 1:length(workloadNames)
+%     for c = 0:1
+%         workload = data(strcmp(data.TestName, 'speed comparison') & data.Workload == i & data.Cache == c, :);
+%         disp(workload)
+%         bars_data(i, c+1) = workload.Throughput;
+%     end
+% end
+% 
+% bar(bars_data);
+% grid on;
+% set(gca, 'XTickLabel', num2str(coefficients));
+% t = 'Speed comparison for varying p';
+% xlabel('p');
+% legend({'Not Cached', 'Cached'}, 'Location', 'southeast'); % Create legend using the distribution names
+% ylabel('Throughput [Operations / s]');
+% % Get current yticks
+% yticks = get(gca,'ytick');
+% 
+% % Generate new labels
+% yticklabels_values = arrayfun(@(x) sprintf('%.0fK', x / 1e3), yticks, 'UniformOutput', false);
+% 
+% % Set new labels
+% set(gca, 'yticklabel', yticklabels_values);
+% hold off
+% matlab2tikz([t '.tex'], 'extraAxisOptions','scaled y ticks=false', 'showInfo', false);
 
 
 
-%% Functions
-function label = scaleGeometric(x)
-if x >= 0.01
-    label = sprintf('%.2f', x);
-else
-    label = sprintf('%.3f', x);
+%% Geometric 
+p_values = [0.0009, 0.009, 0.09, 0.9];
+x = 0:50;  % range of x values
+
+figure; hold on;  % create a figure and hold the plot
+
+% loop over each value of p
+for i = 1:length(p_values)
+    p = p_values(i);
+    y = pdf('Geometric', x, p);
+    plot(x, y, 'LineWidth', 2);
 end
-end
+
+xlabel('k');
+ylabel('P(X=k)');
+legend('p = 0.0009', 'p = 0.009', 'p = 0.09', 'p = 0.9');
+title('Geometric Distribution for Different p Values');
+grid on;
+ matlab2tikz(['' '.tex'], 'extraAxisOptions','scaled y ticks=false', 'showInfo', false);
