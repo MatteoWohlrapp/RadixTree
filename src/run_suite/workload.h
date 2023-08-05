@@ -68,26 +68,21 @@ private:
         switch (op)
         {
         case INSERT:
-            logger->debug("Inserting in workload: {}", records_vector[insert_index]);
             data_manager.insert(records_vector[insert_index], records_vector[insert_index]);
             insert_index++;
             break;
         case READ:
         {
-            logger->debug("Reading: {}", records_vector[indice_vector[index]]);
             data_manager.get_value(records_vector[indice_vector[index]]);
         }
         break;
         case UPDATE:
-            logger->debug("Updating: {}", records_vector[indice_vector[index]]);
             data_manager.update(records_vector[indice_vector[index]], records_vector[indice_vector[index]] + 1);
             break;
         case SCAN:
-            logger->debug("Scanning: {}", records_vector[indice_vector[index]]);
             data_manager.scan(records_vector[indice_vector[index]], max_scan_range);
             break;
         case DELETE:
-            logger->debug("Deleting: {}", records_vector[indice_vector[index]]);
             data_manager.delete_value(records_vector[indice_vector[index]]);
             break;
         case NUM_OPERATIONS:
@@ -174,7 +169,6 @@ private:
         // Inserting all elements
         for (uint64_t i = 0; i < record_count; i++)
         {
-            logger->debug("Inserting in workload initialization: {}", records_vector[i]);
             data_manager.insert(records_vector[i], records_vector[i]);
         }
     }
@@ -319,8 +313,8 @@ private:
 
             std::cout << "Total time: " << std::fixed << std::setprecision(10) << total_time << "s\n";
             std::cout << "Throughput: " << std::fixed << std::setprecision(10) << total_operations / total_time << "s\n";
-            std::cout << "Cache Size: " << data_manager.get_cache_size() << std::endl; 
-            std::cout << "Buffer Size: " << data_manager.get_current_buffer_size() * Configuration::page_size << std::endl; 
+            std::cout << "Cache Size: " << data_manager.get_cache_size() << std::endl;
+            std::cout << "Buffer Size: " << data_manager.get_current_buffer_size() * Configuration::page_size << std::endl;
         }
     }
 
@@ -332,14 +326,14 @@ public:
      * @param operation_count_arg The number of performed operations
      * @param distribution_arg The distribution
      * @param coefficient_arg The coefficient for the distribution
-     * @param insert_proportion The proportion of inserts
-     * @param read_proportion The proportion of reads
-     * @param update_proportion The proportion of updates
-     * @param scan_proportion The proportion of scancs
-     * @param delete_proportion The proportion of deletes
+     * @param insert_proportion_arg The proportion of inserts
+     * @param read_proportion_arg The proportion of reads
+     * @param update_proportion_arg The proportion of updates
+     * @param scan_proportion_arg The proportion of scancs
+     * @param delete_proportion_arg The proportion of deletes
      * @param cache_arg If the cache is activated or not
      * @param radix_tree_size_arg The size of the cache
-     * @param measure_per_operation Decides about the type of measurements
+     * @param measure_per_operation_arg Decides about the type of measurements
      */
     Workload(uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, double insert_proportion_arg, double read_proportion_arg, double update_proportion_arg, double scan_proportion_arg, double delete_proportion_arg, bool cache_arg, uint64_t radix_tree_size_arg, bool measure_per_operation_arg) : record_count(record_count_arg), operation_count(operation_count_arg), distribution(distribution_arg), coefficient(coefficient_arg), insert_proportion(insert_proportion_arg), read_proportion(read_proportion_arg), update_proportion(update_proportion_arg), scan_proportion(scan_proportion_arg), delete_proportion(delete_proportion_arg), measure_per_operation(measure_per_operation_arg), data_manager(buffer_size_arg, cache_arg, radix_tree_size_arg)
     {
@@ -391,7 +385,7 @@ public:
      * @param coefficient_arg The coefficient for the distribution
      * @param cache_arg If the cache is activated or not
      * @param radix_tree_size_arg The size of the cache
-     * @param measure_per_operation Decides about the type of measurements
+     * @param measure_per_operation_arg Decides about the type of measurements
      */
     WorkloadA(uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, uint64_t radix_tree_size_arg, bool measure_per_operation_arg)
         : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0, 0.5, 0.5, 0, 0, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
@@ -414,7 +408,7 @@ public:
      * @param coefficient_arg The coefficient for the distribution
      * @param cache_arg If the cache is activated or not
      * @param radix_tree_size_arg The size of the cache
-     * @param measure_per_operation Decides about the type of measurements
+     * @param measure_per_operation_arg Decides about the type of measurements
      */
     WorkloadB(uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, uint64_t radix_tree_size_arg, bool measure_per_operation_arg)
         : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0, 0.95, 0.05, 0, 0, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
@@ -437,7 +431,7 @@ public:
      * @param coefficient_arg The coefficient for the distribution
      * @param cache_arg If the cache is activated or not
      * @param radix_tree_size_arg The size of the cache
-     * @param measure_per_operation Decides about the type of measurements
+     * @param measure_per_operation_arg Decides about the type of measurements
      */
     WorkloadC(uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, uint64_t radix_tree_size_arg, bool measure_per_operation_arg)
         : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0, 1, 0, 0, 0, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
@@ -460,7 +454,7 @@ public:
      * @param coefficient_arg The coefficient for the distribution
      * @param cache_arg If the cache is activated or not
      * @param radix_tree_size_arg The size of the cache
-     * @param measure_per_operation Decides about the type of measurements
+     * @param measure_per_operation_arg Decides about the type of measurements
      */
     WorkloadE(uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, uint64_t radix_tree_size_arg, bool measure_per_operation_arg)
         : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0.05, 0, 0, 0.95, 0, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
@@ -483,7 +477,7 @@ public:
      * @param coefficient_arg The coefficient for the distribution
      * @param cache_arg If the cache is activated or not
      * @param radix_tree_size_arg The size of the cache
-     * @param measure_per_operation Decides about the type of measurements
+     * @param measure_per_operation_arg Decides about the type of measurements
      */
     WorkloadX(uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, uint64_t radix_tree_size_arg, bool measure_per_operation_arg)
         : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0, 0.90, 0, 0, 0.1, cache_arg, radix_tree_size_arg, measure_per_operation_arg)

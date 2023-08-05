@@ -1,10 +1,9 @@
 /**
  * @file    time.h
- * 
+ *
  * @author  Matteo Wohlrapp
  * @date    16.05.2023
-*/
-
+ */
 
 #pragma once
 
@@ -15,13 +14,13 @@
 
 /**
  * @brief namespace that handles time requests
-*/
+ */
 namespace Time
 {
     /**
      * @brief returns the current date time as a string
      * @returns a string of the current date time
-    */
+     */
     inline std::string getDateTime()
     {
         std::time_t time = std::time(0);

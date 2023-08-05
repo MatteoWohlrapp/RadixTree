@@ -49,7 +49,6 @@ public:
         buffer_manager = new BufferManager(storage_manager, buffer_size_arg, PAGE_SIZE);
         if (cache_arg)
         {
-            logger->debug("Cache enabled");
             radix_tree = new RadixTree<PAGE_SIZE>(radix_tree_size_arg, buffer_manager);
         }
         bplus_tree = new BPlusTree<PAGE_SIZE>(buffer_manager, radix_tree);
@@ -75,7 +74,6 @@ public:
         storage_manager->destroy();
         if (radix_tree)
         {
-            logger->debug("Destroying radix tree");
             radix_tree->destroy();
             delete radix_tree;
         }
@@ -177,22 +175,22 @@ public:
     /**
      * @brief Returns the current size of the cache
      * @return the size of the cache
-    */
+     */
     uint64_t get_cache_size()
     {
         if (radix_tree)
         {
             return radix_tree->get_cache_size();
         }
-        return 0; 
+        return 0;
     }
 
     /**
      * @brief Returns the current size of the buffer
      * @return the size of the buffer
-    */
+     */
     uint64_t get_current_buffer_size()
     {
-        return buffer_manager->get_current_buffer_size(); 
+        return buffer_manager->get_current_buffer_size();
     }
 };

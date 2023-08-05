@@ -45,7 +45,6 @@ private:
     uint64_t transform(int64_t key)
     {
         uint64_t transformed_key = ((uint64_t)key) + INT64_MAX + 1;
-        logger->debug("Transformed key is: {} from key: {}", transformed_key, key);
         return transformed_key;
     }
 
@@ -57,7 +56,6 @@ private:
     int64_t inverse_transform(uint64_t key)
     {
         uint64_t transformed_key = ((uint64_t)key) - INT64_MAX - 1;
-        logger->debug("Inverse Transformed key is: {} from key: {}", (int64_t)transformed_key, key);
         return transformed_key;
     }
 
@@ -70,10 +68,8 @@ private:
      */
     void insert_recursive(RHeader *rheader, uint64_t key, uint64_t page_id, BHeader *bheader)
     {
-        logger->debug("In recursive insert");
         if (!root)
         {
-            logger->debug("Root is nullptr");
             // insert first element
             RHeader *new_root_header = (RHeader *)malloc(size_4);
             RNode4 *new_root = new (new_root_header) RNode4(true, 8, key, 0);
@@ -90,7 +86,6 @@ private:
             {
                 if (!can_insert(rheader))
                 {
-                    logger->debug("Cant insert into root");
                     root = increase_node_size(rheader);
                     insert(inverse_transform(key), page_id, bheader);
                     return;
@@ -98,7 +93,6 @@ private:
                 if (rheader->depth != 1)
                 {
                     // compressed
-                    logger->debug("Header depth not 1");
                     // check similarities between existing element and new key
                     int prefix_length = longest_common_prefix(root->key, key);
 
@@ -136,7 +130,6 @@ private:
 
                 if (!child_header)
                 {
-                    logger->debug("Child header null");
                     // will do lazy expansion to save information
                     node_insert(rheader, partial_key, key, page_id, bheader);
                     rheader->unfix_node();
@@ -147,7 +140,6 @@ private:
                     {
                         // if child is full we need to resize it
                         child_header = increase_node_size(child_header);
-                        logger->debug("Increased node size, child header: {}", (void *)child_header);
                         node_insert(rheader, partial_key, child_header);
                     }
 
@@ -155,7 +147,6 @@ private:
 
                     if (prefix_length + 1 < child_header->depth)
                     {
-                        logger->debug("Prefix length is {} for child depth {}, so wrong for key {}, need to create new node", prefix_length + 1, child_header->depth, key);
                         // compression
                         // create new node
                         RHeader *new_node_header = (RHeader *)malloc(size_4);
@@ -172,7 +163,6 @@ private:
                     else
                     {
                         child_header->fix_node();
-                        logger->debug("Fixing header at depth: {} with key: {}", child_header->depth, child_header->key);
                         rheader->unfix_node();
                         // in this case the prefix of the numbers matches and we know that we can insert, so calling recursive insert instead
                         insert_recursive(child_header, key, page_id, bheader);
@@ -254,7 +244,6 @@ private:
      */
     void destroy_recursive(RHeader *header)
     {
-        logger->debug("Destroying pointer: {}", (void *)header);
         if (!header)
             return;
         if (header->leaf)
@@ -444,7 +433,6 @@ private:
             return new_header;
         }
         }
-        logger->debug("Node Type: {}", header->type);
         return nullptr;
     }
 
@@ -518,7 +506,6 @@ private:
         }
         break;
         }
-        logger->debug("Node Type: {}", header->type);
         return nullptr;
     }
 
@@ -559,7 +546,6 @@ private:
         {
         case 4:
         {
-            logger->debug("Inserting child as void pointer");
             RNode4 *node = (RNode4 *)parent;
             node->insert(key, child);
         }
@@ -738,7 +724,6 @@ private:
         }
         else
         {
-            logger->debug("Next was null");
             header->unfix_node();
             return nullptr;
         }
@@ -1291,7 +1276,6 @@ public:
      */
     void insert(int64_t key, uint64_t page_id, BHeader *bheader)
     {
-        logger->info("Inserting into radix tree, current size: {}", current_size);
         if (current_size < radix_tree_size)
         {
             buffer[write] = key;
@@ -1307,8 +1291,6 @@ public:
         }
         else
         {
-            logger->debug("Radix Tree is full, can't insert more elements.");
-
             if (read != write)
             {
                 delete_reference(buffer[read]);
@@ -1324,7 +1306,6 @@ public:
     void delete_reference(int64_t s_key)
     {
         uint64_t key = transform(s_key);
-        logger->debug("Deleting in Radix Tree: {}", s_key);
         if (!root)
             return;
 

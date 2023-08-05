@@ -16,6 +16,10 @@ StorageManager::StorageManager(std::filesystem::path base_path_arg, int page_siz
     {
         std::filesystem::create_directories(base_path);
     }
+    else
+    {
+        std::filesystem::remove(base_path / data);
+    }
 
     data_fs.open(base_path / data, std::ios::binary | std::ios::in | std::ios::out);
 
@@ -48,7 +52,6 @@ void StorageManager::destroy()
     data_fs.close();
     data_fs.open(base_path / data, std::ofstream::out | std::ofstream::trunc);
     data_fs.close();
-    std::filesystem::remove(base_path / data);
 }
 
 void StorageManager::load_page(BHeader *header, uint64_t page_id)

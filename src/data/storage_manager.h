@@ -31,7 +31,7 @@ private:
 
     /// path to the data file
     std::filesystem::path data = "data.bin";
-    
+
     /// file handle for the data file
     std::fstream data_fs;
 

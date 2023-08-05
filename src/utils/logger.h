@@ -1,10 +1,9 @@
 /**
  * @file    logger.h
- * 
+ *
  * @author  Matteo Wohlrapp
  * @date    16.05.2023
-*/
-
+ */
 
 #pragma once
 

@@ -11,6 +11,8 @@
 #include "../model/r_frame.h"
 #include <cassert>
 #include <iostream>
+#include <emmintrin.h>
+#include <nmmintrin.h>
 
 constexpr int size_4 = 64;     /// size for node 4 in bytes
 constexpr int size_16 = 168;   /// size for node 16 in bytes
@@ -54,7 +56,7 @@ struct RNode4
      */
     void insert(uint8_t key, void *child)
     {
-        assert(child && "Trying to insert null pointer."); 
+        assert(child && "Trying to insert null pointer.");
         for (int i = 0; i < header.current_size; i++)
         {
             if (keys[i] == key)
@@ -232,20 +234,39 @@ struct RNode16
     }
 
     /**
+     * @brief Searches through the keys and returns the index, the current size if not available
+     * @param key the key to look for
+     * @return the index of the key
+     */
+    uint16_t get_index(uint8_t key)
+    {
+        __m128i keys_simd = _mm_loadu_si128(reinterpret_cast<const __m128i *>(keys));
+        __m128i key_simd = _mm_set1_epi8(key);
+        __m128i cmp = _mm_cmpeq_epi8(key_simd, keys_simd);
+        int mask = (1 << header.current_size) - 1;
+        int bitfield = _mm_movemask_epi8(cmp) & mask;
+        if (bitfield != 0)
+        {
+
+            return __builtin_ctz(bitfield);
+        }
+        return header.current_size;
+    }
+
+    /**
      * @brief insert a new element with key
      * @param key the key which identifies the value
      * @param child the element that should be inserted under key
      */
     void insert(uint8_t key, void *child)
     {
-        assert(child && "Trying to insert null pointer."); 
-        for (int i = 0; i < header.current_size; i++)
+        assert(child && "Trying to insert null pointer.");
+        uint16_t index = get_index(key);
+
+        if (index < header.current_size && keys[index] == key)
         {
-            if (keys[i] == key)
-            {
-                children[i] = child;
-                return;
-            }
+            children[index] = child;
+            return;
         }
         assert(header.current_size < 16 && "Trying to insert into full node");
 
@@ -267,15 +288,15 @@ struct RNode16
 
         assert(header.leaf && "Inserting a new frame in a non leaf node");
 
-        for (int i = 0; i < header.current_size; i++)
+        uint16_t index = get_index(key);
+
+        if (index < header.current_size && keys[index] == key)
         {
-            if (keys[i] == key)
-            {
-                ((RFrame *)children[i])->page_id = page_id;
-                ((RFrame *)children[i])->header = bheader;
-                return 0;
-            }
+            ((RFrame *)children[index])->page_id = page_id;
+            ((RFrame *)children[index])->header = bheader;
+            return 0;
         }
+
         assert(header.current_size < 16 && "Trying to insert into full node");
 
         RFrame *frame = (RFrame *)malloc(16);
@@ -312,44 +333,43 @@ struct RNode16
     int delete_reference(uint8_t key)
     {
         int deleted_bytes = 0;
-        for (int i = 0; i < header.current_size; i++)
+        uint16_t index = get_index(key);
+
+        if (index < header.current_size && keys[index] == key)
         {
-            if (keys[i] == key)
+            if (header.leaf)
             {
-                if (header.leaf)
-                {
-                    deleted_bytes = 16;
-                }
-                else
-                {
-                    switch (((RHeader *)children[i])->type)
-                    {
-                    case 4:
-                        deleted_bytes = size_4;
-                        break;
-                    case 16:
-                        deleted_bytes = size_16;
-                        break;
-                    case 48:
-                        deleted_bytes = size_48;
-                        break;
-                    case 256:
-                        deleted_bytes = size_256;
-                        break;
-                    default:
-                        break;
-                    }
-                }
-                free(children[i]);
-                if (i != header.current_size - 1)
-                {
-                    keys[i] = keys[header.current_size - 1];
-                    children[i] = children[header.current_size - 1];
-                }
-                header.current_size--;
-                return deleted_bytes;
+                deleted_bytes = 16;
             }
+            else
+            {
+                switch (((RHeader *)children[index])->type)
+                {
+                case 4:
+                    deleted_bytes = size_4;
+                    break;
+                case 16:
+                    deleted_bytes = size_16;
+                    break;
+                case 48:
+                    deleted_bytes = size_48;
+                    break;
+                case 256:
+                    deleted_bytes = size_256;
+                    break;
+                default:
+                    break;
+                }
+            }
+            free(children[index]);
+            if (index != header.current_size - 1)
+            {
+                keys[index] = keys[header.current_size - 1];
+                children[index] = children[header.current_size - 1];
+            }
+            header.current_size--;
         }
+
         return deleted_bytes;
     }
 
@@ -423,7 +443,7 @@ struct RNode48
      */
     void insert(uint8_t key, void *child)
     {
-        assert(child && "Trying to insert null pointer."); 
+        assert(child && "Trying to insert null pointer.");
         if (keys[key] != 255)
         {
             children[keys[key]] = child;
@@ -606,7 +626,7 @@ struct RNode256
      */
     void insert(uint8_t key, void *child)
     {
-        assert(child && "Trying to insert null pointer."); 
+        assert(child && "Trying to insert null pointer.");
         if (children[key] == nullptr)
             header.current_size++;
 

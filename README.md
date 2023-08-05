@@ -20,7 +20,7 @@ docker run -v <path_to_project>:/app -p 8000:8000 -it radixtree
 ```
 
 
-## Build and run
+## Build
 
 ### Build without Doxygen
 
@@ -33,3 +33,9 @@ docker run -v <path_to_project>:/app -p 8000:8000 -it radixtree
 1. Navigate into the build folder: `cd build`
 2. Run `cmake -D BUILD_DOC=ON ..` to create the makefile. Version 10.0.0-4ubuntu1 of the clang compiler is used.
 3. Run `make` to generate the executable and tests and `make doc_doxygen` to generate the documentation.
+
+## Run 
+There are multiple options to run the code, check the help menu to find out more: <br>
+1. `-s` runs the script that is also used for the benchmarks in evalutation section in the thesis 
+2. `-w{,a,b,c,e,x}`runs single workloads. Either the predefined ones or an individual one, defined through the command line parameters
+3. `-r <number>` executes a 'run confiugration' which is basically a way for you to specify what you want to compute. Just modify `run_config_one.cc` or `run_config_two.cc`. The data manager will be created automatically, you just need to use it 

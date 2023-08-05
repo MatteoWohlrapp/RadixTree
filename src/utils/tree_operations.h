@@ -11,7 +11,7 @@
 #include "../radix_tree/radix_tree.h"
 #include "../data/buffer_manager.h"
 
-// forward declaration 
+// forward declaration
 template <int PAGE_SIZE>
 class RadixTree;
 
@@ -23,6 +23,7 @@ namespace TreeOperations
     /**
      * @brief Start at element key and get range consecutive elements
      * @param buffer_manager The buffer manager
+     * @param cache A reference to the cache
      * @param header The pointer to the current node
      * @param key The key corresponding to a value
      * @param range The number of elements that are scanned
@@ -67,10 +68,12 @@ namespace TreeOperations
                 index++;
             }
             buffer_manager->unfix_page(node->header.page_id, false);
+
+            if (sum == INT64_MIN)
+                return INT64_MIN + 1;
+            else
+                return sum;
         }
-        if (sum == INT64_MIN)
-            return INT64_MIN + 1;
-        else
-            return sum;
+        return INT64_MIN;
     }
 }

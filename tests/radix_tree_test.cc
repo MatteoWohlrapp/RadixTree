@@ -77,10 +77,10 @@ protected:
     {
         if (radix_tree->root)
         {
-            radix_tree->root->fix_node(); 
+            radix_tree->root->fix_node();
             return radix_tree->get_page_recursive(radix_tree->root, radix_tree->transform(key));
         }
-        return nullptr; 
+        return nullptr;
     }
 };
 

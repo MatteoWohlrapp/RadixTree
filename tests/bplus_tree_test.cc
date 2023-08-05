@@ -437,7 +437,7 @@ TEST_F(BPlusTreeTest, OrderIncorrectInner)
     outer->keys[0] = 21;
     outer->current_index++;
 
-    set_root_id(2); 
+    set_root_id(2);
     ASSERT_FALSE(is_ordered());
     ASSERT_TRUE(is_balanced());
     ASSERT_TRUE(all_pages_unfixed());

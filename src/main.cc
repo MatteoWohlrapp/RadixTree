@@ -294,7 +294,7 @@ void handle_arguments(int argc, char *argsv[])
             configuration.run_workload = true;
             configuration.script = true;
         }
-        break; 
+        break;
         }
     }
 

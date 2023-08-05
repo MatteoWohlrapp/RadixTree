@@ -45,7 +45,6 @@ private:
      */
     void recursive_insert(BHeader *header, int64_t key, int64_t value)
     {
-        logger->debug("Recursive insert into page: {}", header->page_id);
         if (!header->inner)
         {
             // outer node
@@ -59,7 +58,6 @@ private:
                 // Because the node size has a lower limit, this does not cause issues
                 int64_t split_key = node->keys[split_index - 1];
                 uint64_t new_outer_id = split_outer_node(header, split_index);
-                logger->debug("Splitting outer root node, new outer id: {}", new_outer_id);
 
                 // create new inner node for root
                 BHeader *new_root_node_address = buffer_manager->create_new_page();
@@ -77,7 +75,6 @@ private:
             }
             else
             {
-                logger->debug("Inserting into outer node");
                 node->insert(key, value);
                 if (cache)
                 {
@@ -99,7 +96,6 @@ private:
                 // Because the node size has a lower limit, this does not cause issues
                 int64_t split_key = node->keys[split_index - 1];
                 uint64_t new_inner_id = split_inner_node(header, split_index);
-                logger->debug("Splitting inner root node, new inner id: {}", new_inner_id);
 
                 // create new inner node for root
                 BHeader *new_root_node_address = buffer_manager->create_new_page();
@@ -122,20 +118,17 @@ private:
                 // find next page to insert
                 uint64_t next_page = node->next_page(key);
                 BHeader *child_header = buffer_manager->request_page(next_page);
-                logger->debug("Finding child to insert: {}", next_page);
 
                 if (child_header->inner)
                 {
                     BInnerNode<PAGE_SIZE> *child = (BInnerNode<PAGE_SIZE> *)child_header;
                     if (child->is_full())
                     {
-                        logger->debug("Child is inner and full");
                         // split the inner node
                         int split_index = get_split_index(child->max_size);
                         // Because the node size has a lower limit, this does not cause issues
                         int64_t split_key = child->keys[split_index - 1];
                         uint64_t new_inner_id = split_inner_node(child_header, split_index);
-                        logger->debug("New inner child id: {}", new_inner_id);
 
                         node->insert(split_key, new_inner_id);
 
@@ -151,7 +144,6 @@ private:
                     }
                     else
                     {
-                        logger->debug("Child is inner and not full");
                         // child correctly fixed before, just need to unfix current node
                         buffer_manager->unfix_page(header->page_id, false);
                         recursive_insert(child_header, key, value);
@@ -163,13 +155,11 @@ private:
 
                     if (child->is_full())
                     {
-                        logger->debug("Child is outer and full");
                         // split the outer node
                         int split_index = get_split_index(child->max_size);
                         // Because the node size has a lower limit, this does not cause issues
                         int64_t split_key = child->keys[split_index - 1];
                         uint64_t new_outer_id = split_outer_node(child_header, split_index);
-                        logger->debug("New outer child id: {}", new_outer_id);
 
                         // Insert new child and then call function again
                         node->insert(split_key, new_outer_id);
@@ -186,7 +176,6 @@ private:
                     }
                     else
                     {
-                        logger->debug("Child is outer and not full");
                         // child correctly fixed before, just need to unfix current node
                         buffer_manager->unfix_page(header->page_id, false);
                         recursive_insert(child_header, key, value);
@@ -203,7 +192,6 @@ private:
      */
     void recursive_delete(BHeader *header, int64_t key)
     {
-        logger->debug("Deleting key {}", key);
         if (!header->inner)
         {
             // outer node
@@ -239,7 +227,6 @@ private:
 
                     if (!child->can_delete())
                     {
-                        logger->debug("Cant delete inner child");
                         /**
                          * 1. Substitute with left or right if you can
                          * 2. If not, merge with left or right
@@ -655,7 +642,6 @@ private:
                                 cache->update_range(child->keys[0], child->keys[child->current_index - 1], merge_header->page_id, merge_header);
                             }
 
-                            logger->debug("Deleting page {}", (void *)&child->header);
                             for (int i = 0; i < child->current_index; i++)
                             {
                                 merge->insert(child->keys[i], child->values[i]);
@@ -1025,7 +1011,6 @@ private:
         }
         if (count != num_elements)
         {
-            logger->debug("Count is off, count: {}, expected {}", count, num_elements);
             return false;
         }
 

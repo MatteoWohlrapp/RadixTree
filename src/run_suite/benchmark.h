@@ -1,10 +1,9 @@
 /**
  * @file    benchmark.h
- * 
+ *
  * @author  Matteo Wohlrapp
  * @date    16.05.2023
-*/
-
+ */
 
 #pragma once
 
@@ -16,7 +15,7 @@
 
 /**
  * @brief A class the abstracts the benchmarking
-*/
+ */
 class Benchmark
 {
 private:
@@ -25,7 +24,7 @@ private:
 public:
     /**
      * @brief Constructor
-    */
+     */
     Benchmark()
     {
         logger = spdlog::get("logger");
@@ -35,7 +34,7 @@ public:
      * @brief Measures the speed of function call and prints the execution time
      * @param func The function that is measured
      * @param benchmark Specifying if the funtion execution should be benchmarked or not
-    */
+     */
     template <typename Run>
     void measure(Run func, bool benchmark)
     {

@@ -3,7 +3,6 @@
 #include "spdlog/sinks/basic_file_sink.h"
 #include <filesystem>
 
-
 class MyEnvironment : public ::testing::Environment
 {
 public:
@@ -32,7 +31,6 @@ public:
       auto logger = std::make_shared<spdlog::logger>("logger", sink);
       logger->set_level(level);
       spdlog::register_logger(logger);
-
     }
     catch (const spdlog::spdlog_ex &ex)
     {

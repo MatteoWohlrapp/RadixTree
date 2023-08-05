@@ -37,7 +37,7 @@ void RunConfigOne::execute(bool benchmark)
         }
         std::geometric_distribution<int> geom(0.01);
 
-        for (int i = 0; i < 1000; i ++)
+        for (int i = 0; i < 1000; i++)
         {
             int num = geom(generator);
             if (num >= 10000)

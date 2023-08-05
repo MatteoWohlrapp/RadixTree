@@ -17,8 +17,8 @@ class WorkloadScript
 {
 private:
     uint64_t total_records = 12500000;
-    uint64_t buffer_size = 40000;         // around 0.3 gb - 0.5 gb at 15 mio entries
-    uint64_t radix_tree_size = 697932185; // around 1.3 gb - 1.5 gb at 15 mio entries
+    uint64_t buffer_size = 40000;
+    uint64_t radix_tree_size = 697932185;
     uint64_t operation_count = 20000000;
     uint64_t record_count = 10000000;
     int max_scan_range = 100;
@@ -37,17 +37,13 @@ private:
     std::string results_filename;
     std::ofstream csv_file;
 
-    uint64_t operation_counts[5] = {10000000, 20000000, 30000000, 40000000, 50000000};
-    uint64_t small_operations_counts[5] = {1000, 10000, 100000, 1000000, 10000000};
     uint64_t record_counts[5] = {2000000, 4000000, 6000000, 8000000, 10000000};
-    uint64_t small_record_counts[5] = {200, 2000, 20000, 200000, 2000000};
-    double coefficients[10] = {0.0009, 0.009, 0.09, 0.9};
+    double coefficients[4] = {0.0009, 0.009, 0.09, 0.9};
     std::vector<std::string> distributions = {"uniform", "geometric"};
     bool caches[2] = {true, false};
     double workloads[5][5] = {
         {0, 0.5, 0.5, 0, 0}, {0, 0.95, 0.05, 0, 0}, {0, 1, 0, 0, 0}, {0.05, 0, 0, 0.95, 0}, {0, 0.90, 0, 0, 0.1}};
-    // uint64_t memory_distributions[5][2] = {{262144000, 448000}, {524288000, 1572864000}, {1048576000, 256000}, {1572864000, 128000}, {1835008000, 64000}};
-    uint64_t memory_distributions[5][2] = {{131072000, 224000}, {262144000, 192000}, {524288000, 128000}, {786432000, 64000}, {917504000, 32000}};
+    uint64_t memory_distributions[6][2] = {{0, 80000}, {32768000, 72000}, {81920000, 60000}, {163840000, 40000}, {245760000, 20000}, {294912000, 8000}};
 
     /**
      * @brief enumeration for the different kinds of operation possible
@@ -73,26 +69,21 @@ private:
         switch (op)
         {
         case INSERT:
-            logger->debug("Inserting in workload: {}", records_vector[insert_index]);
             data_manager.insert(records_vector[insert_index], records_vector[insert_index]);
             insert_index++;
             break;
         case READ:
         {
-            logger->debug("Reading: {}", records_vector[indice_vector[index]]);
             data_manager.get_value(records_vector[indice_vector[index]]);
         }
         break;
         case UPDATE:
-            logger->debug("Updating: {}", records_vector[indice_vector[index]]);
             data_manager.update(records_vector[indice_vector[index]], records_vector[indice_vector[index]] + 1);
             break;
         case SCAN:
-            logger->debug("Scanning: {}", records_vector[indice_vector[index]]);
             data_manager.scan(records_vector[indice_vector[index]], max_scan_range);
             break;
         case DELETE:
-            logger->debug("Deleting: {}", records_vector[indice_vector[index]]);
             data_manager.delete_value(records_vector[indice_vector[index]]);
             break;
         case NUM_OPERATIONS:
@@ -109,14 +100,15 @@ private:
      * @param operation_count_arg The number of performed operations
      * @param distribution_arg The distribution
      * @param coefficient_arg The coefficient for the distribution
-     * @param insert_proportion The proportion of inserts
-     * @param read_proportion The proportion of reads
-     * @param update_proportion The proportion of updates
-     * @param scan_proportion The proportion of scancs
-     * @param delete_proportion The proportion of deletes
+     * @param insert_proportion_arg The proportion of inserts
+     * @param read_proportion_arg The proportion of reads
+     * @param update_proportion_arg The proportion of updates
+     * @param scan_proportion_arg The proportion of scancs
+     * @param delete_proportion_arg The proportion of deletes
      * @param cache_arg If the cache is activated or not
      * @param radix_tree_size_arg The size of the cache
      * @param workload_arg The workload that is run
+     * @param inverse Specifies if the elements are inserted from the front or the back of the array
      */
     void run_workload(std::string test_name, int iteration, uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, double insert_proportion_arg, double read_proportion_arg, double update_proportion_arg, double scan_proportion_arg, double delete_proportion_arg, bool cache_arg, uint64_t radix_tree_size_arg, int workload_arg, bool inverse = false)
     {
@@ -177,9 +169,9 @@ private:
         }
         else
         {
-            for (uint64_t i = record_count_arg - 1; i >= 0; i--)
+            for (uint64_t i = 0; i < record_count_arg; i++)
             {
-                data_manager.insert(records_vector[i], records_vector[i]);
+                data_manager.insert(records_vector[record_count_arg - i - 1], records_vector[record_count_arg - i - 1]);
             }
         }
 
@@ -246,11 +238,11 @@ private:
      * @param operation_count_arg The number of performed operations
      * @param distribution_arg The distribution
      * @param coefficient_arg The coefficient for the distribution
-     * @param insert_proportion The proportion of inserts
-     * @param read_proportion The proportion of reads
-     * @param update_proportion The proportion of updates
-     * @param scan_proportion The proportion of scancs
-     * @param delete_proportion The proportion of deletes
+     * @param insert_proportion_arg The proportion of inserts
+     * @param read_proportion_arg The proportion of reads
+     * @param update_proportion_arg The proportion of updates
+     * @param scan_proportion_arg The proportion of scancs
+     * @param delete_proportion_arg The proportion of deletes
      * @param cache_arg If the cache is activated or not
      * @param radix_tree_size_arg The size of the cache
      * @param cache_size_arg The actual size of the cache
@@ -348,6 +340,8 @@ public:
                   << std::flush;
 
         int iteration = 1;
+        run_workload("vary record size", iteration, buffer_size, record_count, operation_count, "geometric", 0.001, workloads[0][0], workloads[0][1], workloads[0][2], workloads[0][3], workloads[0][4], false, radix_tree_size, 0);
+
         std::cout << "Vary records-size tests started..." << std::endl;
 
         iteration = 1;
@@ -371,7 +365,7 @@ public:
             {
                 for (auto &distribution : distributions)
                 {
-                    run_workload("vary distribution", iteration, 4000, 500000, 500000, distribution, 0.001, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], cache, 69793215, i);
+                    run_workload("vary distribution", iteration, 4000, 1000000, 1000000, distribution, 0.1, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], cache, 69793215, i, true);
                     iteration++;
                 }
             }
@@ -380,27 +374,19 @@ public:
 
         iteration = 1;
         std::cout << "Vary geometric distribution coefficient tests started..." << std::endl;
-        for (auto &cache : caches)
+        for (int i = 0; i < 5; i++)
         {
-
-            for (auto &coefficient_l : coefficients)
+            for (auto &cache : caches)
             {
-                run_workload("vary geometric distribution", iteration, buffer_size, record_count, operation_count, "geometric", coefficient_l, workloads[0][0], workloads[0][1], workloads[0][2], workloads[0][3], workloads[0][4], cache, radix_tree_size, 0, true);
-                iteration++;
+
+                for (auto &coefficient_l : coefficients)
+                {
+                    run_workload("vary geometric distribution", iteration, 4000, 1000000, 1000000, "geometric", coefficient_l, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], cache, 69793215, i, true);
+                    iteration++;
+                }
             }
         }
         std::cout << "Vary geometric distribution coefficient tests completed..." << std::endl;
-
-        iteration = 1;
-        std::cout << "Show memory size tests started..." << std::endl;
-
-        for (int j = 0; j < 5; j++)
-        {
-            run_workload("vary memory size", iteration, 524288, small_record_counts[j], small_operations_counts[j], "geometric", 0.001, workloads[0][0], workloads[0][1], workloads[0][2], workloads[0][3], workloads[0][4], true, 2147483648, 0);
-            iteration++;
-        }
-
-        std::cout << "Show memory size tests completed..." << std::endl;
 
         iteration = 1;
         std::cout << "Vary memory distribution coefficient tests started..." << std::endl;
@@ -409,23 +395,20 @@ public:
         {
             for (auto &memory_distribution_l : memory_distributions)
             {
-                run_workload("vary memory distribution", iteration, memory_distribution_l[1], record_count, operation_count, "geometric", 0.001, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], true, memory_distribution_l[0], i);
-                iteration++;
+                if (memory_distribution_l[0] == 0)
+                {
+                    run_workload("vary memory distribution", iteration, memory_distribution_l[1], record_count, operation_count, "geometric", 0.001, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], false, memory_distribution_l[0], i);
+                    iteration++;
+                }
+                else
+                {
+                    run_workload("vary memory distribution", iteration, memory_distribution_l[1], record_count, operation_count, "geometric", 0.001, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], true, memory_distribution_l[0], i);
+                    iteration++;
+                }
             }
         }
 
-        std::cout << "Vary memory distribution coefficient tests completed..." << std::endl;
-
-        std::cout << "Speed tests started ...";
-        for (int i = 0; i < 5; i++)
-        {
-
-            run_workload("speed comparison", iteration, 104857, record_count, operation_count, "geometric", 0.01, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], false, 0, i);
-            iteration++;
-            run_workload("speed comparison", iteration, 52428, record_count, operation_count, "geometric", 0.01, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], true, 214748364, i);
-            iteration++;
-        }
-        std::cout << "Speed tests completed..." << std::endl;
+        std::cout << "Vary memory distribution tests completed..." << std::endl;
 
         std::cout << "All tests completed!" << std::endl;
     }
