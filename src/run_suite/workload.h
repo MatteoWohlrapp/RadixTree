@@ -118,7 +118,6 @@ private:
         else if (distribution == "geometric")
         {
             std::geometric_distribution<uint64_t> dist(coefficient);
-            ;
 
             index_distribution = [this, dist]() mutable -> uint64_t
             {

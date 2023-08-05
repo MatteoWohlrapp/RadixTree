@@ -48,6 +48,7 @@ void StorageManager::destroy()
     data_fs.close();
     data_fs.open(base_path / data, std::ofstream::out | std::ofstream::trunc);
     data_fs.close();
+    std::filesystem::remove(base_path / data);
 }
 
 void StorageManager::load_page(BHeader *header, uint64_t page_id)

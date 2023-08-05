@@ -56,7 +56,6 @@ static struct option long_options[] = {
     {"run_config", required_argument, 0, 'r'},
     {"verbosity_level", required_argument, 0, 'v'},
     {"log_mode", required_argument, 0, 'l'},
-    {"delete", no_argument, 0, 'd'},
     {"workload", optional_argument, 0, 'w'},
     {"help", no_argument, 0, 'h'},
     {"coefficient", required_argument, 0, 0},
@@ -72,7 +71,6 @@ void print_help()
     printf(" -b, --benchmark ......................... Activate benchmark mode. Overwrites any log-level specification to turn all loggers off\n");
     printf(" -v, --verbosity_level <verbosity_level> . Sets the verbosity level for the program: 'o' (off), 'e' (error), 'c' (critical), 'w' (warn), 'i' (info), 'd' (debug), 't' (trace). By default info is used\n");
     printf(" -l, --log_mode <log_mode> ............... Specifies where the logs for the program are written to: 'f' (file), 'c' (console). By default, logs are written to the console when opening the menu\n");
-    printf(" -d, --delete ............................ Deletes files from previous runs and resets the db\n");
     printf("--buffer_size <buffer_size>............... Set the buffer size.\n");
     printf("--radix_tree_size <radix_tree_size>....... Set the size of the cache.\n");
     printf("--record_count <record_count>............. Set the record count for a workload.\n");
@@ -94,7 +92,7 @@ const void handle_logging(int argc, char *argsv[])
     char log_mode = 'c';
     while (1)
     {
-        int result = getopt_long(argc, argsv, "hbcr:v:l:dw::s", long_options, &option_index);
+        int result = getopt_long(argc, argsv, "hbcr:v:l:w::s", long_options, &option_index);
         if (result == -1)
         {
             break;
@@ -169,7 +167,7 @@ void handle_arguments(int argc, char *argsv[])
 
     while (true)
     {
-        int result = getopt_long(argc, argsv, "hbcr:v:l:dw::s", long_options, &option_index);
+        int result = getopt_long(argc, argsv, "hbcr:v:l:w::s", long_options, &option_index);
         if (result == -1)
         {
             break;
@@ -207,10 +205,6 @@ void handle_arguments(int argc, char *argsv[])
             break;
         case 'c':
             configuration.cache = true;
-            break;
-        case 'd':
-            std::filesystem::remove("./db/data.bin");
-            std::filesystem::remove("./db/bitmap.bin");
             break;
         case '?':
             print_help();
