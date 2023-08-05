@@ -28,6 +28,8 @@ docker run -v <path_to_project>:/app -p 8000:8000 -it radixtree
 2. Run `cmake ..` to create the makefile. Version 10.0.0-4ubuntu1 of the clang compiler is used. If you want to build in debug, use `cmake -DCMAKE_BUILD_TYPE=Debug ..`
 3. Run `make` to generate the executable and tests.
 
+*Note: remove `set(CMAKE_CXX_COMPILER "/usr/bin/clang++")` from CMakeLists.txt if the compiler is in a different location. This was necessary for the docker configuration.*
+
 ### Build with Doxygen
 
 1. Navigate into the build folder: `cd build`
