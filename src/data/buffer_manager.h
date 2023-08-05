@@ -15,9 +15,9 @@
 #include <random>
 #include "spdlog/spdlog.h"
 
-/// forward declaration 
+/// forward declaration
 class BufferManagerTest;
-class BPlusTreeTest; 
+class BPlusTreeTest;
 
 /**
  * @brief Handles the pages currently stored in memory
@@ -40,10 +40,10 @@ private:
     std::uniform_int_distribution<int> dist;
 
     /// how many pages will be stored in the buffer manager
-    int buffer_size; 
+    uint64_t buffer_size;
 
     /// the size of the page
-    int page_size; 
+    int page_size;
 
     /**
      * @brief Get a specific page from disc
@@ -59,7 +59,7 @@ private:
 
 public:
     friend class BufferManagerTest;
-    friend class BPlusTreeTest; 
+    friend class BPlusTreeTest;
 
     /**
      * @brief Constructor for the Buffer Manager
@@ -67,7 +67,7 @@ public:
      * @param buffer_size_arg The size of the buffer
      * @param page_size_arg The size of the page that needs to be allocated
      */
-    BufferManager(StorageManager *storage_manager_arg, int buffer_size_arg, int page_size_arg);
+    BufferManager(StorageManager *storage_manager_arg, uint64_t buffer_size_arg, int page_size_arg);
 
     /**
      * @brief Request a page
@@ -111,4 +111,10 @@ public:
      * @brief Function that needs to be called before exiting the program, saved all pages to the disc, important to be called before the storage manager is destroyed
      */
     void destroy();
+
+    /**
+     * @brief Returns the current size of the buffer
+     * @return the size of the buffer
+     */
+    uint64_t get_current_buffer_size();
 };

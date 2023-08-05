@@ -11,6 +11,7 @@
 #include "../model/r_header.h"
 #include "r_nodes.h"
 #include "../bplus_tree/b_nodes.h"
+#include "../utils/tree_operations.h"
 #include "spdlog/spdlog.h"
 #include <netinet/in.h>
 
@@ -27,9 +28,14 @@ private:
     // Root Node
     RHeader *root = nullptr;
 
-    /// maximum size of the cache in bytes
-    int radix_tree_size;
-    int current_size = 0;
+    uint64_t radix_tree_size;  /// maximum size of the cache in bytes
+    uint64_t current_size = 0; /// current size of the cache in bytes
+
+    BufferManager *buffer_manager;
+
+    int64_t buffer[256]; /// buffer that handles deletes if the cache is full
+    int read = 0;
+    int write = 0;
 
     /**
      * @brief transforms a signed key to an unsigned key
@@ -39,7 +45,6 @@ private:
     uint64_t transform(int64_t key)
     {
         uint64_t transformed_key = ((uint64_t)key) + INT64_MAX + 1;
-        logger->debug("Transformed key is: {} from key: {}", transformed_key, key);
         return transformed_key;
     }
 
@@ -51,7 +56,6 @@ private:
     int64_t inverse_transform(uint64_t key)
     {
         uint64_t transformed_key = ((uint64_t)key) - INT64_MAX - 1;
-        logger->debug("Inverse Transformed key is: {} from key: {}", transformed_key, key);
         return transformed_key;
     }
 
@@ -64,10 +68,8 @@ private:
      */
     void insert_recursive(RHeader *rheader, uint64_t key, uint64_t page_id, BHeader *bheader)
     {
-        logger->debug("In recursive insert");
         if (!root)
         {
-            logger->debug("Root is nullptr");
             // insert first element
             RHeader *new_root_header = (RHeader *)malloc(size_4);
             RNode4 *new_root = new (new_root_header) RNode4(true, 8, key, 0);
@@ -84,7 +86,6 @@ private:
             {
                 if (!can_insert(rheader))
                 {
-                    logger->debug("Cant insert into root");
                     root = increase_node_size(rheader);
                     insert(inverse_transform(key), page_id, bheader);
                     return;
@@ -92,7 +93,6 @@ private:
                 if (rheader->depth != 1)
                 {
                     // compressed
-                    logger->debug("Header depth not 1");
                     // check similarities between existing element and new key
                     int prefix_length = longest_common_prefix(root->key, key);
 
@@ -130,7 +130,6 @@ private:
 
                 if (!child_header)
                 {
-                    logger->debug("Child header null");
                     // will do lazy expansion to save information
                     node_insert(rheader, partial_key, key, page_id, bheader);
                     rheader->unfix_node();
@@ -141,8 +140,6 @@ private:
                     {
                         // if child is full we need to resize it
                         child_header = increase_node_size(child_header);
-                        logger->info("Increased node size, child header: {}", (void *)child_header);
-                        logger->flush();
                         node_insert(rheader, partial_key, child_header);
                     }
 
@@ -150,7 +147,6 @@ private:
 
                     if (prefix_length + 1 < child_header->depth)
                     {
-                        logger->debug("Prefix length is {} for child depth {}, so wrong for key {}, need to create new node", prefix_length + 1, child_header->depth, key);
                         // compression
                         // create new node
                         RHeader *new_node_header = (RHeader *)malloc(size_4);
@@ -167,7 +163,6 @@ private:
                     else
                     {
                         child_header->fix_node();
-                        logger->debug("Fixing header at depth: {} with key: {}", child_header->depth, child_header->key);
                         rheader->unfix_node();
                         // in this case the prefix of the numbers matches and we know that we can insert, so calling recursive insert instead
                         insert_recursive(child_header, key, page_id, bheader);
@@ -249,8 +244,6 @@ private:
      */
     void destroy_recursive(RHeader *header)
     {
-        logger->info("Destroying pointer: {}", (void *)header);
-        logger->flush();
         if (!header)
             return;
         if (header->leaf)
@@ -440,7 +433,6 @@ private:
             return new_header;
         }
         }
-        logger->info("Node Type: {}", header->type);
         return nullptr;
     }
 
@@ -514,8 +506,6 @@ private:
         }
         break;
         }
-        logger->info("Node Type: {}", header->type);
-        logger->flush();
         return nullptr;
     }
 
@@ -556,7 +546,6 @@ private:
         {
         case 4:
         {
-            logger->debug("Inserting child as void pointer");
             RNode4 *node = (RNode4 *)parent;
             node->insert(key, child);
         }
@@ -696,59 +685,6 @@ private:
     }
 
     /**
-     * @brief Get the value for a key
-     * @param header The radix tree node
-     * @param key The key where the value is stored at
-     * @return The value corresponding to the key or INT64_MIN if not present
-     */
-    int64_t get_value_recursive(RHeader *header, uint64_t key)
-    {
-        if (header == nullptr)
-            return INT64_MIN;
-
-        logger->info("Key is {}", get_key(key, header->depth));
-
-        void *next = get_next_page(header, get_key(key, header->depth));
-        if (next)
-        {
-            if (header->leaf)
-            {
-                logger->debug("Header is leaf");
-                RFrame *frame = (RFrame *)next;
-                if (frame->header->page_id == frame->page_id)
-                {
-                    int64_t value = ((BOuterNode<PAGE_SIZE> *)frame->header)->get_value(inverse_transform(key));
-                    logger->debug("Page id {} matching, value is: {}", frame->page_id, value);
-                    header->unfix_node();
-                    return value;
-                }
-                else
-                {
-                    logger->debug("Page id from header {} not matching saved id {}", frame->header->page_id, frame->page_id);
-                    header->unfix_node();
-                    // Delete from tree as the reference is not matching and the page_id is wrong
-                    delete_reference(key);
-                    return INT64_MIN;
-                }
-            }
-            else
-            {
-                logger->debug("Header is not leaf");
-                RHeader *child = (RHeader *)next;
-                child->fix_node();
-                header->unfix_node();
-                return get_value_recursive(child, key);
-            }
-        }
-        else
-        {
-            logger->debug("Next was null");
-            header->unfix_node();
-            return INT64_MIN;
-        }
-    }
-
-    /**
      * @brief Get the page a key is located on
      * @param header The radix tree node
      * @param key The key which is on the page
@@ -774,7 +710,7 @@ private:
                 {
                     header->unfix_node();
                     // Delete from tree as the reference is not matching and the page_id is wrong
-                    delete_reference(key);
+                    delete_reference(inverse_transform(key));
                     return nullptr;
                 }
             }
@@ -788,7 +724,6 @@ private:
         }
         else
         {
-            logger->debug("Next was null");
             header->unfix_node();
             return nullptr;
         }
@@ -940,31 +875,18 @@ private:
             RNode4 *node = (RNode4 *)header;
             for (int i = 0; i < node->header.current_size; i++)
             {
-                if (header->depth == 1 && from < 0 && to >= 0)
-                {
-                    uint8_t from_byte = get_key(from, 1);
-                    uint8_t to_byte = get_key(to, 1);
+                intermediate_key = get_intermediate_key(header->key, node->keys[i], header->depth);
 
-                    if (node->keys[i] >= from_byte || node->keys[i] <= to_byte)
+                if (intermediate_key >= from_key && intermediate_key <= to_key)
+                {
+                    if (header->leaf)
+                    {
+                        node_insert(header, node->keys[i], header->key, page_id, bheader);
+                    }
+                    else
                     {
                         ((RHeader *)node->children[i])->fix_node();
                         update_range_recursive(((RHeader *)node->children[i]), from, to, page_id, bheader);
-                    }
-                }
-                else
-                {
-                    intermediate_key = get_intermediate_key(header->key, node->keys[i], header->depth);
-                    if (intermediate_key >= from_key && intermediate_key <= to_key)
-                    {
-                        if (header->leaf)
-                        {
-                            node_insert(header, node->keys[i], header->key, page_id, bheader);
-                        }
-                        else
-                        {
-                            ((RHeader *)node->children[i])->fix_node();
-                            update_range_recursive(((RHeader *)node->children[i]), from, to, page_id, bheader);
-                        }
                     }
                 }
             }
@@ -1341,7 +1263,7 @@ public:
     friend class RadixTreeTest;
     friend class Debuger;
 
-    RadixTree(int radix_tree_size_arg) : radix_tree_size(radix_tree_size_arg)
+    RadixTree(uint64_t radix_tree_size_arg, BufferManager *buffer_manager_arg) : radix_tree_size(radix_tree_size_arg), buffer_manager(buffer_manager_arg)
     {
         logger = spdlog::get("logger");
     }
@@ -1356,6 +1278,11 @@ public:
     {
         if (current_size < radix_tree_size)
         {
+            buffer[write] = key;
+            write = (write + 1) % 256;
+            if (write == read)
+                read = (read + 1) % 256;
+
             if (root)
             {
                 root->fix_node();
@@ -1364,7 +1291,11 @@ public:
         }
         else
         {
-            logger->debug("Radix Tree is full, can't insert more elements.");
+            if (read != write)
+            {
+                delete_reference(buffer[read]);
+                read = (read + 1) % 256;
+            }
         }
     }
 
@@ -1375,7 +1306,6 @@ public:
     void delete_reference(int64_t s_key)
     {
         uint64_t key = transform(s_key);
-        logger->debug("Deleting in Radix Tree: {}", key);
         if (!root)
             return;
 
@@ -1451,32 +1381,6 @@ public:
     }
 
     /**
-     * @brief Get a value corresponding to the key
-     * @param key The key corresponding to the value
-     * @return The value
-     */
-    int64_t get_value(int64_t key)
-    {
-        if (!root)
-            return INT64_MIN;
-        root->fix_node();
-        return get_value_recursive(root, transform(key));
-    }
-
-    /**
-     * @brief Get the page a key is located on
-     * @param key The key which is on the page
-     * @return The page
-     */
-    BHeader *get_page(int64_t key)
-    {
-        if (!root)
-            return nullptr;
-        root->fix_node();
-        return get_page_recursive(root, transform(key));
-    }
-
-    /**
      * @brief Updates a range of values, specified by values from and to
      * @param from key from which updates are applied
      * @param to key until which updates are applied
@@ -1503,6 +1407,7 @@ public:
 
     /**
      * @brief Validates the radix tree
+     * @return true if the tree is valid, false otherwise
      */
     bool valdidate()
     {
@@ -1516,5 +1421,107 @@ public:
             return false;
 
         return true;
+    }
+
+    /**
+     * @brief Get a value corresponding to the key
+     * @param key The key corresponding to the value
+     * @return The value
+     */
+    int64_t get_value(int64_t key)
+    {
+        if (root)
+        {
+            root->fix_node();
+            BHeader *header = get_page_recursive(root, transform(key));
+            if (header)
+            {
+                buffer_manager->fix_page(header->page_id);
+                uint64_t value = ((BOuterNode<PAGE_SIZE> *)header)->get_value(key);
+                buffer_manager->unfix_page(header->page_id, false);
+                return value;
+            }
+        }
+        return INT64_MIN;
+    }
+
+    /**
+     * @brief Updates a key if it is cached
+     * @param key The key to update
+     * @param value The value to update
+     * @return true if update was possible, false otherwise
+     */
+    bool update(int64_t key, int64_t value)
+    {
+        if (root)
+        {
+            root->fix_node();
+            BHeader *header = get_page_recursive(root, transform(key));
+            if (header)
+            {
+                buffer_manager->fix_page(header->page_id);
+                ((BOuterNode<PAGE_SIZE> *)header)->update(key, value);
+                buffer_manager->unfix_page(header->page_id, true);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @brief Performs a scan if the value is cached
+     * @param key The key to start the scan from
+     * @param range How many elements to scan
+     * @return the sum of the scan, INT64_MIN otherwise
+     */
+    int64_t scan(int64_t key, int range)
+    {
+        if (root)
+        {
+            root->fix_node();
+            BHeader *header = get_page_recursive(root, transform(key));
+            if (header)
+            {
+                buffer_manager->fix_page(header->page_id);
+                return TreeOperations::scan<PAGE_SIZE>(buffer_manager, nullptr, header, key, range);
+            }
+        }
+        return INT64_MIN;
+    }
+
+    /**
+     * @brief Deletes a value from the tree when the page is cached
+     * @param key The key corresponding to the value that will be deleted
+     * @return true if it can delete the value, false otherwise
+     */
+    bool delete_value(int64_t key)
+    {
+        if (root)
+        {
+            root->fix_node();
+            BHeader *header = get_page_recursive(root, transform(key));
+            if (header)
+            {
+                BOuterNode<PAGE_SIZE> *node = (BOuterNode<PAGE_SIZE> *)header;
+                if (node->can_delete())
+                {
+                    buffer_manager->fix_page(header->page_id);
+                    node->delete_value(key);
+                    delete_reference(key);
+                    buffer_manager->unfix_page(header->page_id, true);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @brief Returns the current size of the cache
+     * @return the size of the cache
+     */
+    uint64_t get_cache_size()
+    {
+        return current_size;
     }
 };

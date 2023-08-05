@@ -1,0 +1,61 @@
+% This file was created by matlab2tikz.
+%
+%The latest updates can be retrieved from
+%  http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz
+%where you can also make suggestions and rate matlab2tikz.
+%
+\definecolor{mycolor1}{rgb}{0.00000,0.44700,0.74100}%
+\definecolor{mycolor2}{rgb}{0.85000,0.32500,0.09800}%
+%
+\begin{tikzpicture}
+
+\begin{axis}[%
+width=6.028in,
+height=4.754in,
+at={(1.011in,0.642in)},
+scale only axis,
+bar shift auto,
+xmin=0.514285714285714,
+xmax=5.48571428571429,
+xtick={1,2,3,4,5},
+xticklabels={{MeanTime},{MedianTime},{90Percentile},{95Percentile},{99Percentile}},
+ymin=0,
+ymax=1.9723e-06,
+ytick={0,2e-07,4e-07,6e-07,8e-07,1e-06,1.2e-06,1.4e-06,1.6e-06,1.8e-06},
+yticklabels={{$\text{0}\mu\text{ s}$},{$\text{0}\mu\text{ s}$},{$\text{0}\mu\text{ s}$},{$\text{1}\mu\text{ s}$},{$\text{1}\mu\text{ s}$},{$\text{1}\mu\text{ s}$},{$\text{1}\mu\text{ s}$},{$\text{1}\mu\text{ s}$},{$\text{2}\mu\text{ s}$},{$\text{2}\mu\text{ s}$}},
+ylabel style={font=\color{white!15!black}},
+ylabel={Time of one operation in microseconds},
+axis background/.style={fill=white},
+xmajorgrids,
+ymajorgrids,
+legend style={at={(0.97,0.03)}, anchor=south east, legend cell align=left, align=left, draw=white!15!black},
+scaled y ticks=false
+]
+\addplot[ybar, bar width=0.229, fill=mycolor1, draw=black, area legend] table[row sep=crcr] {%
+1	1.427e-06\\
+2	1.349e-06\\
+3	1.472e-06\\
+4	1.565e-06\\
+5	1.793e-06\\
+};
+\addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
+0.514285714285714	0\\
+5.48571428571429	0\\
+};
+\addlegendentry{Read, Cached}
+
+\addplot[ybar, bar width=0.229, fill=mycolor2, draw=black, area legend] table[row sep=crcr] {%
+1	1.392e-06\\
+2	1.286e-06\\
+3	1.47e-06\\
+4	1.531e-06\\
+5	1.67e-06\\
+};
+\addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
+0.514285714285714	0\\
+5.48571428571429	0\\
+};
+\addlegendentry{Read, Not Cached}
+
+\end{axis}
+\end{tikzpicture}%

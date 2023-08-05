@@ -30,6 +30,6 @@ struct BHeader
 
     /**
      * @brief Constructor that does not change anything, can be used when correct values are already in the right memory position
-    */
+     */
     BHeader() {}
 };

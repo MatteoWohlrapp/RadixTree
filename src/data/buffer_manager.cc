@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <random>
 
-BufferManager::BufferManager(StorageManager* storage_manager_arg, int buffer_size_arg, int page_size_arg) : storage_manager(storage_manager_arg), buffer_size(buffer_size_arg), page_size(page_size_arg)
+BufferManager::BufferManager(StorageManager *storage_manager_arg, uint64_t buffer_size_arg, int page_size_arg) : storage_manager(storage_manager_arg), buffer_size(buffer_size_arg), page_size(page_size_arg)
 {
     logger = spdlog::get("logger");
     dist = std::uniform_int_distribution<int>(0, buffer_size);
@@ -13,7 +13,6 @@ BufferManager::BufferManager(StorageManager* storage_manager_arg, int buffer_siz
 
 void BufferManager::destroy()
 {
-    logger->trace("Destroying");
     for (auto &pair : page_id_map)
     {
         if (pair.second->dirty)
@@ -29,13 +28,11 @@ BHeader *BufferManager::request_page(uint64_t page_id)
     std::map<uint64_t, BFrame *>::iterator it = page_id_map.find(page_id);
     if (it == page_id_map.end())
     {
-        logger->debug("Page {} not in memory", page_id);
         // means the page is not in the buffer and we need to fetch it from memory
         fetch_page_from_disk(page_id);
         it = page_id_map.find(page_id);
     }
     // fix page
-    logger->debug("Page id in map: {}", it->second->header.page_id);
     it->second->fix_count++;
     it->second->marked = true;
     return &it->second->header;
@@ -69,16 +66,16 @@ BHeader *BufferManager::create_new_page()
 
 void BufferManager::delete_page(uint64_t page_id)
 {
-    logger->debug("Deleting page"); 
+    // storage_manager->delete_page(page_id);
     std::map<uint64_t, BFrame *>::iterator it = page_id_map.find(page_id);
     if (it != page_id_map.end())
     {
         assert(it->second->fix_count == 0 && "Fix count is not zero when deleting");
         BFrame *temp = it->second;
-        page_id_map.erase(it);
-        storage_manager->delete_page(temp->header.page_id);
-        free(temp);
-        current_buffer_size--;
+        temp->header.page_id = 0;
+        temp->marked = false;
+        temp->dirty = false;
+        temp->fix_count = 0;
     }
 }
 
@@ -126,7 +123,7 @@ BFrame *BufferManager::evict_page()
                     storage_manager->save_page(&it->second->header);
                 }
                 BFrame *frame = it->second;
-                page_id_map.erase(it->second->header.page_id);
+                page_id_map.erase(it->first);
                 return frame;
             }
         }
@@ -135,11 +132,9 @@ BFrame *BufferManager::evict_page()
 
 void BufferManager::fetch_page_from_disk(uint64_t page_id)
 {
-    logger->debug("Fetching page {} from disk", page_id);
     BFrame *frame_address;
     if (current_buffer_size >= buffer_size)
     {
-        logger->debug("Buffer full, evicting page");
         frame_address = evict_page();
     }
     else
@@ -161,4 +156,9 @@ void BufferManager::mark_dirty(uint64_t page_id)
     {
         it->second->dirty = true;
     }
+}
+
+uint64_t BufferManager::get_current_buffer_size()
+{
+    return current_buffer_size;
 }

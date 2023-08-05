@@ -10,14 +10,12 @@ class StorageManagerTest : public ::testing::Test
 protected:
     StorageManager *storage_manager;
     std::filesystem::path base_path = "../tests/temp/";
-    std::filesystem::path bitmap = "bitmap.bin";
     std::filesystem::path data = "data.bin";
     int page_size = 32;
     std::shared_ptr<spdlog::logger> logger = spdlog::get("logger");
 
     void SetUp() override
     {
-        std::filesystem::remove(base_path / bitmap);
         std::filesystem::remove(base_path / data);
         storage_manager = new StorageManager(base_path, page_size);
     }
@@ -41,17 +39,11 @@ protected:
     {
         return &storage_manager->data_fs;
     }
-
-    void overwrite_storage_manager()
-    {
-        storage_manager = new StorageManager(base_path, page_size);
-    }
 };
 
 TEST_F(StorageManagerTest, FolderInitialization)
 {
     ASSERT_TRUE(std::filesystem::exists(base_path));
-    ASSERT_TRUE(std::filesystem::exists(base_path / bitmap));
     ASSERT_TRUE(std::filesystem::exists(base_path / data));
 }
 
@@ -68,10 +60,6 @@ TEST_F(StorageManagerTest, BitmapSavingAndLoading)
 
     header->page_id = 3;
     storage_manager->save_page(header);
-
-    storage_manager->destroy();
-
-    overwrite_storage_manager();
 
     for (int i = 0; i < 4; i++)
     {
@@ -92,36 +80,6 @@ TEST_F(StorageManagerTest, SaveAndLoadNewPage)
 
     // save the page to the file
     storage_manager->save_page(header);
-
-    // Re-load the page and check if it was saved correctly
-    BHeader *loaded_header = (BHeader *)malloc(page_size);
-    storage_manager->load_page(loaded_header, 1);
-
-    // test for header properties
-    ASSERT_EQ(loaded_header->page_id, 1);
-    ASSERT_EQ(loaded_header->inner, true);
-    // test for data properties
-    arr = (char *)loaded_header;
-    ASSERT_EQ(arr[page_size - 2], 1);
-    ASSERT_EQ(arr[page_size - 1], 2);
-}
-
-TEST_F(StorageManagerTest, SaveAndLoadNewPageFromMemory)
-{
-    BHeader *header = (BHeader *)malloc(page_size);
-    header->page_id = 1;
-    header->inner = true;
-
-    // cast to char array and fill latest two bytes with values to check later
-    char *arr = (char *)header;
-    arr[page_size - 2] = 1;
-    arr[page_size - 1] = 2;
-
-    // save the page to the file
-    storage_manager->save_page(header);
-    storage_manager->destroy();
-
-    overwrite_storage_manager();
 
     // Re-load the page and check if it was saved correctly
     BHeader *loaded_header = (BHeader *)malloc(page_size);
@@ -249,9 +207,6 @@ TEST_F(StorageManagerTest, InsertHigherPagesThanInitialBitmapSize)
     arr[page_size - 2] = 1;
     arr[page_size - 1] = 2;
     storage_manager->save_page(header);
-    storage_manager->destroy();
-
-    overwrite_storage_manager();
 
     // Re-load the page and check if it was saved correctly
     BHeader *loaded_header = (BHeader *)malloc(page_size);
@@ -365,42 +320,4 @@ TEST_F(StorageManagerTest, DeleteOutOfBitmapSize)
 
     storage_manager->delete_page(2);
     ASSERT_EQ(storage_manager->get_unused_page_id(), 2);
-}
-
-TEST_F(StorageManagerTest, ResiszingWhenDestroying)
-{
-    BHeader *header = (BHeader *)malloc(page_size);
-    // interesting size because boundary of page size
-    header->page_id = page_size * 2 - 1;
-    storage_manager->save_page(header);
-    storage_manager->destroy(); 
-
-    overwrite_storage_manager();
-
-    BHeader* loaded_header = (BHeader *)malloc(page_size);
-    storage_manager->load_page(loaded_header, page_size * 2 - 1); 
-    ASSERT_EQ(loaded_header->page_id, page_size * 2 - 1); 
-
-    header->page_id = 1;
-    storage_manager->save_page(header);
-    storage_manager->delete_page(page_size * 2 - 1);
-    storage_manager->destroy();
-
-    overwrite_storage_manager();
-
-    ASSERT_EQ(get_free_space_map().size(), 8);
-    ASSERT_EQ(File::get_file_size(get_data_fs()), 8 * page_size);
-
-    header->page_id = 9;
-    storage_manager->save_page(header);
-    storage_manager->destroy();
-
-    overwrite_storage_manager();
-
-    storage_manager->load_page(loaded_header, 9);
-
-    ASSERT_EQ(loaded_header->page_id, 9);
-    ASSERT_EQ(get_free_space_map().size(), 16);
-    // smaller than size of bitmap, and 10 pages -> 0-9
-    ASSERT_EQ(File::get_file_size(get_data_fs()), 10 * page_size);
 }

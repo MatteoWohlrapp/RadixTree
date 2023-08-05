@@ -15,6 +15,7 @@
 #include <iostream>
 #include <cassert>
 #include "spdlog/spdlog.h"
+#include "../utils/tree_operations.h"
 
 /// forward declaration
 class BPlusTreeTest;
@@ -44,7 +45,6 @@ private:
      */
     void recursive_insert(BHeader *header, int64_t key, int64_t value)
     {
-        logger->debug("Recursive insert into page: {}", header->page_id);
         if (!header->inner)
         {
             // outer node
@@ -58,7 +58,6 @@ private:
                 // Because the node size has a lower limit, this does not cause issues
                 int64_t split_key = node->keys[split_index - 1];
                 uint64_t new_outer_id = split_outer_node(header, split_index);
-                logger->debug("Splitting outer root node, new outer id: {}", new_outer_id);
 
                 // create new inner node for root
                 BHeader *new_root_node_address = buffer_manager->create_new_page();
@@ -76,7 +75,6 @@ private:
             }
             else
             {
-                logger->debug("Inserting into outer node");
                 node->insert(key, value);
                 if (cache)
                 {
@@ -98,7 +96,6 @@ private:
                 // Because the node size has a lower limit, this does not cause issues
                 int64_t split_key = node->keys[split_index - 1];
                 uint64_t new_inner_id = split_inner_node(header, split_index);
-                logger->debug("Splitting inner root node, new inner id: {}", new_inner_id);
 
                 // create new inner node for root
                 BHeader *new_root_node_address = buffer_manager->create_new_page();
@@ -121,20 +118,17 @@ private:
                 // find next page to insert
                 uint64_t next_page = node->next_page(key);
                 BHeader *child_header = buffer_manager->request_page(next_page);
-                logger->debug("Finding child to insert: {}", next_page);
 
                 if (child_header->inner)
                 {
                     BInnerNode<PAGE_SIZE> *child = (BInnerNode<PAGE_SIZE> *)child_header;
                     if (child->is_full())
                     {
-                        logger->debug("Child is inner and full");
                         // split the inner node
                         int split_index = get_split_index(child->max_size);
                         // Because the node size has a lower limit, this does not cause issues
                         int64_t split_key = child->keys[split_index - 1];
                         uint64_t new_inner_id = split_inner_node(child_header, split_index);
-                        logger->debug("New inner child id: {}", new_inner_id);
 
                         node->insert(split_key, new_inner_id);
 
@@ -150,7 +144,6 @@ private:
                     }
                     else
                     {
-                        logger->debug("Child is inner and not full");
                         // child correctly fixed before, just need to unfix current node
                         buffer_manager->unfix_page(header->page_id, false);
                         recursive_insert(child_header, key, value);
@@ -162,13 +155,11 @@ private:
 
                     if (child->is_full())
                     {
-                        logger->debug("Child is outer and full");
                         // split the outer node
                         int split_index = get_split_index(child->max_size);
                         // Because the node size has a lower limit, this does not cause issues
                         int64_t split_key = child->keys[split_index - 1];
                         uint64_t new_outer_id = split_outer_node(child_header, split_index);
-                        logger->debug("New outer child id: {}", new_outer_id);
 
                         // Insert new child and then call function again
                         node->insert(split_key, new_outer_id);
@@ -185,7 +176,6 @@ private:
                     }
                     else
                     {
-                        logger->debug("Child is outer and not full");
                         // child correctly fixed before, just need to unfix current node
                         buffer_manager->unfix_page(header->page_id, false);
                         recursive_insert(child_header, key, value);
@@ -206,7 +196,6 @@ private:
         {
             // outer node
             BOuterNode<PAGE_SIZE> *node = (BOuterNode<PAGE_SIZE> *)header;
-            logger->flush();
             node->delete_value(key);
             if (cache)
                 cache->delete_reference(key);
@@ -238,7 +227,6 @@ private:
 
                     if (!child->can_delete())
                     {
-                        logger->debug("Cant delete inner child");
                         /**
                          * 1. Substitute with left or right if you can
                          * 2. If not, merge with left or right
@@ -334,7 +322,8 @@ private:
             int64_t value = node->get_value(key);
             if (cache)
             {
-                cache->insert(key, header->page_id, header);
+                if (value != INT64_MIN)
+                    cache->insert(key, header->page_id, header);
             }
             buffer_manager->unfix_page(header->page_id, false);
             return value;
@@ -773,42 +762,7 @@ private:
     {
         if (!header->inner)
         {
-            BOuterNode<PAGE_SIZE> *node = (BOuterNode<PAGE_SIZE> *)header;
-
-            int index = node->binary_search(key);
-            int scanned = 0;
-            int64_t sum = 0;
-
-            assert((node->keys[index] == key) && "Scan on key that does not exist.");
-            if (node->keys[index] == key)
-            {
-                if (cache)
-                {
-                    cache->insert(key, header->page_id, header);
-                }
-                while (scanned < range)
-                {
-                    if (index == node->current_index)
-                    {
-                        if (node->next_lef_id == 0)
-                        {
-                            buffer_manager->unfix_page(node->header.page_id, false);
-                            return sum;
-                        }
-                        BOuterNode<PAGE_SIZE> *temp = node;
-                        node = (BOuterNode<PAGE_SIZE> *)buffer_manager->request_page(node->next_lef_id);
-                        buffer_manager->unfix_page(temp->header.page_id, false);
-                        index = 0;
-                    }
-
-                    sum ^= node->values[index];
-                    logger->debug("Sum: {}", sum);
-                    scanned++;
-                    index++;
-                }
-                buffer_manager->unfix_page(node->header.page_id, false);
-            }
-            return sum;
+            return TreeOperations::scan<PAGE_SIZE>(buffer_manager, cache, header, key, range);
         }
         else
         {
@@ -820,10 +774,10 @@ private:
     }
 
     /**
-     * @brief Validates if the tree is balanced 
+     * @brief Validates if the tree is balanced
      * @param page_id The page_id of node
      * @return true if the tree is balanced, false if not
-    */
+     */
     bool is_balanced()
     {
         BHeader *root = buffer_manager->request_page(root_id);
@@ -836,7 +790,7 @@ private:
      * @brief Validates if the tree is balanced recursively
      * @param header The current node
      * @return -1 if the tree is unbalanced, the depth otherwise
-    */
+     */
     int recursive_is_balanced(BHeader *header)
     {
         if (!header->inner)
@@ -873,9 +827,9 @@ private:
     }
 
     /**
-     * @brief Validates if the tree is ordered 
+     * @brief Validates if the tree is ordered
      * @return true if the tree is ordered, false if not
-    */
+     */
     bool is_ordered()
     {
         BHeader *root = buffer_manager->request_page(root_id);
@@ -888,7 +842,7 @@ private:
      * @brief Validates if the tree is ordered recursively
      * @param header The current node
      * @return true if the tree is ordered, false otherwise
-    */
+     */
     bool recursive_is_ordered(BHeader *header)
     {
         if (!header->inner)
@@ -928,10 +882,10 @@ private:
 
     /**
      * @brief Checks if all keys in a page are smaller or equal to key
-     * @param page_id The page to check 
+     * @param page_id The page to check
      * @param key The key to compare to
      * @return true if all keys are smaller or equal, false otherwise
-    */
+     */
     bool smaller_or_equal(uint64_t page_id, int64_t key)
     {
         BHeader *header = buffer_manager->request_page(page_id);
@@ -978,10 +932,10 @@ private:
 
     /**
      * @brief Checks if all keys in a page are bigger to key
-     * @param page_id The page to check 
+     * @param page_id The page to check
      * @param key The key to compare to
      * @return true if all keys are bigger, false otherwise
-    */
+     */
     bool bigger(uint64_t page_id, int64_t key)
     {
         BHeader *header = buffer_manager->request_page(page_id);
@@ -1028,9 +982,9 @@ private:
 
     /**
      * @brief Validates if the tree nodes are concatenated
-     * @param num_elements Checks the number of elements in the tree 
+     * @param num_elements Checks the number of elements in the tree
      * @return true if the tree is concatenated, false otherwise
-    */
+     */
     bool is_concatenated(int num_elements)
     {
         uint64_t page_id = find_leftmost(root_id);
@@ -1057,7 +1011,6 @@ private:
         }
         if (count != num_elements)
         {
-            logger->debug("Count is off, count: {}, expected {}", count, num_elements);
             return false;
         }
 
@@ -1065,10 +1018,10 @@ private:
     }
 
     /**
-     * @brief Finds the leftmost element in the tree 
+     * @brief Finds the leftmost element in the tree
      * @param page_id The page id of the node
      * @returns the page_id of the leftmost node
-    */
+     */
     uint64_t find_leftmost(uint64_t page_id)
     {
         BHeader *header = buffer_manager->request_page(page_id);
@@ -1155,15 +1108,16 @@ public:
     /**
      * @brief Validates the b+ tree
      * @param num_elements The number of elements in the tree
+     * @return true if the tree is valid, false otherwise
      */
     bool validate(int num_elements)
     {
-        if(!is_balanced())
-            return false; 
-        if(!is_ordered())
-            return false; 
-        if(!is_concatenated(num_elements))
-            return false; 
+        if (!is_balanced())
+            return false;
+        if (!is_ordered())
+            return false;
+        if (!is_concatenated(num_elements))
+            return false;
         return true;
     }
 };

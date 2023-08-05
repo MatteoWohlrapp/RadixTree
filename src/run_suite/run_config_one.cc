@@ -31,18 +31,18 @@ void RunConfigOne::execute(bool benchmark)
 
             unique_values.insert(value);
             values[i] = value;
-            logger->info("Inserting: {}", i);
+            logger->debug("Inserting: {}", i);
             logger->flush();
             data_manager.insert(value, value);
         }
         std::geometric_distribution<int> geom(0.01);
 
-        for (int i = 0; i < 1000; i ++)
+        for (int i = 0; i < 1000; i++)
         {
             int num = geom(generator);
             if (num >= 10000)
                 num = 9999;
-            logger->info("Reading i: {}", i);
+            logger->debug("Reading i: {}", i);
             logger->flush();
             data_manager.get_value(values[num]);
         }

@@ -1,0 +1,89 @@
+% This file was created by matlab2tikz.
+%
+%The latest updates can be retrieved from
+%  http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz
+%where you can also make suggestions and rate matlab2tikz.
+%
+\definecolor{mycolor1}{rgb}{0.00000,0.44700,0.74100}%
+\definecolor{mycolor2}{rgb}{0.85000,0.32500,0.09800}%
+\definecolor{mycolor3}{rgb}{0.92900,0.69400,0.12500}%
+\definecolor{mycolor4}{rgb}{0.49400,0.18400,0.55600}%
+%
+\begin{tikzpicture}
+
+\begin{axis}[%
+width=6.028in,
+height=4.754in,
+at={(1.011in,0.642in)},
+scale only axis,
+bar shift auto,
+xmin=0.509090909090909,
+xmax=5.49090909090909,
+xtick={1,2,3,4,5},
+xticklabels={{MeanTime},{MedianTime},{90Percentile},{95Percentile},{99Percentile}},
+ymin=0,
+ymax=2.3914e-05,
+ytick={0,5e-06,1e-05,1.5e-05,2e-05},
+yticklabels={{$\text{0}\mu\text{ s}$},{$\text{5}\mu\text{ s}$},{$\text{10}\mu\text{ s}$},{$\text{15}\mu\text{ s}$},{$\text{20}\mu\text{ s}$}},
+ylabel style={font=\color{white!15!black}},
+ylabel={Time of one operation in microseconds},
+axis background/.style={fill=white},
+xmajorgrids,
+ymajorgrids,
+legend style={at={(0.97,0.03)}, anchor=south east, legend cell align=left, align=left, draw=white!15!black},
+scaled y ticks=false
+]
+\addplot[ybar, bar width=0.145, fill=mycolor1, draw=black, area legend] table[row sep=crcr] {%
+1	4.0386e-06\\
+2	3.496e-06\\
+3	4.297e-06\\
+4	5.499e-06\\
+5	2.174e-05\\
+};
+\addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
+0.509090909090909	0\\
+5.49090909090909	0\\
+};
+\addlegendentry{Insert, Cached}
+
+\addplot[ybar, bar width=0.145, fill=mycolor2, draw=black, area legend] table[row sep=crcr] {%
+1	2.4352e-06\\
+2	2.152e-06\\
+3	2.54e-06\\
+4	2.731e-06\\
+5	1.0054e-05\\
+};
+\addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
+0.509090909090909	0\\
+5.49090909090909	0\\
+};
+\addlegendentry{Insert, Not Cached}
+
+\addplot[ybar, bar width=0.145, fill=mycolor3, draw=black, area legend] table[row sep=crcr] {%
+1	1.37e-06\\
+2	1.317e-06\\
+3	1.519e-06\\
+4	1.627e-06\\
+5	2.148e-06\\
+};
+\addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
+0.509090909090909	0\\
+5.49090909090909	0\\
+};
+\addlegendentry{Scan, Cached}
+
+\addplot[ybar, bar width=0.145, fill=mycolor4, draw=black, area legend] table[row sep=crcr] {%
+1	2.0131e-06\\
+2	1.92e-06\\
+3	2.175e-06\\
+4	2.272e-06\\
+5	2.483e-06\\
+};
+\addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
+0.509090909090909	0\\
+5.49090909090909	0\\
+};
+\addlegendentry{Scan, Not Cached}
+
+\end{axis}
+\end{tikzpicture}%

@@ -29,13 +29,9 @@ private:
 
     std::filesystem::path base_path;
 
-    /// path to the bitmap file
-    std::filesystem::path bitmap = "bitmap.bin";
     /// path to the data file
     std::filesystem::path data = "data.bin";
 
-    /// file handle for the offset file
-    std::fstream bitmap_fs;
     /// file handle for the data file
     std::fstream data_fs;
 
@@ -49,10 +45,10 @@ private:
     boost::dynamic_bitset<> free_space_map;
 
     /// how many pages there are saved
-    int current_page_count = 0;
+    uint64_t current_page_count = 0;
 
     /// where to find the next free space
-    int next_free_space = 1;
+    uint64_t next_free_space = 1;
 
     /**
      * @brief Find the next free space in the bitmap and set the attribute
@@ -92,7 +88,7 @@ public:
      * @brief Gives an unsued page_id, when requesting a new unused page_id, the bitmap is already set, so its important to write the page at the end
      * @return page_id that is currently not in use
      */
-    int get_unused_page_id();
+    uint64_t get_unused_page_id();
 
     /**
      * @brief Used to save the offset to disc, needs to be called before exiting the program

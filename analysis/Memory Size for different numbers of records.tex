@@ -1,0 +1,65 @@
+% This file was created by matlab2tikz.
+%
+%The latest updates can be retrieved from
+%  http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz
+%where you can also make suggestions and rate matlab2tikz.
+%
+\definecolor{mycolor1}{rgb}{0.00000,0.44700,0.74100}%
+\definecolor{mycolor2}{rgb}{0.85000,0.32500,0.09800}%
+%
+\begin{tikzpicture}
+
+\begin{axis}[%
+width=6.028in,
+height=4.754in,
+at={(1.011in,0.642in)},
+scale only axis,
+bar shift auto,
+xmin=0.514285714285714,
+xmax=5.48571428571429,
+xtick={1,1.5,2,2.5,3,3.5,4,4.5,5},
+xticklabels={{0.0002M},{},{0.002M},{},{0.02M},{},{0.2M},{},{2M}},
+xlabel style={font=\color{white!15!black}},
+xlabel={Number of records},
+ymin=0,
+ymax=250000000,
+ytick={0,50000000,100000000,150000000,200000000,250000000},
+yticklabels={{0M},{50M},{100M},{150M},{200M},{250M}},
+ylabel style={font=\color{white!15!black}},
+ylabel={Size [Bytes]},
+axis background/.style={fill=white},
+axis x line*=bottom,
+axis y line*=left,
+xmajorgrids,
+ymajorgrids,
+legend style={at={(0.97,0.03)}, anchor=south east, legend cell align=left, align=left, draw=white!15!black},
+scaled y ticks=false
+]
+\addplot[ybar, bar width=0.229, fill=mycolor1, draw=black, area legend] table[row sep=crcr] {%
+1	20992\\
+2	212288\\
+3	2118416\\
+4	21173760\\
+5	211737472\\
+};
+\addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
+0.514285714285714	0\\
+5.48571428571429	0\\
+};
+\addlegendentry{Cache}
+
+\addplot[ybar, bar width=0.229, fill=mycolor2, draw=black, area legend] table[row sep=crcr] {%
+1	4096\\
+2	65536\\
+3	647168\\
+4	6500352\\
+5	65015808\\
+};
+\addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
+0.514285714285714	0\\
+5.48571428571429	0\\
+};
+\addlegendentry{Buffer}
+
+\end{axis}
+\end{tikzpicture}%

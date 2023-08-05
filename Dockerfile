@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     libssl-dev \
     libboost-all-dev \
+    valgrind \
     && rm -rf /var/lib/apt/lists/*
 
 # Set default compiler options

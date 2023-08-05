@@ -1,0 +1,113 @@
+% This file was created by matlab2tikz.
+%
+%The latest updates can be retrieved from
+%  http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz
+%where you can also make suggestions and rate matlab2tikz.
+%
+\definecolor{mycolor1}{rgb}{0.00000,0.44700,0.74100}%
+\definecolor{mycolor2}{rgb}{0.85000,0.32500,0.09800}%
+\definecolor{mycolor3}{rgb}{0.92900,0.69400,0.12500}%
+\definecolor{mycolor4}{rgb}{0.49400,0.18400,0.55600}%
+\definecolor{mycolor5}{rgb}{0.46600,0.67400,0.18800}%
+%
+\begin{tikzpicture}
+
+\begin{axis}[%
+width=6.028in,
+height=4.754in,
+at={(1.011in,0.642in)},
+scale only axis,
+xmin=0.001,
+xmax=0.01,
+xtick={0.001,0.002,0.003,0.004,0.005,0.006,0.007,0.008,0.009,0.01},
+xlabel style={font=\color{white!15!black}},
+xlabel={p},
+ymin=0,
+ymax=1000000,
+ytick={0,100000,200000,300000,400000,500000,600000,700000,800000,900000,1000000},
+yticklabels={{0K},{100K},{200K},{300K},{400K},{500K},{600K},{700K},{800K},{900K},{1000K}},
+ylabel style={font=\color{white!15!black}},
+ylabel={Throughput [Operations / s]},
+axis background/.style={fill=white},
+xmajorgrids,
+ymajorgrids,
+legend style={at={(0.97,0.03)}, anchor=south east, legend cell align=left, align=left, draw=white!15!black},
+scaled y ticks=false
+]
+\addplot [color=mycolor1]
+  table[row sep=crcr]{%
+0.001	543023.73\\
+0.002	553305.87\\
+0.003	565112.4\\
+0.004	563189.19\\
+0.005	567912.79\\
+0.006	561277.6\\
+0.007	573100.22\\
+0.008	571374.07\\
+0.009	566747.01\\
+0.01	565112.67\\
+};
+\addlegendentry{Workload A}
+
+\addplot [color=mycolor2]
+  table[row sep=crcr]{%
+0.001	562552.16\\
+0.002	565482.27\\
+0.003	567134.32\\
+0.004	568268.72\\
+0.005	577483.38\\
+0.006	568677.57\\
+0.007	576587.69\\
+0.008	571861.14\\
+0.009	579276.01\\
+0.01	577305.24\\
+};
+\addlegendentry{Workload B}
+
+\addplot [color=mycolor3]
+  table[row sep=crcr]{%
+0.001	564290.17\\
+0.002	567604.29\\
+0.003	554653.87\\
+0.004	569262.36\\
+0.005	571040.56\\
+0.006	571065.36\\
+0.007	573655.02\\
+0.008	570960.02\\
+0.009	572300.87\\
+0.01	572422.73\\
+};
+\addlegendentry{Workload C}
+
+\addplot [color=mycolor4]
+  table[row sep=crcr]{%
+0.001	176857.59\\
+0.002	175747.87\\
+0.003	158448.91\\
+0.004	177676.74\\
+0.005	178369.95\\
+0.006	176541.5\\
+0.007	169761.58\\
+0.008	177555.81\\
+0.009	176754.08\\
+0.01	180316\\
+};
+\addlegendentry{Workload E}
+
+\addplot [color=mycolor5]
+  table[row sep=crcr]{%
+0.001	556024.06\\
+0.002	565294.03\\
+0.003	568683.79\\
+0.004	557784.94\\
+0.005	563385.61\\
+0.006	562604.56\\
+0.007	571230.46\\
+0.008	562201.75\\
+0.009	547512.72\\
+0.01	565082.37\\
+};
+\addlegendentry{Workload X}
+
+\end{axis}
+\end{tikzpicture}%

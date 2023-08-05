@@ -437,7 +437,7 @@ TEST_F(RNodeTest, GetNextChild48)
 
     for (int64_t i = 1; i <= 48; i++)
     {
-        logger->info("Inserting into Node48: {}", i);
+        logger->debug("Inserting into Node48: {}", i);
         node->insert(i, (void *)i);
     }
 

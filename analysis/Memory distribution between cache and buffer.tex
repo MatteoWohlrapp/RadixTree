@@ -1,0 +1,105 @@
+% This file was created by matlab2tikz.
+%
+%The latest updates can be retrieved from
+%  http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz
+%where you can also make suggestions and rate matlab2tikz.
+%
+\definecolor{mycolor1}{rgb}{0.00000,0.44700,0.74100}%
+\definecolor{mycolor2}{rgb}{0.85000,0.32500,0.09800}%
+\definecolor{mycolor3}{rgb}{0.92900,0.69400,0.12500}%
+\definecolor{mycolor4}{rgb}{0.49400,0.18400,0.55600}%
+\definecolor{mycolor5}{rgb}{0.46600,0.67400,0.18800}%
+%
+\begin{tikzpicture}
+
+\begin{axis}[%
+width=6.028in,
+height=4.754in,
+at={(1.011in,0.642in)},
+scale only axis,
+bar shift auto,
+xmin=0.507692307692308,
+xmax=5.49230769230769,
+xtick={1,2,3,4,5},
+xticklabels={{1:7},{2:6},{1:1},{6:2},{7:1}},
+xlabel style={font=\color{white!15!black}},
+xlabel={Distribution ratio},
+ymin=0,
+ymax=1000000,
+ytick={0,100000,200000,300000,400000,500000,600000,700000,800000,900000,1000000},
+yticklabels={{0K},{100K},{200K},{300K},{400K},{500K},{600K},{700K},{800K},{900K},{1000K}},
+ylabel style={font=\color{white!15!black}},
+ylabel={Throughput [Operations / s]},
+axis background/.style={fill=white},
+xmajorgrids,
+ymajorgrids,
+legend style={at={(0.97,0.03)}, anchor=south east, legend cell align=left, align=left, draw=white!15!black},
+scaled y ticks=false
+]
+\addplot[ybar, bar width=0.123, fill=mycolor1, draw=black, area legend] table[row sep=crcr] {%
+1	858755.35\\
+2	905844.59\\
+3	908046.76\\
+4	844262.23\\
+5	828943.27\\
+};
+\addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
+0.507692307692308	0\\
+5.49230769230769	0\\
+};
+\addlegendentry{Workload A}
+
+\addplot[ybar, bar width=0.123, fill=mycolor2, draw=black, area legend] table[row sep=crcr] {%
+1	669373.45\\
+2	716071.14\\
+3	717292.11\\
+4	675722.77\\
+5	673359.15\\
+};
+\addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
+0.507692307692308	0\\
+5.49230769230769	0\\
+};
+\addlegendentry{Workload B}
+
+\addplot[ybar, bar width=0.123, fill=mycolor3, draw=black, area legend] table[row sep=crcr] {%
+1	680253.15\\
+2	667577.98\\
+3	696170.06\\
+4	673506.08\\
+5	658613.33\\
+};
+\addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
+0.507692307692308	0\\
+5.49230769230769	0\\
+};
+\addlegendentry{Workload C}
+
+\addplot[ybar, bar width=0.123, fill=mycolor4, draw=black, area legend] table[row sep=crcr] {%
+1	598209.01\\
+2	610234.06\\
+3	614103.63\\
+4	642142.99\\
+5	224125.35\\
+};
+\addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
+0.507692307692308	0\\
+5.49230769230769	0\\
+};
+\addlegendentry{Workload E}
+
+\addplot[ybar, bar width=0.123, fill=mycolor5, draw=black, area legend] table[row sep=crcr] {%
+1	444603.87\\
+2	451516.32\\
+3	443291.9\\
+4	453494.47\\
+5	444338.25\\
+};
+\addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
+0.507692307692308	0\\
+5.49230769230769	0\\
+};
+\addlegendentry{Workload X}
+
+\end{axis}
+\end{tikzpicture}%
