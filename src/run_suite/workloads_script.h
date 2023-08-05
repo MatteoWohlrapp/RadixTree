@@ -340,7 +340,6 @@ public:
                   << std::flush;
 
         int iteration = 1;
-        run_workload("vary record size", iteration, buffer_size, record_count, operation_count, "geometric", 0.001, workloads[0][0], workloads[0][1], workloads[0][2], workloads[0][3], workloads[0][4], false, radix_tree_size, 0);
 
         std::cout << "Vary records-size tests started..." << std::endl;
 
