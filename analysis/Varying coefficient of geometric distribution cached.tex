@@ -1,9 +1,5 @@
 % This file was created by matlab2tikz.
 %
-%The latest updates can be retrieved from
-%  http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz
-%where you can also make suggestions and rate matlab2tikz.
-%
 \definecolor{mycolor1}{rgb}{0.00000,0.44700,0.74100}%
 \definecolor{mycolor2}{rgb}{0.85000,0.32500,0.09800}%
 \definecolor{mycolor3}{rgb}{0.92900,0.69400,0.12500}%
@@ -17,95 +13,83 @@ width=6.028in,
 height=4.754in,
 at={(1.011in,0.642in)},
 scale only axis,
-xmin=0.001,
-xmax=0.01,
-xtick={0.001,0.002,0.003,0.004,0.005,0.006,0.007,0.008,0.009,0.01},
+bar shift auto,
+xmin=0.507692307692308,
+xmax=4.49230769230769,
+xtick={1,2,3,4},
+xticklabels={{0.0009},{ 0.009},{  0.09},{   0.9}},
 xlabel style={font=\color{white!15!black}},
 xlabel={p},
 ymin=0,
-ymax=1000000,
-ytick={0,100000,200000,300000,400000,500000,600000,700000,800000,900000,1000000},
-yticklabels={{0K},{100K},{200K},{300K},{400K},{500K},{600K},{700K},{800K},{900K},{1000K}},
+ymax=2600000,
+ytick={0,500000,1000000,1500000,2000000,2500000},
+yticklabels={{0K},{500K},{1000K},{1500K},{2000K},{2500K}},
 ylabel style={font=\color{white!15!black}},
 ylabel={Throughput [Operations / s]},
 axis background/.style={fill=white},
 xmajorgrids,
 ymajorgrids,
 legend style={at={(0.97,0.03)}, anchor=south east, legend cell align=left, align=left, draw=white!15!black},
-scaled y ticks=false
+scaled y ticks=false,
+scaled x ticks=false
 ]
-\addplot [color=mycolor1]
-  table[row sep=crcr]{%
-0.001	910132.69\\
-0.002	912943.23\\
-0.003	904203.69\\
-0.004	908726.54\\
-0.005	923376\\
-0.006	936193.22\\
-0.007	917312.81\\
-0.008	918168.88\\
-0.009	892363.34\\
-0.01	923476.27\\
+\addplot[ybar, bar width=0.123, fill=mycolor1, draw=black, area legend] table[row sep=crcr] {%
+1	568084.13\\
+2	1164879.92\\
+3	2322104.53\\
+4	2436092.65\\
+};
+\addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
+0.507692307692308	0\\
+4.49230769230769	0\\
 };
 \addlegendentry{Workload A}
 
-\addplot [color=mycolor2]
-  table[row sep=crcr]{%
-0.001	680182.26\\
-0.002	694456.09\\
-0.003	699054.68\\
-0.004	712451.5\\
-0.005	708016.62\\
-0.006	708506.84\\
-0.007	718327.72\\
-0.008	731649.27\\
-0.009	722381.55\\
-0.01	724296.95\\
+\addplot[ybar, bar width=0.123, fill=mycolor2, draw=black, area legend] table[row sep=crcr] {%
+1	568378.41\\
+2	1219415.02\\
+3	2400635.04\\
+4	2545566.82\\
+};
+\addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
+0.507692307692308	0\\
+4.49230769230769	0\\
 };
 \addlegendentry{Workload B}
 
-\addplot [color=mycolor3]
-  table[row sep=crcr]{%
-0.001	670107.99\\
-0.002	680026.64\\
-0.003	683512.96\\
-0.004	695929.95\\
-0.005	703611.95\\
-0.006	697882.08\\
-0.007	713381.01\\
-0.008	710555.42\\
-0.009	719702.22\\
-0.01	707241.66\\
+\addplot[ybar, bar width=0.123, fill=mycolor3, draw=black, area legend] table[row sep=crcr] {%
+1	561945.38\\
+2	1210808.48\\
+3	2359669.91\\
+4	2546145.09\\
+};
+\addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
+0.507692307692308	0\\
+4.49230769230769	0\\
 };
 \addlegendentry{Workload C}
 
-\addplot [color=mycolor4]
-  table[row sep=crcr]{%
-0.001	202075.33\\
-0.002	191357.58\\
-0.003	197536.87\\
-0.004	193599.15\\
-0.005	196652.66\\
-0.006	206899.19\\
-0.007	202858.22\\
-0.008	209926.86\\
-0.009	211372.98\\
-0.01	214527.75\\
+\addplot[ybar, bar width=0.123, fill=mycolor4, draw=black, area legend] table[row sep=crcr] {%
+1	430171.99\\
+2	630649.21\\
+3	1161908.73\\
+4	1231228.7\\
+};
+\addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
+0.507692307692308	0\\
+4.49230769230769	0\\
 };
 \addlegendentry{Workload E}
 
-\addplot [color=mycolor5]
-  table[row sep=crcr]{%
-0.001	442278.01\\
-0.002	446494.08\\
-0.003	449757.14\\
-0.004	448556.57\\
-0.005	447656.15\\
-0.006	456638.33\\
-0.007	452290.06\\
-0.008	449067.2\\
-0.009	454664.38\\
-0.01	455552.41\\
+\addplot[ybar, bar width=0.123, fill=mycolor5, draw=black, area legend] table[row sep=crcr] {%
+1	935816.38\\
+2	979822.84\\
+3	965205.58\\
+4	978292.06\\
+};
+\addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
+0.507692307692308	0\\
+4.49230769230769	0\\
 };
 \addlegendentry{Workload X}
 

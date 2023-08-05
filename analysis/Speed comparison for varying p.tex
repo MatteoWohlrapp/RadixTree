@@ -11,16 +11,15 @@ height=4.754in,
 at={(1.011in,0.642in)},
 scale only axis,
 bar shift auto,
-xmin=0.514285714285714,
-xmax=3.48571428571429,
-xtick={1,2,3},
-xticklabels={{0.001},{0.005},{  0.1}},
+xmin=-0.228571428571429,
+xmax=1,
+xtick={\empty},
 xlabel style={font=\color{white!15!black}},
 xlabel={p},
 ymin=0,
-ymax=900000,
-ytick={0,100000,200000,300000,400000,500000,600000,700000,800000,900000},
-yticklabels={{0K},{100K},{200K},{300K},{400K},{500K},{600K},{700K},{800K},{900K}},
+ymax=1,
+ytick={0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1},
+yticklabels={{0K},{0K},{0K},{0K},{0K},{0K},{0K},{0K},{0K},{0K},{0K}},
 ylabel style={font=\color{white!15!black}},
 ylabel={Throughput [Operations / s]},
 axis background/.style={fill=white},
@@ -30,24 +29,20 @@ legend style={at={(0.97,0.03)}, anchor=south east, legend cell align=left, align
 scaled y ticks=false
 ]
 \addplot[ybar, bar width=0.229, fill=mycolor1, draw=black, area legend] table[row sep=crcr] {%
-1	510656.69\\
-2	497742.62\\
-3	530075.97\\
+\\
 };
 \addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
-0.514285714285714	0\\
-3.48571428571429	0\\
+-0.228571428571429	0\\
+1	0\\
 };
 \addlegendentry{Not Cached}
 
 \addplot[ybar, bar width=0.229, fill=mycolor2, draw=black, area legend] table[row sep=crcr] {%
-1	788528.68\\
-2	839368.78\\
-3	829328.82\\
+\\
 };
 \addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
-0.514285714285714	0\\
-3.48571428571429	0\\
+-0.228571428571429	0\\
+1	0\\
 };
 \addlegendentry{Cached}
 

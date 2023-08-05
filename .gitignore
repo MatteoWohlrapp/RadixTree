@@ -6,6 +6,3 @@ doxys_documentation/
 logs/
 tests/temp
 **/.DS_Store
-benchmarks/db/*.bin
-benchmarks/*.txt
-results/*

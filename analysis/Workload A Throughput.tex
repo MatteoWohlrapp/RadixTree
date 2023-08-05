@@ -17,34 +17,36 @@ xticklabels={{2.0M},{4.0M},{6.0M},{8.0M},{10.0M}},
 xlabel style={font=\color{white!15!black}},
 xlabel={Number of records},
 ymin=0,
-ymax=900000,
-ytick={0,100000,200000,300000,400000,500000,600000,700000,800000,900000},
-yticklabels={{0K},{100K},{200K},{300K},{400K},{500K},{600K},{700K},{800K},{900K}},
+ymax=2100000,
+ytick={0,100000,200000,300000,400000,500000,600000,700000,800000,900000,1000000,1100000,1200000,1300000,1400000,1500000,1600000,1700000,1800000,1900000,2000000,2100000},
+yticklabels={{0K},{100K},{200K},{300K},{400K},{500K},{600K},{700K},{800K},{900K},{1000K},{1100K},{1200K},{1300K},{1400K},{1500K},{1600K},{1700K},{1800K},{1900K},{2000K},{2100K}},
 ylabel style={font=\color{white!15!black}},
 ylabel={Throughput [Operations / s]},
 axis background/.style={fill=white},
 xmajorgrids,
 ymajorgrids,
 legend style={at={(0.97,0.03)}, anchor=south east, legend cell align=left, align=left, draw=white!15!black},
-scaled y ticks=false
+scaled y ticks=false,
+scaled x ticks=false,
+yshift=-2ex
 ]
 \addplot [color=mycolor1]
   table[row sep=crcr]{%
-2000000	865813.22\\
-4000000	856097.82\\
-6000000	890511.28\\
-8000000	842336.71\\
-10000000	842698.99\\
+2000000	2020710.06\\
+4000000	1979537.4\\
+6000000	1905346.24\\
+8000000	1901725.31\\
+10000000	1853665.35\\
 };
 \addlegendentry{Cached}
 
 \addplot [color=mycolor2]
   table[row sep=crcr]{%
-2000000	719394.91\\
-4000000	685963.38\\
-6000000	542714.28\\
-8000000	520113.51\\
-10000000	542462.75\\
+2000000	1037583.11\\
+4000000	998596.6\\
+6000000	761878.8\\
+8000000	759852.42\\
+10000000	745945.44\\
 };
 \addlegendentry{Not Cached}
 

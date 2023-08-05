@@ -36,6 +36,10 @@ docker run -v <path_to_project>:/app -p 8000:8000 -it radixtree
 
 ## Run 
 There are multiple options to run the code, check the help menu to find out more: <br>
-1. `-s` runs the script that is also used for the benchmarks in evalutation section in the thesis 
+1. `-s` runs the script that is also used for the benchmarks in evalutation section in the thesis and saves the results to a csv file. Before running, create a `results` folder under root if not already available
 2. `-w{,a,b,c,e,x}`runs single workloads. Either the predefined ones or an individual one, defined through the command line parameters
 3. `-r <number>` executes a 'run confiugration' which is basically a way for you to specify what you want to compute. Just modify `run_config_one.cc` or `run_config_two.cc`. The data manager will be created automatically, you just need to use it 
+
+## Results 
+In the `analysis` folder in the root, you can find a Matlab script that generates graphs from the data in the csv files generated when running with `-s`. 
+The graphs are generated and saved as tickz files in the `analysis` folder. The files present are for the run specified in the Matlab script.
