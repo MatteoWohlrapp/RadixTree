@@ -14,6 +14,8 @@
 #include <map>
 #include <random>
 #include "spdlog/spdlog.h"
+#include <mutex> 
+#include <shared_mutex> 
 
 /// forward declaration
 class BufferManagerTest;
@@ -44,6 +46,9 @@ private:
 
     /// the size of the page
     int page_size;
+
+    std::shared_mutex page_map_mutex;                    // mutex to protect page_id_map
+    std::map<uint64_t, std::shared_mutex> frame_mutexes; // a mutex for each frame
 
     /**
      * @brief Get a specific page from disc

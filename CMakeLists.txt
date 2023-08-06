@@ -1,8 +1,14 @@
-
 cmake_minimum_required(VERSION 3.16)
 project(radix_tree CXX)
 set(CMAKE_CXX_STANDARD 17)
 
+# Find OpenMP
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    message("OpenMP support enabled.")
+else()
+    message(WARNING "OpenMP not found. Your project will be built without OpenMP support.")
+endif()
 
 # let ccmake and cmake-gui offer the default build type options
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug;Release;RelWithDebInfo;MinSizeRel")
@@ -47,11 +53,14 @@ target_link_options(RadixTree
         PRIVATE -fsanitize=address,undefined
 )
 
+if (OPENMP_FOUND)
+    target_link_libraries(RadixTree PUBLIC OpenMP::OpenMP_CXX)
+endif()
+
 #include modules 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 message("CMAKE_BUILD_TYPE is set to ${CMAKE_BUILD_TYPE}")
-
 
 include(doxygen)
 include(googletest)

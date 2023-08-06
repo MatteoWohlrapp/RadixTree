@@ -13,21 +13,20 @@ void RunConfigTwo::execute(bool benchmark)
     {
         auto debuger = Debuger(&data_manager);
 
-        data_manager.insert(1, 1);
-        data_manager.insert(256, 256);
-        data_manager.insert(65536, 65536);
-        data_manager.insert(16777216, 16777216);
-        data_manager.insert(4294967296, 4294967296);
-        data_manager.insert(1099511627776, 1099511627776);
-        data_manager.insert(281474976710656, 281474976710656);
-        data_manager.insert(72057594037927936, 72057594037927936);
-        data_manager.insert(144115188075855872, 144115188075855872);
-        data_manager.insert(216172782113783808, 216172782113783808);
-        data_manager.insert(288230376151711744, 288230376151711744);
-        logger->debug("Getting value");
-        data_manager.get_value(288230376151711744);
-        debuger.traverse_bplus_tree();
-        debuger.traverse_radix_tree();
+        for (int i = 0; i < 20; i++)
+            data_manager.insert(i, i);
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+        for (int i = 0; i < 20; i++)
+        {
+            int64_t value = data_manager.get_value(i);
+#pragma omp critical
+            {
+                std::cout << value << std::endl;
+            }
+        }
     };
     this->benchmark.measure(run, benchmark);
 }

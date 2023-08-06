@@ -9,6 +9,7 @@
 #include "../data/data_manager.h"
 #include <sys/resource.h>
 #include <iostream>
+#include <omp.h>
 
 /**
  * @brief General abstraction for the YCSB workload
@@ -25,7 +26,6 @@ private:
     double update_proportion;
     double scan_proportion;
     double delete_proportion;
-    bool measure_per_operation;
     int max_scan_range = 100;
 
     std::shared_ptr<spdlog::logger> logger;
@@ -182,37 +182,22 @@ private:
             exit(1);
         }
 
-        uint64_t thread_count = 1;
+        uint64_t thread_count = 8;
         uint64_t num_op_per_thread = operation_count / thread_count;
 
+#pragma omp parallel for num_threads(thread_count)
         for (uint64_t t = 0; t < thread_count; t++)
         {
-            if (measure_per_operation)
+            std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
+            Operation op;
+            for (uint64_t i = num_op_per_thread * t; i < num_op_per_thread * (t+1); i++)
             {
-                std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
-                Operation op;
-                for (uint64_t i = thread_count * t; i < thread_count * t + num_op_per_thread; i++)
-                {
-                    op = operations_vector[i];
-                    start = std::chrono::high_resolution_clock::now();
-                    perform_operation(op, i);
-                    end = std::chrono::high_resolution_clock::now();
-                    std::chrono::duration<double> elapsed = end - start;
-                    times[op].push_back(elapsed.count());
-                }
-            }
-            else
-            {
-                std::chrono::time_point<std::chrono::high_resolution_clock> total_start, total_end;
-
-                total_start = std::chrono::high_resolution_clock::now();
-                for (uint64_t i = thread_count * t; i < thread_count * t + num_op_per_thread; i++)
-                {
-                    perform_operation(operations_vector[i], i);
-                }
-                total_end = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double> total_elapsed = total_end - total_start;
-                times[0].push_back(total_elapsed.count());
+                op = operations_vector[i];
+                start = std::chrono::high_resolution_clock::now();
+                perform_operation(op, i);
+                end = std::chrono::high_resolution_clock::now();
+                std::chrono::duration<double> elapsed = end - start;
+                times[op][i] = elapsed.count();
             }
         }
     }
@@ -259,61 +244,51 @@ private:
      */
     void analyze()
     {
-        if (!measure_per_operation)
+
+        std::vector<std::string> operation_names = {"INSERT", "READ", "UPDATE", "SCAN", "DELETE"};
+
+        uint64_t total_operations = 0;
+        double total_time = 0;
+
+        for (int i = 0; i < NUM_OPERATIONS; ++i)
         {
-            double total_time = times[0][0];
-            double throughput = operation_count / total_time;
-
-            std::cout << "Total time for all operations: " << std::fixed << std::setprecision(2) << total_time << "s\n";
-            std::cout << "Throughput: " << std::fixed << std::setprecision(2) << throughput << " operations/s\n";
-        }
-        else
-        {
-            std::vector<std::string> operation_names = {"INSERT", "READ", "UPDATE", "SCAN", "DELETE"};
-
-            uint64_t total_operations = 0;
-            double total_time = 0;
-
-            for (int i = 0; i < NUM_OPERATIONS; ++i)
+            std::vector<double> &operation_times = times[i];
+            if (operation_times.empty())
             {
-                std::vector<double> &operation_times = times[i];
-                if (operation_times.empty())
-                {
-                    continue;
-                }
-
-                double sum = std::accumulate(operation_times.begin(), operation_times.end(), 0.0);
-                total_time += sum;
-                total_operations += operation_times.size();
-                double mean = sum / operation_times.size();
-
-                std::sort(operation_times.begin(), operation_times.end());
-                double median = operation_times[operation_times.size() / 2];
-                if (operation_times.size() % 2 == 0)
-                {
-                    median = (operation_times[operation_times.size() / 2 - 1] + median) / 2;
-                }
-
-                double percentile_90 = operation_times[int(0.9 * operation_times.size())];
-                double percentile_95 = operation_times[int(0.95 * operation_times.size())];
-                double percentile_99 = operation_times[int(0.99 * operation_times.size())];
-
-                std::cout << "Analysis for " << operation_names[i] << " operations:\n";
-                std::cout << "Total number of operations: " << operation_times.size() << "\n";
-                std::cout << "Total time: " << std::fixed << std::setprecision(10) << sum << "s\n";
-                std::cout << "Mean time: " << std::fixed << std::setprecision(10) << mean << "s\n";
-                std::cout << "Median time: " << std::fixed << std::setprecision(10) << median << "s\n";
-                std::cout << "90th percentile time: " << std::fixed << std::setprecision(10) << percentile_90 << "s\n";
-                std::cout << "95th percentile time: " << std::fixed << std::setprecision(10) << percentile_95 << "s\n";
-                std::cout << "99th percentile time: " << std::fixed << std::setprecision(10) << percentile_99 << "s\n";
-                std::cout << "\n";
+                continue;
             }
 
-            std::cout << "Total time: " << std::fixed << std::setprecision(10) << total_time << "s\n";
-            std::cout << "Throughput: " << std::fixed << std::setprecision(10) << total_operations / total_time << "s\n";
-            std::cout << "Cache Size: " << data_manager.get_cache_size() << std::endl;
-            std::cout << "Buffer Size: " << data_manager.get_current_buffer_size() * Configuration::page_size << std::endl;
+            double sum = std::accumulate(operation_times.begin(), operation_times.end(), 0.0);
+            total_time += sum;
+            total_operations += operation_times.size();
+            double mean = sum / operation_times.size();
+
+            std::sort(operation_times.begin(), operation_times.end());
+            double median = operation_times[operation_times.size() / 2];
+            if (operation_times.size() % 2 == 0)
+            {
+                median = (operation_times[operation_times.size() / 2 - 1] + median) / 2;
+            }
+
+            double percentile_90 = operation_times[int(0.9 * operation_times.size())];
+            double percentile_95 = operation_times[int(0.95 * operation_times.size())];
+            double percentile_99 = operation_times[int(0.99 * operation_times.size())];
+
+            std::cout << "Analysis for " << operation_names[i] << " operations:\n";
+            std::cout << "Number of operations: " << operation_times.size() << "\n";
+            std::cout << "Operation time: " << std::fixed << std::setprecision(10) << sum << "s\n";
+            std::cout << "Mean time: " << std::fixed << std::setprecision(10) << mean << "s\n";
+            std::cout << "Median time: " << std::fixed << std::setprecision(10) << median << "s\n";
+            std::cout << "90th percentile time: " << std::fixed << std::setprecision(10) << percentile_90 << "s\n";
+            std::cout << "95th percentile time: " << std::fixed << std::setprecision(10) << percentile_95 << "s\n";
+            std::cout << "99th percentile time: " << std::fixed << std::setprecision(10) << percentile_99 << "s\n";
+            std::cout << "\n";
         }
+
+        std::cout << "Total time: " << std::fixed << std::setprecision(10) << total_time << "s\n";
+        std::cout << "Throughput: " << std::fixed << std::setprecision(10) << total_operations / total_time << "s\n";
+        std::cout << "Cache Size: " << data_manager.get_cache_size() << std::endl;
+        std::cout << "Buffer Size: " << data_manager.get_current_buffer_size() * Configuration::page_size << std::endl;
     }
 
 public:
@@ -331,12 +306,11 @@ public:
      * @param delete_proportion_arg The proportion of deletes
      * @param cache_arg If the cache is activated or not
      * @param radix_tree_size_arg The size of the cache
-     * @param measure_per_operation_arg Decides about the type of measurements
      */
-    Workload(uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, double insert_proportion_arg, double read_proportion_arg, double update_proportion_arg, double scan_proportion_arg, double delete_proportion_arg, bool cache_arg, uint64_t radix_tree_size_arg, bool measure_per_operation_arg) : record_count(record_count_arg), operation_count(operation_count_arg), distribution(distribution_arg), coefficient(coefficient_arg), insert_proportion(insert_proportion_arg), read_proportion(read_proportion_arg), update_proportion(update_proportion_arg), scan_proportion(scan_proportion_arg), delete_proportion(delete_proportion_arg), measure_per_operation(measure_per_operation_arg), data_manager(buffer_size_arg, cache_arg, radix_tree_size_arg)
+    Workload(uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, double insert_proportion_arg, double read_proportion_arg, double update_proportion_arg, double scan_proportion_arg, double delete_proportion_arg, bool cache_arg, uint64_t radix_tree_size_arg) : record_count(record_count_arg), operation_count(operation_count_arg), distribution(distribution_arg), coefficient(coefficient_arg), insert_proportion(insert_proportion_arg), read_proportion(read_proportion_arg), update_proportion(update_proportion_arg), scan_proportion(scan_proportion_arg), delete_proportion(delete_proportion_arg), data_manager(buffer_size_arg, cache_arg, radix_tree_size_arg)
     {
         logger = spdlog::get("logger");
-        times = std::vector<std::vector<double>>(NUM_OPERATIONS, std::vector<double>(0, 0.0));
+        times = std::vector<std::vector<double>>(NUM_OPERATIONS, std::vector<double>(operation_count_arg, 0.0));
         value_distribution = std::uniform_int_distribution<int64_t>(INT64_MIN + 1, INT64_MAX - 1);
         generator = std::mt19937(42);
         operations_vector.resize(operation_count_arg);
@@ -383,10 +357,9 @@ public:
      * @param coefficient_arg The coefficient for the distribution
      * @param cache_arg If the cache is activated or not
      * @param radix_tree_size_arg The size of the cache
-     * @param measure_per_operation_arg Decides about the type of measurements
      */
-    WorkloadA(uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, uint64_t radix_tree_size_arg, bool measure_per_operation_arg)
-        : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0, 0.5, 0.5, 0, 0, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
+    WorkloadA(uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, uint64_t radix_tree_size_arg)
+        : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0, 0.5, 0.5, 0, 0, cache_arg, radix_tree_size_arg)
     {
     }
 };
@@ -406,10 +379,9 @@ public:
      * @param coefficient_arg The coefficient for the distribution
      * @param cache_arg If the cache is activated or not
      * @param radix_tree_size_arg The size of the cache
-     * @param measure_per_operation_arg Decides about the type of measurements
      */
-    WorkloadB(uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, uint64_t radix_tree_size_arg, bool measure_per_operation_arg)
-        : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0, 0.95, 0.05, 0, 0, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
+    WorkloadB(uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, uint64_t radix_tree_size_arg)
+        : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0, 0.95, 0.05, 0, 0, cache_arg, radix_tree_size_arg)
     {
     }
 };
@@ -429,10 +401,9 @@ public:
      * @param coefficient_arg The coefficient for the distribution
      * @param cache_arg If the cache is activated or not
      * @param radix_tree_size_arg The size of the cache
-     * @param measure_per_operation_arg Decides about the type of measurements
      */
-    WorkloadC(uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, uint64_t radix_tree_size_arg, bool measure_per_operation_arg)
-        : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0, 1, 0, 0, 0, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
+    WorkloadC(uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, uint64_t radix_tree_size_arg)
+        : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0, 1, 0, 0, 0, cache_arg, radix_tree_size_arg)
     {
     }
 };
@@ -452,10 +423,9 @@ public:
      * @param coefficient_arg The coefficient for the distribution
      * @param cache_arg If the cache is activated or not
      * @param radix_tree_size_arg The size of the cache
-     * @param measure_per_operation_arg Decides about the type of measurements
      */
-    WorkloadE(uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, uint64_t radix_tree_size_arg, bool measure_per_operation_arg)
-        : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0.05, 0, 0, 0.95, 0, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
+    WorkloadE(uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, uint64_t radix_tree_size_arg)
+        : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0.05, 0, 0, 0.95, 0, cache_arg, radix_tree_size_arg)
     {
     }
 };
@@ -477,8 +447,8 @@ public:
      * @param radix_tree_size_arg The size of the cache
      * @param measure_per_operation_arg Decides about the type of measurements
      */
-    WorkloadX(uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, uint64_t radix_tree_size_arg, bool measure_per_operation_arg)
-        : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0, 0.90, 0, 0, 0.1, cache_arg, radix_tree_size_arg, measure_per_operation_arg)
+    WorkloadX(uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, bool cache_arg, uint64_t radix_tree_size_arg)
+        : Workload(buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, 0, 0.90, 0, 0, 0.1, cache_arg, radix_tree_size_arg)
     {
     }
 };

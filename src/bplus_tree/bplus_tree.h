@@ -16,6 +16,7 @@
 #include <cassert>
 #include "spdlog/spdlog.h"
 #include "../utils/tree_operations.h"
+#include <mutex>
 
 /// forward declaration
 class BPlusTreeTest;
@@ -36,6 +37,8 @@ private:
 
     /// root of tree
     uint64_t root_id = 0;
+
+    std::mutex root_mutex; // mutex to protect page_id_map
 
     /**
      * @brief Inserts recursively into the tree
@@ -326,6 +329,8 @@ private:
                     cache->insert(key, header->page_id, header);
             }
             buffer_manager->unfix_page(header->page_id, false);
+            if (header->page_id == root_id)
+                root_mutex.unlock();
             return value;
         }
         else
@@ -333,6 +338,8 @@ private:
             BInnerNode<PAGE_SIZE> *node = (BInnerNode<PAGE_SIZE> *)header;
             BHeader *child_header = buffer_manager->request_page(node->next_page(key));
             buffer_manager->unfix_page(header->page_id, false);
+            if (header->page_id == root_id)
+                root_mutex.unlock();
             return recursive_get_value(child_header, key);
         }
     }
@@ -741,12 +748,16 @@ private:
                 cache->insert(key, header->page_id, header);
             }
             buffer_manager->unfix_page(node->header.page_id, true);
+            if (header->page_id == root_id)
+                root_mutex.unlock();
         }
         else
         {
             BInnerNode<PAGE_SIZE> *node = (BInnerNode<PAGE_SIZE> *)header;
             BHeader *child_header = buffer_manager->request_page(node->next_page(key));
             buffer_manager->unfix_page(header->page_id, false);
+            if (header->page_id == root_id)
+                root_mutex.unlock();
             update_recursive(child_header, key, value);
         }
     }
@@ -1081,6 +1092,7 @@ public:
      */
     int64_t get_value(int64_t key)
     {
+        root_mutex.lock();
         return recursive_get_value(buffer_manager->request_page(root_id), key);
     }
 
@@ -1102,6 +1114,7 @@ public:
      */
     void update(int64_t key, int64_t value)
     {
+        root_mutex.lock();
         return update_recursive(buffer_manager->request_page(root_id), key, value);
     }
 

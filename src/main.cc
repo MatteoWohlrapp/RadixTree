@@ -51,7 +51,6 @@ static struct option long_options[] = {
     {"delete_proportion", required_argument, 0, 0},
     {"cache", required_argument, 0, 0},
     {"radix_tree_size", required_argument, 0, 0},
-    {"measure_per_operation", no_argument, 0, 0},
     {"benchmark", no_argument, 0, 'b'},
     {"run_config", required_argument, 0, 'r'},
     {"verbosity_level", required_argument, 0, 'v'},
@@ -81,7 +80,6 @@ void print_help()
     printf("--update_proportion <update_proportion>... Set the update proportion for the general workload.\n");
     printf("--scan_proportion <scan_proportion>....... Set the scan proportion for the general workload.\n");
     printf("--delete_proportion <delete_proportion>... Set the delete proportion for the general workload.\n");
-    printf("--measure_per_operation .................. Select if you want to measure each individual operation of the workload individually, or if you want to measure the throughput.\n");
     printf("-h, --help ...................................... Help\n");
 }
 
@@ -198,8 +196,6 @@ void handle_arguments(int argc, char *argsv[])
                 configuration.cache = atoi(optarg);
             else if (std::string(long_options[option_index].name) == "radix_tree_size")
                 configuration.radix_tree_size = atoll(optarg);
-            else if (std::string(long_options[option_index].name) == "measure_per_operation")
-                configuration.measure_per_operation = true;
             else if (std::string(long_options[option_index].name) == "coefficient")
                 configuration.coefficient = atof(optarg);
             break;
@@ -265,25 +261,25 @@ void handle_arguments(int argc, char *argsv[])
                 switch (arg)
                 {
                 case 'a':
-                    workload.reset(new WorkloadA(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.coefficient, configuration.cache, configuration.radix_tree_size, configuration.measure_per_operation));
+                    workload.reset(new WorkloadA(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.coefficient, configuration.cache, configuration.radix_tree_size));
                     break;
                 case 'b':
-                    workload.reset(new WorkloadB(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.coefficient, configuration.cache, configuration.radix_tree_size, configuration.measure_per_operation));
+                    workload.reset(new WorkloadB(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.coefficient, configuration.cache, configuration.radix_tree_size));
                     break;
                 case 'c':
-                    workload.reset(new WorkloadC(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.coefficient, configuration.cache, configuration.radix_tree_size, configuration.measure_per_operation));
+                    workload.reset(new WorkloadC(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.coefficient, configuration.cache, configuration.radix_tree_size));
                     break;
                 case 'e':
-                    workload.reset(new WorkloadE(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.coefficient, configuration.cache, configuration.radix_tree_size, configuration.measure_per_operation));
+                    workload.reset(new WorkloadE(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.coefficient, configuration.cache, configuration.radix_tree_size));
                     break;
                 case 'x':
-                    workload.reset(new WorkloadX(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.coefficient, configuration.cache, configuration.radix_tree_size, configuration.measure_per_operation));
+                    workload.reset(new WorkloadX(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.coefficient, configuration.cache, configuration.radix_tree_size));
                     break;
                 }
             }
             else
             {
-                workload.reset(new Workload(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.coefficient, configuration.insert_proportion, configuration.read_proportion, configuration.update_proportion, configuration.scan_proportion, configuration.delete_proportion, configuration.cache, configuration.radix_tree_size, configuration.measure_per_operation));
+                workload.reset(new Workload(configuration.buffer_size, configuration.record_count, configuration.operation_count, configuration.distribution, configuration.coefficient, configuration.insert_proportion, configuration.read_proportion, configuration.update_proportion, configuration.scan_proportion, configuration.delete_proportion, configuration.cache, configuration.radix_tree_size));
                 break;
             }
         }

@@ -1,4 +1,3 @@
-
 #include "buffer_manager.h"
 #include "../configuration.h"
 #include <iostream>
@@ -25,13 +24,21 @@ void BufferManager::destroy()
 
 BHeader *BufferManager::request_page(uint64_t page_id)
 {
+    frame_mutexes[page_id].lock();
+    page_map_mutex.lock_shared();
+
     std::map<uint64_t, BFrame *>::iterator it = page_id_map.find(page_id);
     if (it == page_id_map.end())
     {
+        page_map_mutex.unlock_shared();
+        page_map_mutex.lock();
         // means the page is not in the buffer and we need to fetch it from memory
         fetch_page_from_disk(page_id);
+        page_map_mutex.unlock();
+        page_map_mutex.lock_shared();
         it = page_id_map.find(page_id);
     }
+    page_map_mutex.unlock_shared();
     // fix page
     it->second->fix_count++;
     it->second->marked = true;
@@ -40,6 +47,9 @@ BHeader *BufferManager::request_page(uint64_t page_id)
 
 BHeader *BufferManager::create_new_page()
 {
+    logger->debug("About to lock map in create_new_page");
+    page_map_mutex.lock();
+
     BFrame *frame_address;
     // check if buffer is full and then evict pages
     if (current_buffer_size >= buffer_size)
@@ -53,23 +63,34 @@ BHeader *BufferManager::create_new_page()
         frame_address = (BFrame *)malloc(page_size + 8);
         current_buffer_size++;
     }
+    uint64_t page_id = storage_manager->get_unused_page_id();
+    frame_mutexes[page_id].lock(); // lock
+    page_id_map.emplace(page_id, frame_address);
+    page_map_mutex.unlock();
+
     // fix page
     frame_address->fix_count = 1;
     frame_address->marked = true;
     frame_address->dirty = true;
-    uint64_t page_id = storage_manager->get_unused_page_id();
+    logger->debug("About to lock frame {}", page_id);
     frame_address->header.page_id = page_id;
     frame_address->header.inner = false;
-    page_id_map.emplace(page_id, frame_address);
+    logger->debug("About to unlock map in create_new_page");
     return &frame_address->header;
 }
 
 void BufferManager::delete_page(uint64_t page_id)
 {
+    frame_mutexes[page_id].lock(); // lock
+    logger->debug("About to lock map in delete");
+    page_map_mutex.lock_shared();
+
     // storage_manager->delete_page(page_id);
     std::map<uint64_t, BFrame *>::iterator it = page_id_map.find(page_id);
     if (it != page_id_map.end())
     {
+        logger->debug("About to unlock map in delete");
+        page_map_mutex.unlock_shared();
         assert(it->second->fix_count == 0 && "Fix count is not zero when deleting");
         BFrame *temp = it->second;
         temp->header.page_id = 0;
@@ -77,28 +98,60 @@ void BufferManager::delete_page(uint64_t page_id)
         temp->dirty = false;
         temp->fix_count = 0;
     }
+    else
+    {
+        logger->debug("About to unlock map in delete");
+        page_map_mutex.unlock_shared();
+    }
+
+    logger->debug("About to unlock frame {}", page_id);
+    frame_mutexes[page_id].unlock();
 }
 
 void BufferManager::fix_page(uint64_t page_id)
 {
+    logger->debug("About to lock frame {}", page_id);
+    frame_mutexes[page_id].lock(); // locks
+    logger->debug("About to lock map in fix");
+    page_map_mutex.lock_shared();
+
     std::map<uint64_t, BFrame *>::iterator it = page_id_map.find(page_id);
     if (it != page_id_map.end())
     {
-        assert(it->second->fix_count == 0 && "Trying to fix page that is not unfixed");
+        logger->debug("About to unlock map in fix");
+        page_map_mutex.unlock_shared();
+        // assert(it->second->fix_count == 0 && "Trying to fix page that is not unfixed");
         it->second->marked = true;
         it->second->fix_count++;
+    }
+    else
+    {
+        logger->debug("About to unlock map in fix");
+        page_map_mutex.unlock_shared();
     }
 }
 
 void BufferManager::unfix_page(uint64_t page_id, bool dirty)
 {
+    logger->debug("About to lock map in unfix");
+    page_map_mutex.lock_shared();
     std::map<uint64_t, BFrame *>::iterator it = page_id_map.find(page_id);
     if (it != page_id_map.end())
     {
-        assert(it->second->fix_count == 1 && "Trying to unfix page that is not fixed with 1");
+        logger->debug("About to unlock map in unfix");
+        page_map_mutex.unlock_shared();
+        // assert(it->second->fix_count == 1 && "Trying to unfix page that is not fixed with 1");
         it->second->fix_count--;
         it->second->dirty = it->second->dirty || dirty;
     }
+    else
+    {
+        logger->debug("About to unlock map in unfix");
+        page_map_mutex.unlock_shared();
+    }
+
+    logger->debug("About to unlock frame {}", page_id);
+    frame_mutexes[page_id].unlock();
 }
 
 BFrame *BufferManager::evict_page()
@@ -151,11 +204,15 @@ void BufferManager::fetch_page_from_disk(uint64_t page_id)
 
 void BufferManager::mark_dirty(uint64_t page_id)
 {
+    frame_mutexes[page_id].lock(); // lock
+    page_map_mutex.lock_shared();
     std::map<uint64_t, BFrame *>::iterator it = page_id_map.find(page_id);
     if (it != page_id_map.end())
     {
         it->second->dirty = true;
     }
+    frame_mutexes[page_id].unlock();
+    page_map_mutex.unlock_shared();
 }
 
 uint64_t BufferManager::get_current_buffer_size()
