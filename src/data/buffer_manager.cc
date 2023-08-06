@@ -219,3 +219,28 @@ uint64_t BufferManager::get_current_buffer_size()
 {
     return current_buffer_size;
 }
+
+bool BufferManager::can_fix(uint64_t page_id, BHeader* header){
+    logger->debug("About to lock frame {}", page_id);
+    frame_mutexes[page_id].lock(); // locks
+    logger->debug("About to lock map in fix");
+    page_map_mutex.lock_shared();
+
+    std::map<uint64_t, BFrame *>::iterator it = page_id_map.find(page_id);
+    if (it != page_id_map.end() && &it->second->header == header)
+    {
+        logger->debug("About to unlock map in fix");
+        page_map_mutex.unlock_shared();
+        // assert(it->second->fix_count == 0 && "Trying to fix page that is not unfixed");
+        it->second->marked = true;
+        it->second->fix_count++;
+        return true;
+    }
+    else
+    {
+        logger->debug("About to unlock map in fix");
+        page_map_mutex.unlock_shared();
+        frame_mutexes[page_id].unlock();
+        return false; 
+    }
+}

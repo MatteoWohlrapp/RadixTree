@@ -46,7 +46,8 @@ target_include_directories(RadixTree
 # depending on the compiler different flags are used
 target_compile_options(RadixTree
         PRIVATE -Wall
-        PRIVATE -fsanitize=address,undefined  # Add this line
+        PRIVATE -fopenmp               
+        PRIVATE -fsanitize=address,undefined
 )
 
 target_link_options(RadixTree

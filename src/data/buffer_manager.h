@@ -99,6 +99,8 @@ public:
      */
     void fix_page(uint64_t page_id);
 
+    bool can_fix(uint64_t page_id, BHeader* header); 
+
     /**
      * @brief Unfixes a page and enables other threads to modify it again
      * @param page_id The page id of the page that should be fixed

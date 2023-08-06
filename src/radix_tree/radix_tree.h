@@ -33,6 +33,8 @@ private:
 
     BufferManager *buffer_manager;
 
+    std::shared_mutex root_lock; 
+
     int64_t buffer[256]; /// buffer that handles deletes if the cache is full
     int read = 0;
     int write = 0;
@@ -701,14 +703,17 @@ private:
             if (header->leaf)
             {
                 RFrame *frame = (RFrame *)next;
-                if (frame->header->page_id == frame->page_id)
+                if (buffer_manager->can_fix(frame->page_id, frame->header))
                 {
-                    header->unfix_node();
+                    logger->info("Can fix worked"); 
+                    header->unfix_node_read();
                     return frame->header;
                 }
                 else
                 {
-                    header->unfix_node();
+                    if(header == root)
+                        root_lock.unlock_shared(); 
+                    header->unfix_node_read();
                     // Delete from tree as the reference is not matching and the page_id is wrong
                     delete_reference(inverse_transform(key));
                     return nullptr;
@@ -717,14 +722,18 @@ private:
             else
             {
                 RHeader *child = (RHeader *)next;
-                child->fix_node();
-                header->unfix_node();
+                child->fix_node_read();
+                header->unfix_node_read();
+                if(header == root)
+                    root_lock.unlock_shared(); 
                 return get_page_recursive(child, key);
             }
         }
         else
         {
-            header->unfix_node();
+            header->unfix_node_read();
+            if(header == root)
+                root_lock.unlock_shared(); 
             return nullptr;
         }
     }
@@ -1432,11 +1441,11 @@ public:
     {
         if (root)
         {
-            root->fix_node();
+            root_lock.lock_shared(); 
+            root->fix_node_read();
             BHeader *header = get_page_recursive(root, transform(key));
             if (header)
             {
-                buffer_manager->fix_page(header->page_id);
                 uint64_t value = ((BOuterNode<PAGE_SIZE> *)header)->get_value(key);
                 buffer_manager->unfix_page(header->page_id, false);
                 return value;
@@ -1455,11 +1464,11 @@ public:
     {
         if (root)
         {
-            root->fix_node();
+            root_lock.lock_shared(); 
+            root->fix_node_read();
             BHeader *header = get_page_recursive(root, transform(key));
             if (header)
             {
-                buffer_manager->fix_page(header->page_id);
                 ((BOuterNode<PAGE_SIZE> *)header)->update(key, value);
                 buffer_manager->unfix_page(header->page_id, true);
                 return true;

@@ -28,6 +28,7 @@ namespace Configuration
         double delete_proportion = 0;         /// proportion of delete during workload
         bool cache = false;                   /// if caching is enabled
         uint64_t radix_tree_size = 104857600; /// Size of the cache, default here is 100 MB
+        bool measure_per_operation = false;   /// Either measure throughput or individual operations which gives the percentiles etc.
         bool benchmark = false;               /// whether benchmarking is enabled or not, only applicable for run config
         bool run_workload = false;            /// if a workload or a run config should be run
         bool script = false;

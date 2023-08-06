@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <iostream>
 #include <cassert>
+#include <shared_mutex> 
 
 /**
  * @brief Data Structure that acts as the header for the pages that are saved on memory.
@@ -32,7 +33,9 @@ struct RHeader
     uint16_t current_size = 0;
 
     /// fix and unfix
-    uint8_t fix_count = 0;
+    //uint8_t fix_count = 0;
+    std::shared_mutex node_lock;    
+
 
     /**
      * @brief Constructor for the header
@@ -61,9 +64,15 @@ struct RHeader
      */
     void fix_node()
     {
-        assert(fix_count == 0 && "Trying to fix rnode that is already fixed.");
+        node_lock.lock(); 
+        //assert(fix_count == 0 && "Trying to fix rnode that is already fixed.");
 
-        fix_count++;
+        //fix_count++;
+    }
+
+    void fix_node_read()
+    {
+        node_lock.lock_shared(); 
     }
 
     /**
@@ -71,8 +80,14 @@ struct RHeader
      */
     void unfix_node()
     {
-        assert(fix_count == 1 && "Trying to unfix rnode that is not fixed.");
+        node_lock.unlock(); 
+        //assert(fix_count == 1 && "Trying to unfix rnode that is not fixed.");
 
-        fix_count--;
+        //fix_count--;
+    }
+
+    void unfix_node_read()
+    {
+        node_lock.unlock_shared(); 
     }
 };

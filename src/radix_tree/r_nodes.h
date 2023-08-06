@@ -14,10 +14,10 @@
 #include <emmintrin.h>
 #include <nmmintrin.h>
 
-constexpr int size_4 = 64;     /// size for node 4 in bytes
-constexpr int size_16 = 168;   /// size for node 16 in bytes
-constexpr int size_48 = 920;   /// size for node 48 in bytes
-constexpr int size_256 = 2072; /// size for node 256 in bytes
+constexpr int size_4 = 120;     /// size for node 4 in bytes
+constexpr int size_16 = 224;   /// size for node 16 in bytes
+constexpr int size_48 = 720;   /// size for node 48 in bytes
+constexpr int size_256 = 2128; /// size for node 256 in bytes
 
 /**
  * @brief Structure for the node with size of 4
