@@ -28,6 +28,7 @@ TEST_F(BNodeTest, BBInnerNodeConstructor)
 {
     header->inner = false;
     header->page_id = 3;
+    ASSERT_EQ(header->page_id, 3); // needed bc of compiler optimization in release on some machines
     BInnerNode<PAGE_SIZE> *node = new (header) BInnerNode<PAGE_SIZE>();
 
     ASSERT_EQ(sizeof(BInnerNode<PAGE_SIZE>), PAGE_SIZE);
@@ -94,6 +95,7 @@ TEST_F(BNodeTest, BOuterNodeConstructor)
 {
     header->inner = true;
     header->page_id = 3;
+    ASSERT_EQ(header->page_id, 3); 
     BOuterNode<PAGE_SIZE> *node = new (header) BOuterNode<PAGE_SIZE>();
 
     ASSERT_EQ(sizeof(BOuterNode<PAGE_SIZE>), PAGE_SIZE);
