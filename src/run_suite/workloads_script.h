@@ -16,11 +16,11 @@
 class WorkloadScript
 {
 private:
-    uint64_t total_records = 12500000;
-    uint64_t buffer_size = 40000;
-    uint64_t radix_tree_size = 697932185;
-    uint64_t operation_count = 20000000;
-    uint64_t record_count = 10000000;
+    uint64_t total_records = 1250000;
+    uint64_t buffer_size = 4000;
+    uint64_t radix_tree_size = 69793218;
+    uint64_t operation_count = 2000000;
+    uint64_t record_count = 1000000;
     int max_scan_range = 100;
 
     std::shared_ptr<spdlog::logger> logger;
@@ -37,13 +37,9 @@ private:
     std::string results_filename;
     std::ofstream csv_file;
 
-    uint64_t record_counts[5] = {2000000, 4000000, 6000000, 8000000, 10000000};
-    double coefficients[4] = {0.0009, 0.009, 0.09, 0.9};
-    std::vector<std::string> distributions = {"uniform", "geometric"};
-    bool caches[2] = {true, false};
+    int threads[5] = {1, 5, 10, 20, 30};
     double workloads[5][5] = {
         {0, 0.5, 0.5, 0, 0}, {0, 0.95, 0.05, 0, 0}, {0, 1, 0, 0, 0}, {0.05, 0, 0, 0.95, 0}, {0, 0.90, 0, 0, 0.1}};
-    uint64_t memory_distributions[6][2] = {{0, 80000}, {32768000, 72000}, {81920000, 60000}, {163840000, 40000}, {245760000, 20000}, {294912000, 8000}};
 
     /**
      * @brief enumeration for the different kinds of operation possible
@@ -109,8 +105,9 @@ private:
      * @param radix_tree_size_arg The size of the cache
      * @param workload_arg The workload that is run
      * @param inverse Specifies if the elements are inserted from the front or the back of the array
+     * @param threads The number of threads this is run for
      */
-    void run_workload(std::string test_name, int iteration, uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, double insert_proportion_arg, double read_proportion_arg, double update_proportion_arg, double scan_proportion_arg, double delete_proportion_arg, bool cache_arg, uint64_t radix_tree_size_arg, int workload_arg, bool inverse = false)
+    void run_workload(std::string test_name, int iteration, uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, double insert_proportion_arg, double read_proportion_arg, double update_proportion_arg, double scan_proportion_arg, double delete_proportion_arg, bool cache_arg, uint64_t radix_tree_size_arg, int workload_arg, bool inverse = false, int threads = 0)
     {
         std::cout << "Starting iteration " << iteration << " of test " << test_name << std::endl
                   << std::flush;
@@ -177,27 +174,22 @@ private:
 
         insert_index = record_count_arg;
 
-        const int thread_count = 1;
-        int num_op_per_thread = operation_count_arg / thread_count;
-
-        for (int t = 0; t < thread_count; t++)
+        std::chrono::time_point<std::chrono::high_resolution_clock> total_start, total_end;
+        total_start = std::chrono::high_resolution_clock::now();
+    #pragma omp parallel for num_threads(threads)
+        for (uint64_t i = 0; i < operation_count; i++)
         {
-            std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
-            Operation op;
-            for (int i = thread_count * t; i < thread_count * t + num_op_per_thread; i++)
-            {
-                op = operations_vector[i];
-                start = std::chrono::high_resolution_clock::now();
-                perform_operation(op, i);
-                end = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double> elapsed = end - start;
-                times[op].push_back(elapsed.count());
-            }
+            perform_operation(operations_vector[i], i);
         }
+        total_end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> total_elapsed = total_end - total_start;
+        times[0].push_back(total_elapsed.count());
+        
+
         uint64_t cache_size = data_manager.get_cache_size();
         uint64_t current_buffer_size = data_manager.get_current_buffer_size();
 
-        analyze(test_name, iteration, buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, insert_proportion_arg, read_proportion_arg, update_proportion_arg, scan_proportion_arg, delete_proportion_arg, cache_arg, radix_tree_size_arg, cache_size, current_buffer_size, workload_arg);
+        analyze(test_name, iteration, buffer_size_arg, record_count_arg, operation_count_arg, distribution_arg, coefficient_arg, insert_proportion_arg, read_proportion_arg, update_proportion_arg, scan_proportion_arg, delete_proportion_arg, cache_arg, radix_tree_size_arg, cache_size, current_buffer_size, workload_arg, threads);
 
         data_manager.destroy();
     }
@@ -248,66 +240,15 @@ private:
      * @param cache_size_arg The actual size of the cache
      * @param current_buffer_size_arg The size of the buffer
      * @param workload_arg The workload that is run
+     * @param threads The number of threads
      */
-    void analyze(std::string test_name, int iteration, uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, double insert_proportion_arg, double read_proportion_arg, double update_proportion_arg, double scan_proportion_arg, double delete_proportion_arg, bool cache_arg, uint64_t radix_tree_size_arg, uint64_t cache_size_arg, uint64_t current_buffer_size_arg, int workload_arg)
+    void analyze(std::string test_name, int iteration, uint64_t buffer_size_arg, uint64_t record_count_arg, uint64_t operation_count_arg, std::string distribution_arg, double coefficient_arg, double insert_proportion_arg, double read_proportion_arg, double update_proportion_arg, double scan_proportion_arg, double delete_proportion_arg, bool cache_arg, uint64_t radix_tree_size_arg, uint64_t cache_size_arg, uint64_t current_buffer_size_arg, int workload_arg, int threads)
     {
-        std::vector<OperationResult> operation_results(NUM_OPERATIONS);
-
-        struct rusage usage;
-        getrusage(RUSAGE_SELF, &usage);
-
-        std::vector<std::string> operation_names = {"INSERT", "READ", "UPDATE", "SCAN", "DELETE"};
-        uint64_t total_operations = 0;
-        double total_time = 0;
-
-        for (int i = 0; i < NUM_OPERATIONS; ++i)
-        {
-            std::vector<double> &operation_times = times[i];
-            OperationResult &result = operation_results[i];
-
-            if (operation_times.empty())
-            {
-                continue;
-            }
-
-            double sum = std::accumulate(operation_times.begin(), operation_times.end(), 0.0);
-            result.total_time = sum;
-            result.operation_count = operation_times.size();
-            total_operations += operation_times.size();
-            total_time += sum;
-
-            std::sort(operation_times.begin(), operation_times.end());
-            double median = operation_times[operation_times.size() / 2];
-            if (operation_times.size() % 2 == 0)
-            {
-                median = (operation_times[operation_times.size() / 2 - 1] + median) / 2;
-            }
-            result.median_time = median;
-
-            double percentile_90 = operation_times[int(0.9 * operation_times.size())];
-            double percentile_95 = operation_times[int(0.95 * operation_times.size())];
-            double percentile_99 = operation_times[int(0.99 * operation_times.size())];
-            result.percentile_90 = percentile_90;
-            result.percentile_95 = percentile_95;
-            result.percentile_99 = percentile_99;
-
-            result.mean_time = sum / operation_times.size();
-        }
-        // Write to CSV file
         csv_file.open(results_filename, std::ios_base::app);
         csv_file << test_name << "," << iteration << "," << buffer_size_arg << "," << record_count_arg << "," << operation_count_arg << ","
-                 << distribution_arg << "," << workload_arg << "," << insert_proportion_arg << "," << read_proportion_arg << ","
-                 << update_proportion_arg << "," << scan_proportion_arg << "," << delete_proportion_arg << ","
-                 << (cache_arg ? "true" : "false") << "," << radix_tree_size_arg << "," << std::fixed << std::setprecision(5) << coefficient_arg << ",";
-
-        for (const OperationResult &result : operation_results)
-        {
-            csv_file << result.operation_count << "," << std::fixed << std::setprecision(10) << result.total_time << ","
-                     << result.mean_time << "," << result.median_time << "," << result.percentile_90 << ","
-                     << result.percentile_95 << "," << result.percentile_99 << ",";
-        }
-        csv_file << cache_size_arg << "," << current_buffer_size_arg << "," << std::fixed << std::setprecision(2) << total_time << ","
-                 << total_operations / total_time << "\n";
+                 << distribution_arg << "," << std::fixed << std::setprecision(5) << coefficient_arg << "," << (cache_arg ? "true" : "false") << radix_tree_size_arg << "," << workload_arg << ",";
+        csv_file << cache_size_arg << "," << current_buffer_size_arg << "," << std::fixed << std::setprecision(2) << times[0][0] << ","
+                 << operation_count_arg / times[0][0] << "," << threads <<"\n";
         csv_file.close();
     }
 
@@ -325,7 +266,7 @@ public:
         std::string prefix = Time::getDateTime();
         results_filename = "../results/" + prefix + "test_results.csv";
         csv_file.open(results_filename, std::ios_base::app);
-        csv_file << "TestName,Iteration,BufferSize,RecordCount,OperationCount,Distribution,Workload,InsertProportion,ReadProportion,UpdateProportion,ScanProportion,DeleteProportion,Cache,RadixTreeSize,Coefficient,InsertOperationCount,InsertTotalTime,InsertMeanTime,InsertMedianTime,Insert90Percentile,Insert95Percentile,Insert99Percentile,ReadOperationCount,ReadTotalTime,ReadMeanTime,ReadMedianTime,Read90Percentile,Read95Percentile,Read99Percentile,UpdateOperationCount,UpdateTotalTime,UpdateMeanTime,UpdateMedianTime,Update90Percentile,Update95Percentile,Update99Percentile,ScanOperationCount,ScanTotalTime,ScanMeanTime,ScanMedianTime,Scan90Percentile,Scan95Percentile,Scan99Percentile,DeleteOperationCount,DeleteTotalTime,DeleteMeanTime,DeleteMedianTime,Delete90Percentile,Delete95Percentile,Delete99Percentile,CacheSize,CurrentBufferSize,TotalTime,Throughput\n";
+        csv_file << "TestName,Iteration,BufferSize,RecordCount,OperationCount,Distribution,Coefficient,Cache,RadixTreeSize,Workload,CacheSize,CurrentBufferSize,TotalTime,Throughput,Threads\n";
         csv_file.close();
     }
 
@@ -340,75 +281,21 @@ public:
                   << std::flush;
 
         int iteration = 1;
-        run_workload("vary record size", iteration, buffer_size, record_count, operation_count, "geometric", 0.001, workloads[0][0], workloads[0][1], workloads[0][2], workloads[0][3], workloads[0][4], false, radix_tree_size, 0);
+        
+        std::cout << "Vary thread count started..." << std::endl;
 
-        std::cout << "Vary records-size tests started..." << std::endl;
-
-        iteration = 1;
-        for (auto &cache : caches)
+        for (int i = 0; i < 3; i++)
         {
-            for (int i = 0; i < 5; i++)
-            {
-                for (auto &record_count_l : record_counts)
-                {
-                    run_workload("vary record size", iteration, buffer_size, record_count_l, operation_count, "geometric", 0.001, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], cache, radix_tree_size, i);
-                    iteration++;
-                }
-            }
-        }
-        std::cout << "Vary records-size tests completed..." << std::endl;
-
-        std::cout << "Vary distribution started..." << std::endl;
-        for (auto &cache : caches)
-        {
-            for (int i = 0; i < 5; i++)
-            {
-                for (auto &distribution : distributions)
-                {
-                    run_workload("vary distribution", iteration, 4000, 1000000, 1000000, distribution, 0.1, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], cache, 69793215, i, true);
-                    iteration++;
-                }
-            }
-        }
-        std::cout << "Vary distribution tests completed..." << std::endl;
-
-        iteration = 1;
-        std::cout << "Vary geometric distribution coefficient tests started..." << std::endl;
-        for (int i = 0; i < 5; i++)
-        {
-            for (auto &cache : caches)
-            {
-
-                for (auto &coefficient_l : coefficients)
-                {
-                    run_workload("vary geometric distribution", iteration, 4000, 1000000, 1000000, "geometric", coefficient_l, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], cache, 69793215, i, true);
-                    iteration++;
-                }
-            }
-        }
-        std::cout << "Vary geometric distribution coefficient tests completed..." << std::endl;
-
-        iteration = 1;
-        std::cout << "Vary memory distribution coefficient tests started..." << std::endl;
-
-        for (int i = 0; i < 5; i++)
-        {
-            for (auto &memory_distribution_l : memory_distributions)
-            {
-                if (memory_distribution_l[0] == 0)
-                {
-                    run_workload("vary memory distribution", iteration, memory_distribution_l[1], record_count, operation_count, "geometric", 0.001, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], false, memory_distribution_l[0], i);
-                    iteration++;
-                }
-                else
-                {
-                    run_workload("vary memory distribution", iteration, memory_distribution_l[1], record_count, operation_count, "geometric", 0.001, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], true, memory_distribution_l[0], i);
-                    iteration++;
-                }
+            for (auto &thread : threads)
+            {                
+                run_workload("vary thread count", iteration, buffer_size, record_count, operation_count, "geometric", 0.001, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], true, radix_tree_size, i, false, thread);
+                iteration++;
+                run_workload("vary thread count", iteration, buffer_size, record_count, operation_count, "geometric", 0.001, workloads[i][0], workloads[i][1], workloads[i][2], workloads[i][3], workloads[i][4], false, radix_tree_size, i, false, thread);
+                iteration++;
             }
         }
 
-        std::cout << "Vary memory distribution tests completed..." << std::endl;
+        std::cout << "Vary mthread count tests completed..." << std::endl;
 
         std::cout << "All tests completed!" << std::endl;
     }

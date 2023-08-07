@@ -139,7 +139,6 @@ protected:
             level++;
         }
         return true;
-        logger->debug("Finished traversing");
     }
 
     bool minimum_size()
