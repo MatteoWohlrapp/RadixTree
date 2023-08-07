@@ -33,7 +33,7 @@ private:
 
     BufferManager *buffer_manager;
 
-    std::shared_mutex root_lock; 
+    std::shared_mutex root_lock;
 
     int64_t buffer[256]; /// buffer that handles deletes if the cache is full
     int read = 0;
@@ -705,14 +705,16 @@ private:
                 RFrame *frame = (RFrame *)next;
                 if (buffer_manager->can_fix(frame->page_id, frame->header))
                 {
-                    logger->info("Can fix worked"); 
+                    logger->info("Can fix worked");
                     header->unfix_node_read();
+                    if (header == root)
+                        root_lock.unlock_shared();
                     return frame->header;
                 }
                 else
                 {
-                    if(header == root)
-                        root_lock.unlock_shared(); 
+                    if (header == root)
+                        root_lock.unlock_shared();
                     header->unfix_node_read();
                     // Delete from tree as the reference is not matching and the page_id is wrong
                     delete_reference(inverse_transform(key));
@@ -724,16 +726,16 @@ private:
                 RHeader *child = (RHeader *)next;
                 child->fix_node_read();
                 header->unfix_node_read();
-                if(header == root)
-                    root_lock.unlock_shared(); 
+                if (header == root)
+                    root_lock.unlock_shared();
                 return get_page_recursive(child, key);
             }
         }
         else
         {
             header->unfix_node_read();
-            if(header == root)
-                root_lock.unlock_shared(); 
+            if (header == root)
+                root_lock.unlock_shared();
             return nullptr;
         }
     }
@@ -752,9 +754,13 @@ private:
         if (!grand_child)
         {
             parent->unfix_node();
+            child->unfix_node();
+            if (root == parent)
+                root_lock.unlock();
         }
         else
         {
+            grand_child->fix_node();
             if (grand_child->leaf)
             {
                 node_delete(grand_child, get_key(key, 8));
@@ -774,20 +780,31 @@ private:
                     {
                         child = decrease_node_size(child);
                         node_insert(parent, get_key(key, parent->depth), child);
+                    } else {
+                        child->unfix_node(); 
                     }
                 }
                 else if (!can_delete(grand_child))
                 {
                     grand_child = decrease_node_size(grand_child);
                     node_insert(child, partial_key, grand_child);
+                    child->unfix_node();
+                }
+                else
+                {
+                    grand_child->unfix_node(); 
+                    child->unfix_node();
                 }
 
                 parent->unfix_node();
+                if (root == parent)
+                    root_lock.unlock();
             }
             else
             {
                 parent->unfix_node();
-                child->fix_node();
+                if (root == parent)
+                    root_lock.unlock();
                 delete_reference_recursive(child, grand_child, key);
             }
         }
@@ -1318,6 +1335,7 @@ public:
         if (!root)
             return;
 
+        root_lock.lock();
         root->fix_node();
 
         if (root->leaf)
@@ -1338,6 +1356,8 @@ public:
             {
                 root->unfix_node();
             }
+
+            root_lock.unlock();
         }
         else
         {
@@ -1346,6 +1366,7 @@ public:
 
             if (child_header)
             {
+                child_header->fix_node();
                 if (child_header->leaf)
                 {
                     node_delete(child_header, get_key(key, 8));
@@ -1361,11 +1382,13 @@ public:
                             RHeader *temp = root;
                             root = (RHeader *)get_single_child(root);
                             free_node(temp);
+                            root_lock.unlock();
                             return;
                         }
                         else if (!can_delete(root))
                         {
                             root = decrease_node_size(root);
+                            root_lock.unlock();
                             return;
                         }
                     }
@@ -1374,8 +1397,13 @@ public:
                         child_header = decrease_node_size(child_header);
                         node_insert(root, partial_key, child_header);
                     }
+                    else
+                    {
+                        child_header->unfix_node();
+                    }
 
                     root->unfix_node();
+                    root_lock.unlock();
                 }
                 else
                 {
@@ -1385,6 +1413,7 @@ public:
             else
             {
                 root->unfix_node();
+                root_lock.unlock();
             }
         }
     }
@@ -1441,7 +1470,7 @@ public:
     {
         if (root)
         {
-            root_lock.lock_shared(); 
+            root_lock.lock_shared();
             root->fix_node_read();
             BHeader *header = get_page_recursive(root, transform(key));
             if (header)
@@ -1464,7 +1493,7 @@ public:
     {
         if (root)
         {
-            root_lock.lock_shared(); 
+            root_lock.lock_shared();
             root->fix_node_read();
             BHeader *header = get_page_recursive(root, transform(key));
             if (header)
