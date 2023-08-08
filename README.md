@@ -4,6 +4,8 @@ Codebase for the Thesis: Evaluation of a Radix Tree Cache for Database Managemen
 PDF of the thesis can be found in the root. <br>
 Author: Matteo Wohlrapp <br>
 
+This repository has 2 branches. 'Main' contains the version that is explained in the thesis and that is also used for the evaluation. 'Multithreading' is not complete and only provides support for read and update operations. Furthermore, the locking mechanism is not sophisticated enough to create a performance gain. Refer to the appendix of the thesis for performance data. <br>
+
 
 ## Docker 
 Docker is not necessary to run the executable, but if you want to use it, the following commands can be used: <br>
@@ -41,7 +43,7 @@ There are multiple options to run the code. Check the help menu to find out more
 2. `-w{,a,b,c,e,x}`runs single workloads. Either the predefined ones or an individual one, defined through the command line parameters
 3. `-r <number>` executes a 'run confiugration', which is basically a way for you to specify what you want to compute. Just modify `run_config_one.cc` or `run_config_two.cc`. The data manager will be created automatically
 
-## Testing
+## Test
 In the `tests` folder, there are multiple numerous unit tests, testing all important components. You can run them by executing the `./Alltests` executable. <br>
 Additionally, there is a debugger, defined in `Debugger.h`, that offers a function to traverse both the radix- and the B+ tree and print information about the nodes. You can use it in one of the `run_config` files and pass the data manager in order to extract information about the trees.
 
