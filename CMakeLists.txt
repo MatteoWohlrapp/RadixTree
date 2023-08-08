@@ -65,4 +65,3 @@ message("CMAKE_BUILD_TYPE is set to ${CMAKE_BUILD_TYPE}")
 
 include(doxygen)
 include(googletest)
-include(boost)
