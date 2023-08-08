@@ -14,11 +14,11 @@ bar shift auto,
 xmin=0.514285714285714,
 xmax=5.48571428571429,
 xtick={1,2,3,4,5},
-xticklabels={{MeanTime},{MedianTime},{90Percentile},{95Percentile},{99Percentile}},
+xticklabels={{Mean Time},{Median Time},{90th Percentile},{95th Percentile},{99th Percentile}},
 ymin=0,
-ymax=1.6225e-06,
-ytick={0,2e-07,4e-07,6e-07,8e-07,1e-06,1.2e-06,1.4e-06,1.6e-06},
-yticklabels={{$\text{0.0}\mu\text{ s}$},{$\text{0.2}\mu\text{ s}$},{$\text{0.4}\mu\text{ s}$},{$\text{0.6}\mu\text{ s}$},{$\text{0.8}\mu\text{ s}$},{$\text{1.0}\mu\text{ s}$},{$\text{1.2}\mu\text{ s}$},{$\text{1.4}\mu\text{ s}$},{$\text{1.6}\mu\text{ s}$}},
+ymax=1.3321e-06,
+ytick={0,2e-07,4e-07,6e-07,8e-07,1e-06,1.2e-06},
+yticklabels={{$\text{0.0}\mu\text{ s}$},{$\text{0.2}\mu\text{ s}$},{$\text{0.4}\mu\text{ s}$},{$\text{0.6}\mu\text{ s}$},{$\text{0.8}\mu\text{ s}$},{$\text{1.0}\mu\text{ s}$},{$\text{1.2}\mu\text{ s}$}},
 ylabel style={font=\color{white!15!black}},
 ylabel={Time of one operation in microseconds},
 axis background/.style={fill=white},
@@ -29,11 +29,11 @@ scaled y ticks=false,
 scaled x ticks=false
 ]
 \addplot[ybar, bar width=0.229, fill=mycolor1, draw=black, area legend] table[row sep=crcr] {%
-1	5.365e-07\\
-2	5.14e-07\\
-3	5.78e-07\\
-4	6.05e-07\\
-5	7.03e-07\\
+1	4.235e-07\\
+2	3.99e-07\\
+3	4.63e-07\\
+4	4.91e-07\\
+5	5.86e-07\\
 };
 \addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
 0.514285714285714	0\\
@@ -42,11 +42,11 @@ scaled x ticks=false
 \addlegendentry{Read, Cached}
 
 \addplot[ybar, bar width=0.229, fill=mycolor2, draw=black, area legend] table[row sep=crcr] {%
-1	1.3269e-06\\
-2	1.299e-06\\
-3	1.408e-06\\
-4	1.436e-06\\
-5	1.475e-06\\
+1	1.091e-06\\
+2	1.071e-06\\
+3	1.118e-06\\
+4	1.169e-06\\
+5	1.211e-06\\
 };
 \addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
 0.514285714285714	0\\

@@ -21,9 +21,9 @@ xticklabels={{0.0009},{ 0.009},{  0.09},{   0.9}},
 xlabel style={font=\color{white!15!black}},
 xlabel={p},
 ymin=0,
-ymax=2600000,
-ytick={0,500000,1000000,1500000,2000000,2500000},
-yticklabels={{0K},{500K},{1000K},{1500K},{2000K},{2500K}},
+ymax=3500000,
+ytick={0,500000,1000000,1500000,2000000,2500000,3000000,3500000},
+yticklabels={{0K},{500K},{1000K},{1500K},{2000K},{2500K},{3000K},{3500K}},
 ylabel style={font=\color{white!15!black}},
 ylabel={Throughput [Operations / s]},
 axis background/.style={fill=white},
@@ -34,10 +34,10 @@ scaled y ticks=false,
 scaled x ticks=false
 ]
 \addplot[ybar, bar width=0.123, fill=mycolor1, draw=black, area legend] table[row sep=crcr] {%
-1	1026872.65\\
-2	1068066.87\\
-3	1137085.67\\
-4	1163743.05\\
+1	1266121.34\\
+2	1448682.23\\
+3	1539487.72\\
+4	1545466.21\\
 };
 \addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
 0.507692307692308	0\\
@@ -46,10 +46,10 @@ scaled x ticks=false
 \addlegendentry{Workload A}
 
 \addplot[ybar, bar width=0.123, fill=mycolor2, draw=black, area legend] table[row sep=crcr] {%
-1	1000191.44\\
-2	1088676.41\\
-3	1151954.59\\
-4	1168745.3\\
+1	1306155.72\\
+2	1447790.32\\
+3	1558320.05\\
+4	1531366.72\\
 };
 \addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
 0.507692307692308	0\\
@@ -58,10 +58,10 @@ scaled x ticks=false
 \addlegendentry{Workload B}
 
 \addplot[ybar, bar width=0.123, fill=mycolor3, draw=black, area legend] table[row sep=crcr] {%
-1	1027869.65\\
-2	1088346.32\\
-3	1126450.34\\
-4	1123719.85\\
+1	1317867.24\\
+2	1426304.25\\
+3	1496644.7\\
+4	1552186.11\\
 };
 \addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
 0.507692307692308	0\\
@@ -70,10 +70,10 @@ scaled x ticks=false
 \addlegendentry{Workload C}
 
 \addplot[ybar, bar width=0.123, fill=mycolor4, draw=black, area legend] table[row sep=crcr] {%
-1	683958.88\\
-2	717859.6\\
-3	810617\\
-4	848596.09\\
+1	821515.33\\
+2	886048.14\\
+3	1026991.08\\
+4	1045530.17\\
 };
 \addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
 0.507692307692308	0\\
@@ -82,10 +82,10 @@ scaled x ticks=false
 \addlegendentry{Workload E}
 
 \addplot[ybar, bar width=0.123, fill=mycolor5, draw=black, area legend] table[row sep=crcr] {%
-1	1087232.62\\
-2	1113158.32\\
-3	1127185.17\\
-4	1118188.76\\
+1	1477078.08\\
+2	1501365.77\\
+3	1471321.63\\
+4	1531304.35\\
 };
 \addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
 0.507692307692308	0\\

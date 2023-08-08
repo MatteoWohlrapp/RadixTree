@@ -4,7 +4,7 @@
 
 %% Load Data
 % Load data from CSV
-data = readtable('../results/2023-8-1-7:7:53_test_results-kemper.csv');
+data = readtable('../results/2023-8-5-14:21:53_test_results.csv');
 
 % Convert cell array of character arrays to string array
 data.TestName = string(data.TestName);
@@ -93,7 +93,11 @@ for i = 0:4
 
     bar(bars_data)
     grid on;
-    legend(legends, 'Location', 'southeast'); % Create legend using bar objects and labels
+    if(i == 3)
+        legend(legends, 'Location', 'northeast'); % Create legend using bar objects and labels
+    else 
+        legend(legends, 'Location', 'southeast'); % Create legend using bar objects and labels
+    end 
     set(gca, 'XTickLabel', statistics_groups);
     t = [workloadNames{i+1} ' Statistics'];
     ylabel('Time of one operation in microseconds');
@@ -129,7 +133,8 @@ for c = 0:1
 
     bar(bars_data);
     grid on;
-    legend({'Uniform', 'Geometric'}, 'Location', 'southeast'); % Create legend using the distribution names
+    legend({'Uniform', 'Geometric'}, 'Location', 'northeast'); % Create legend using the distribution names
+
     set(gca, 'XTickLabel', workloadNames);
     t = ['Varying distribution ' cache_text{c+1}];
     ylabel('Throughput [Operations / s]');
