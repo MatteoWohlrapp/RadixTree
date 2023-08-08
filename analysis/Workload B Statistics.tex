@@ -16,11 +16,11 @@ bar shift auto,
 xmin=0.509090909090909,
 xmax=5.49090909090909,
 xtick={1,2,3,4,5},
-xticklabels={{MeanTime},{MedianTime},{90Percentile},{95Percentile},{99Percentile}},
+xticklabels={{Mean Time},{Median Time},{90th Percentile},{95th Percentile},{99th Percentile}},
 ymin=0,
-ymax=1.6478e-06,
-ytick={0,2e-07,4e-07,6e-07,8e-07,1e-06,1.2e-06,1.4e-06,1.6e-06},
-yticklabels={{$\text{0.0}\mu\text{ s}$},{$\text{0.2}\mu\text{ s}$},{$\text{0.4}\mu\text{ s}$},{$\text{0.6}\mu\text{ s}$},{$\text{0.8}\mu\text{ s}$},{$\text{1.0}\mu\text{ s}$},{$\text{1.2}\mu\text{ s}$},{$\text{1.4}\mu\text{ s}$},{$\text{1.6}\mu\text{ s}$}},
+ymax=1.3541e-06,
+ytick={0,2e-07,4e-07,6e-07,8e-07,1e-06,1.2e-06},
+yticklabels={{$\text{0.0}\mu\text{ s}$},{$\text{0.2}\mu\text{ s}$},{$\text{0.4}\mu\text{ s}$},{$\text{0.6}\mu\text{ s}$},{$\text{0.8}\mu\text{ s}$},{$\text{1.0}\mu\text{ s}$},{$\text{1.2}\mu\text{ s}$}},
 ylabel style={font=\color{white!15!black}},
 ylabel={Time of one operation in microseconds},
 axis background/.style={fill=white},
@@ -31,11 +31,11 @@ scaled y ticks=false,
 scaled x ticks=false
 ]
 \addplot[ybar, bar width=0.145, fill=mycolor1, draw=black, area legend] table[row sep=crcr] {%
-1	5.299e-07\\
-2	5.11e-07\\
-3	5.62e-07\\
-4	5.82e-07\\
-5	6.46e-07\\
+1	4.298e-07\\
+2	4.1e-07\\
+3	4.62e-07\\
+4	4.84e-07\\
+5	5.65e-07\\
 };
 \addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
 0.509090909090909	0\\
@@ -44,11 +44,11 @@ scaled x ticks=false
 \addlegendentry{Read, Cached}
 
 \addplot[ybar, bar width=0.145, fill=mycolor2, draw=black, area legend] table[row sep=crcr] {%
-1	1.2947e-06\\
-2	1.262e-06\\
-3	1.375e-06\\
-4	1.401e-06\\
-5	1.448e-06\\
+1	1.051e-06\\
+2	1.032e-06\\
+3	1.09e-06\\
+4	1.128e-06\\
+5	1.175e-06\\
 };
 \addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
 0.509090909090909	0\\
@@ -57,11 +57,11 @@ scaled x ticks=false
 \addlegendentry{Read, Not Cached}
 
 \addplot[ybar, bar width=0.145, fill=mycolor3, draw=black, area legend] table[row sep=crcr] {%
-1	5.537e-07\\
-2	5.38e-07\\
-3	5.92e-07\\
-4	6.12e-07\\
-5	6.74e-07\\
+1	4.537e-07\\
+2	4.28e-07\\
+3	4.79e-07\\
+4	5.02e-07\\
+5	5.8e-07\\
 };
 \addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
 0.509090909090909	0\\
@@ -70,11 +70,11 @@ scaled x ticks=false
 \addlegendentry{Update, Cached}
 
 \addplot[ybar, bar width=0.145, fill=mycolor4, draw=black, area legend] table[row sep=crcr] {%
-1	1.3314e-06\\
-2	1.301e-06\\
-3	1.412e-06\\
-4	1.445e-06\\
-5	1.498e-06\\
+1	1.1119e-06\\
+2	1.073e-06\\
+3	1.142e-06\\
+4	1.173e-06\\
+5	1.231e-06\\
 };
 \addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
 0.509090909090909	0\\

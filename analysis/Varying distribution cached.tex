@@ -16,24 +16,24 @@ xmax=5.48571428571429,
 xtick={1,2,3,4,5},
 xticklabels={{Workload A},{Workload B},{Workload C},{Workload E},{Workload X}},
 ymin=0,
-ymax=2500000,
-ytick={0,500000,1000000,1500000,2000000,2500000},
-yticklabels={{0K},{500K},{1000K},{1500K},{2000K},{2500K}},
+ymax=3500000,
+ytick={0,500000,1000000,1500000,2000000,2500000,3000000,3500000},
+yticklabels={{0K},{500K},{1000K},{1500K},{2000K},{2500K},{3000K},{3500K}},
 ylabel style={font=\color{white!15!black}},
 ylabel={Throughput [Operations / s]},
 axis background/.style={fill=white},
 xmajorgrids,
 ymajorgrids,
-legend style={at={(0.97,0.03)}, anchor=south east, legend cell align=left, align=left, draw=white!15!black},
+legend style={legend cell align=left, align=left, draw=white!15!black},
 scaled y ticks=false,
 scaled x ticks=false
 ]
 \addplot[ybar, bar width=0.229, fill=mycolor1, draw=black, area legend] table[row sep=crcr] {%
-1	21521.38\\
-2	22327.46\\
-3	23918.6\\
-4	14610.26\\
-5	34460.73\\
+1	21909.4\\
+2	22502.62\\
+3	24621.19\\
+4	14890.47\\
+5	35584.86\\
 };
 \addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
 0.514285714285714	0\\
@@ -42,11 +42,11 @@ scaled x ticks=false
 \addlegendentry{Uniform}
 
 \addplot[ybar, bar width=0.229, fill=mycolor2, draw=black, area legend] table[row sep=crcr] {%
-1	2380956.21\\
-2	2354213.6\\
-3	2353268.47\\
-4	1187231.99\\
-5	1004421.33\\
+1	3139298.86\\
+2	3093859.89\\
+3	3007715.94\\
+4	1468632.16\\
+5	1439953.78\\
 };
 \addplot[forget plot, color=white!15!black] table[row sep=crcr] {%
 0.514285714285714	0\\
